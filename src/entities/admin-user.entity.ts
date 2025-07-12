@@ -1,0 +1,31 @@
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn, Index } from 'typeorm';
+import { AuditLog } from './audit-log.entity';
+
+@Entity('admin_users')
+@Index(['username'], { unique: true })
+export class AdminUser {
+  @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
+  id: number;
+
+  @Column({ length: 255, unique: true })
+  username: string;
+
+  @Column({ length: 255 })
+  password: string;
+
+  @Column({ length: 255 })
+  role: string;
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  @Column()
+  createdAt: Date;
+
+  @Column()
+  updatedAt: Date;
+
+  // 关联关系
+  @OneToMany(() => AuditLog, (auditLog) => auditLog.adminUser)
+  auditLogs: AuditLog[];
+}
