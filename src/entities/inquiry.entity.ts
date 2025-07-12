@@ -31,6 +31,8 @@ export class Inquiry extends BaseEntity {
     tradeTerms?: string;
     paymentMethod?: string;
     buyerRemarks?: string;
+    declineReason?: string;
+    declinedBy?: string;
   };
 
   @Column('json', { nullable: true })
