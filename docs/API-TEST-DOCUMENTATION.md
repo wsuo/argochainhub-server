@@ -389,6 +389,280 @@ Authorization: Bearer {access_token}
 
 ---
 
+## 询价单业务流程管理接口
+
+### 1. 获取询价单列表
+**GET** `/api/admin/inquiries?page=1&limit=20&status=pending_quote&buyerId=1&supplierId=2`
+
+查询参数：
+- `page`: 页码 (可选)
+- `limit`: 每页条数 (可选)
+- `inquiryNo`: 询价单号 (可选)
+- `status`: 询价单状态 (可选) - pending_quote/quoted/confirmed/declined/expired/cancelled
+- `buyerId`: 买方企业ID (可选)
+- `supplierId`: 供应商企业ID (可选)
+- `createdStartDate`: 创建开始日期 (可选) - YYYY-MM-DD
+- `createdEndDate`: 创建结束日期 (可选) - YYYY-MM-DD
+
+响应示例：
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "inquiryNo": "INQ2024010001",
+      "status": "pending_quote",
+      "deadline": "2024-02-01",
+      "details": {
+        "deliveryLocation": "上海市",
+        "tradeTerms": "FOB",
+        "paymentMethod": "信用证",
+        "buyerRemarks": "急需，请尽快报价"
+      },
+      "quoteDetails": null,
+      "createdAt": "2024-01-15T08:00:00.000Z",
+      "updatedAt": "2024-01-15T08:00:00.000Z",
+      "buyer": {
+        "id": 1,
+        "name": {
+          "zh": "农业技术有限公司",
+          "en": "Agriculture Technology Co., Ltd."
+        },
+        "type": "buyer"
+      },
+      "supplier": {
+        "id": 2,
+        "name": {
+          "zh": "化工制品有限公司",
+          "en": "Chemical Products Co., Ltd."
+        },
+        "type": "supplier"
+      },
+      "items": [
+        {
+          "id": 1,
+          "quantity": 100.000,
+          "unit": "kg",
+          "packagingReq": "25kg袋装",
+          "productSnapshot": {
+            "name": {
+              "zh": "高效杀虫剂",
+              "en": "High Efficiency Insecticide"
+            },
+            "category": {
+              "zh": "杀虫剂",
+              "en": "Insecticide"
+            },
+            "formulation": "乳油",
+            "activeIngredient": {
+              "zh": "毒死蜱",
+              "en": "Chlorpyrifos"
+            },
+            "content": "40%"
+          },
+          "product": {
+            "id": 1,
+            "name": {
+              "zh": "高效杀虫剂",
+              "en": "High Efficiency Insecticide"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "totalItems": 50,
+    "itemCount": 1,
+    "itemsPerPage": 20,
+    "totalPages": 3,
+    "currentPage": 1
+  }
+}
+```
+
+### 2. 获取询价单统计数据
+**GET** `/api/admin/inquiries/stats`
+
+响应示例：
+```json
+{
+  "pendingQuote": 25,
+  "quoted": 18,
+  "confirmed": 12,
+  "declined": 8,
+  "expired": 5,
+  "cancelled": 2,
+  "total": 70
+}
+```
+
+### 3. 获取询价单详情
+**GET** `/api/admin/inquiries/1`
+
+响应示例：
+```json
+{
+  "id": 1,
+  "inquiryNo": "INQ2024010001",
+  "status": "quoted",
+  "deadline": "2024-02-01",
+  "details": {
+    "deliveryLocation": "上海市",
+    "tradeTerms": "FOB",
+    "paymentMethod": "信用证",
+    "buyerRemarks": "急需，请尽快报价"
+  },
+  "quoteDetails": {
+    "totalPrice": 5000.00,
+    "validUntil": "2024-02-01",
+    "supplierRemarks": "产品质量保证，可提供样品"
+  },
+  "createdAt": "2024-01-15T08:00:00.000Z",
+  "updatedAt": "2024-01-16T10:30:00.000Z",
+  "buyer": {
+    "id": 1,
+    "name": {
+      "zh": "农业技术有限公司",
+      "en": "Agriculture Technology Co., Ltd."
+    },
+    "type": "buyer",
+    "profile": {
+      "description": {
+        "zh": "专业农业技术服务公司",
+        "en": "Professional agricultural technology service company"
+      },
+      "address": "上海市浦东新区",
+      "phone": "+86-21-12345678"
+    }
+  },
+  "supplier": {
+    "id": 2,
+    "name": {
+      "zh": "化工制品有限公司",
+      "en": "Chemical Products Co., Ltd."
+    },
+    "type": "supplier"
+  },
+  "items": [
+    {
+      "id": 1,
+      "quantity": 100.000,
+      "unit": "kg",
+      "packagingReq": "25kg袋装",
+      "productSnapshot": {
+        "name": {
+          "zh": "高效杀虫剂",
+          "en": "High Efficiency Insecticide"
+        },
+        "category": {
+          "zh": "杀虫剂",
+          "en": "Insecticide"
+        },
+        "formulation": "乳油",
+        "activeIngredient": {
+          "zh": "毒死蜱",
+          "en": "Chlorpyrifos"
+        },
+        "content": "40%"
+      },
+      "product": {
+        "id": 1,
+        "name": {
+          "zh": "高效杀虫剂",
+          "en": "High Efficiency Insecticide"
+        },
+        "category": {
+          "zh": "杀虫剂",
+          "en": "Insecticide"
+        }
+      }
+    }
+  ]
+}
+```
+
+### 4. 更新询价单状态
+**PATCH** `/api/admin/inquiries/1/status`
+
+#### 报价操作
+请求体：
+```json
+{
+  "status": "quoted",
+  "operatedBy": "admin_user",
+  "quoteDetails": {
+    "totalPrice": 5000.00,
+    "validUntil": "2024-02-01",
+    "supplierRemarks": "产品质量保证，可提供样品"
+  }
+}
+```
+
+#### 拒绝操作
+请求体：
+```json
+{
+  "status": "declined",
+  "operatedBy": "admin_user",
+  "declineReason": "价格超出预算范围"
+}
+```
+
+#### 确认操作
+请求体：
+```json
+{
+  "status": "confirmed",
+  "operatedBy": "admin_user"
+}
+```
+
+#### 取消操作
+请求体：
+```json
+{
+  "status": "cancelled",
+  "operatedBy": "admin_user"
+}
+```
+
+响应示例：
+```json
+{
+  "id": 1,
+  "inquiryNo": "INQ2024010001",
+  "status": "quoted",
+  "deadline": "2024-02-01",
+  "details": {
+    "deliveryLocation": "上海市",
+    "tradeTerms": "FOB",
+    "paymentMethod": "信用证",
+    "buyerRemarks": "急需，请尽快报价"
+  },
+  "quoteDetails": {
+    "totalPrice": 5000.00,
+    "validUntil": "2024-02-01",
+    "supplierRemarks": "产品质量保证，可提供样品"
+  },
+  "updatedAt": "2024-01-16T10:30:00.000Z"
+}
+```
+
+### 5. 删除询价单
+**DELETE** `/api/admin/inquiries/1`
+
+注意：只有状态为 `pending_quote` 或 `cancelled` 的询价单可以删除。
+
+响应示例：
+```json
+{
+  "message": "询价单删除成功"
+}
+```
+
+---
+
 ## 用户管理接口
 
 ### 1. 获取所有用户列表

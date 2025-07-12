@@ -37,6 +37,11 @@ import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import { 
+  InquiryQueryDto, 
+  UpdateInquiryStatusDto, 
+  InquiryStatsDto 
+} from './dto/inquiry-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../common/utils/language-mapper';
 
@@ -958,5 +963,218 @@ export class AdminService {
 
     Object.assign(product, updateProductDto);
     return this.productRepository.save(product);
+  }
+
+  // 询价单业务流程管理
+  async getInquiries(
+    queryDto: InquiryQueryDto,
+  ): Promise<PaginatedResult<Inquiry>> {
+    const {
+      page = 1,
+      limit = 20,
+      inquiryNo,
+      status,
+      buyerId,
+      supplierId,
+      createdStartDate,
+      createdEndDate,
+    } = queryDto;
+
+    const queryBuilder = this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .leftJoinAndSelect('inquiry.buyer', 'buyer')
+      .leftJoinAndSelect('inquiry.supplier', 'supplier')
+      .leftJoinAndSelect('inquiry.items', 'items')
+      .leftJoinAndSelect('items.product', 'product');
+
+    if (inquiryNo) {
+      queryBuilder.andWhere('inquiry.inquiryNo LIKE :inquiryNo', {
+        inquiryNo: `%${inquiryNo}%`,
+      });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('inquiry.status = :status', { status });
+    }
+
+    if (buyerId) {
+      queryBuilder.andWhere('inquiry.buyerId = :buyerId', { buyerId });
+    }
+
+    if (supplierId) {
+      queryBuilder.andWhere('inquiry.supplierId = :supplierId', { supplierId });
+    }
+
+    if (createdStartDate) {
+      queryBuilder.andWhere('DATE(inquiry.createdAt) >= :createdStartDate', {
+        createdStartDate,
+      });
+    }
+
+    if (createdEndDate) {
+      queryBuilder.andWhere('DATE(inquiry.createdAt) <= :createdEndDate', {
+        createdEndDate,
+      });
+    }
+
+    const [inquiries, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('inquiry.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: inquiries,
+      meta: {
+        totalItems: total,
+        itemCount: inquiries.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async getInquiryById(inquiryId: number): Promise<Inquiry> {
+    const inquiry = await this.inquiryRepository.findOne({
+      where: { id: inquiryId },
+      relations: ['buyer', 'supplier', 'items', 'items.product'],
+    });
+
+    if (!inquiry) {
+      throw new NotFoundException('Inquiry not found');
+    }
+
+    return inquiry;
+  }
+
+  async updateInquiryStatus(
+    inquiryId: number,
+    updateDto: UpdateInquiryStatusDto,
+  ): Promise<Inquiry> {
+    const inquiry = await this.inquiryRepository.findOne({
+      where: { id: inquiryId },
+      relations: ['buyer', 'supplier', 'items'],
+    });
+
+    if (!inquiry) {
+      throw new NotFoundException('Inquiry not found');
+    }
+
+    // 验证状态转换的合理性
+    if (!this.isValidStatusTransition(inquiry.status, updateDto.status)) {
+      throw new BadRequestException(
+        `Invalid status transition from ${inquiry.status} to ${updateDto.status}`,
+      );
+    }
+
+    // 更新状态
+    inquiry.status = updateDto.status;
+
+    // 根据状态更新相关详情
+    if (updateDto.status === InquiryStatus.QUOTED && updateDto.quoteDetails) {
+      inquiry.quoteDetails = updateDto.quoteDetails;
+    }
+
+    if (updateDto.status === InquiryStatus.DECLINED && updateDto.declineReason) {
+      inquiry.details = {
+        ...inquiry.details,
+        declineReason: updateDto.declineReason,
+        declinedBy: updateDto.operatedBy,
+      };
+    }
+
+    return this.inquiryRepository.save(inquiry);
+  }
+
+  async getInquiryStats(): Promise<InquiryStatsDto> {
+    const stats = await this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .select('inquiry.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('inquiry.status')
+      .getRawMany();
+
+    const result: InquiryStatsDto = {
+      pendingQuote: 0,
+      quoted: 0,
+      confirmed: 0,
+      declined: 0,
+      expired: 0,
+      cancelled: 0,
+      total: 0,
+    };
+
+    stats.forEach((stat) => {
+      const count = parseInt(stat.count);
+      result.total += count;
+
+      switch (stat.status) {
+        case InquiryStatus.PENDING_QUOTE:
+          result.pendingQuote = count;
+          break;
+        case InquiryStatus.QUOTED:
+          result.quoted = count;
+          break;
+        case InquiryStatus.CONFIRMED:
+          result.confirmed = count;
+          break;
+        case InquiryStatus.DECLINED:
+          result.declined = count;
+          break;
+        case InquiryStatus.EXPIRED:
+          result.expired = count;
+          break;
+        case InquiryStatus.CANCELLED:
+          result.cancelled = count;
+          break;
+      }
+    });
+
+    return result;
+  }
+
+  async deleteInquiry(inquiryId: number): Promise<void> {
+    const inquiry = await this.inquiryRepository.findOne({
+      where: { id: inquiryId },
+    });
+
+    if (!inquiry) {
+      throw new NotFoundException('Inquiry not found');
+    }
+
+    // 只有待报价和已取消状态的询价单可以删除
+    if (![InquiryStatus.PENDING_QUOTE, InquiryStatus.CANCELLED].includes(inquiry.status)) {
+      throw new BadRequestException(
+        'Only pending or cancelled inquiries can be deleted',
+      );
+    }
+
+    await this.inquiryRepository.remove(inquiry);
+  }
+
+  private isValidStatusTransition(
+    currentStatus: InquiryStatus,
+    newStatus: InquiryStatus,
+  ): boolean {
+    const validTransitions: Record<InquiryStatus, InquiryStatus[]> = {
+      [InquiryStatus.PENDING_QUOTE]: [
+        InquiryStatus.QUOTED,
+        InquiryStatus.DECLINED,
+        InquiryStatus.CANCELLED,
+        InquiryStatus.EXPIRED,
+      ],
+      [InquiryStatus.QUOTED]: [
+        InquiryStatus.CONFIRMED,
+        InquiryStatus.DECLINED,
+        InquiryStatus.EXPIRED,
+      ],
+      [InquiryStatus.CONFIRMED]: [], // 已确认状态不能再转换
+      [InquiryStatus.DECLINED]: [], // 已拒绝状态不能再转换
+      [InquiryStatus.EXPIRED]: [], // 已过期状态不能再转换
+      [InquiryStatus.CANCELLED]: [], // 已取消状态不能再转换
+    };
+
+    return validTransitions[currentStatus]?.includes(newStatus) ?? false;
   }
 }

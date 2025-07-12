@@ -39,9 +39,14 @@ import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import { 
+  InquiryQueryDto, 
+  UpdateInquiryStatusDto 
+} from './dto/inquiry-management.dto';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { ProductStatus } from '../entities/product.entity';
 import { OrderStatus } from '../entities/order.entity';
+import { InquiryStatus } from '../entities/inquiry.entity';
 
 @ApiTags('后台管理')
 @Controller('admin')
@@ -411,5 +416,61 @@ export class AdminController {
     @Body() updateProductDto: UpdateProductDto,
   ) {
     return this.adminService.updateProduct(productId, updateProductDto);
+  }
+
+  // 询价单业务流程管理
+  @Get('inquiries')
+  @ApiOperation({ summary: '获取询价单列表' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
+  @ApiQuery({ name: 'inquiryNo', required: false, description: '询价单号' })
+  @ApiQuery({ name: 'status', required: false, enum: InquiryStatus, description: '询价单状态' })
+  @ApiQuery({ name: 'buyerId', required: false, description: '买方企业ID' })
+  @ApiQuery({ name: 'supplierId', required: false, description: '供应商企业ID' })
+  @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getInquiries(@Query() queryDto: InquiryQueryDto) {
+    return this.adminService.getInquiries(queryDto);
+  }
+
+  @Get('inquiries/stats')
+  @ApiOperation({ summary: '获取询价单统计数据' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getInquiryStats() {
+    return this.adminService.getInquiryStats();
+  }
+
+  @Get('inquiries/:id')
+  @ApiOperation({ summary: '获取询价单详情' })
+  @ApiParam({ name: 'id', description: '询价单ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 404, description: '询价单不存在' })
+  async getInquiryById(@Param('id', ParseIntPipe) inquiryId: number) {
+    return this.adminService.getInquiryById(inquiryId);
+  }
+
+  @Patch('inquiries/:id/status')
+  @ApiOperation({ summary: '更新询价单状态' })
+  @ApiParam({ name: 'id', description: '询价单ID' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 400, description: '状态转换不合法或参数错误' })
+  @ApiResponse({ status: 404, description: '询价单不存在' })
+  async updateInquiryStatus(
+    @Param('id', ParseIntPipe) inquiryId: number,
+    @Body() updateDto: UpdateInquiryStatusDto,
+  ) {
+    return this.adminService.updateInquiryStatus(inquiryId, updateDto);
+  }
+
+  @Delete('inquiries/:id')
+  @ApiOperation({ summary: '删除询价单' })
+  @ApiParam({ name: 'id', description: '询价单ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiResponse({ status: 400, description: '询价单状态不允许删除' })
+  @ApiResponse({ status: 404, description: '询价单不存在' })
+  async deleteInquiry(@Param('id', ParseIntPipe) inquiryId: number) {
+    await this.adminService.deleteInquiry(inquiryId);
+    return { message: '询价单删除成功' };
   }
 }
