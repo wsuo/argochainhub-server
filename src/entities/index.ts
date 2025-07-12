@@ -10,6 +10,7 @@ export { InquiryItem } from './inquiry-item.entity';
 export { SampleRequest, SampleRequestStatus } from './sample-request.entity';
 export { RegistrationRequest, RegistrationRequestStatus } from './registration-request.entity';
 export { Communication, RelatedService as CommunicationRelatedService } from './communication.entity';
-export { Attachment, RelatedService as AttachmentRelatedService } from './attachment.entity';
+export { Attachment, AttachmentType } from './attachment.entity';
+export { Notification, NotificationType, NotificationStatus } from './notification.entity';
 export { AdminUser } from './admin-user.entity';
 export { AuditLog } from './audit-log.entity';

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -12,6 +13,9 @@ import { OrdersModule } from './orders/orders.module';
 import { QuotaModule } from './quota/quota.module';
 import { CommonModule } from './common/common.module';
 import { InquiriesModule } from './inquiries/inquiries.module';
+import { AdminModule } from './admin/admin.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -23,6 +27,7 @@ import jwtConfig from './config/jwt.config';
       load: [appConfig, databaseConfig, jwtConfig],
       envFilePath: ['.env.local', '.env'],
     }),
+    EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) =>
@@ -38,6 +43,9 @@ import jwtConfig from './config/jwt.config';
     QuotaModule,
     CommonModule,
     InquiriesModule,
+    AdminModule,
+    UploadsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

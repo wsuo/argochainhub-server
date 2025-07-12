@@ -1,98 +1,200 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 智慧农化采购平台 (Argochainhub)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+一个专业的B2B农化产品采购平台后端系统，基于NestJS开发。
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 功能特性
 
-## Description
+### 核心业务功能
+- 🏢 **多租户企业管理** - 支持买家和供应商两种企业类型
+- 👥 **用户权限管理** - 企业所有者、管理员、员工等角色
+- 📦 **产品管理** - 农化产品发布、审核、管理
+- 💰 **询价业务流程** - 完整的询价、报价、确认流程
+- 💳 **订阅与配额** - 会员套餐、配额管理、续费
+- 📁 **文件管理** - 产品图片、企业证书、文档上传
+- 🔔 **通知系统** - 业务事件通知、系统消息
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### 技术架构
+- 🛡️ **多层Guard系统** - JWT认证、角色权限、企业类型、配额控制
+- 🗄️ **数据库设计** - 15张表的完整业务模型
+- 📊 **管理后台** - 企业审核、产品审核、数据统计
+- 🔄 **状态机** - 询价流程、审核流程状态管理
+- 📝 **API文档** - 完整的Swagger文档
 
-## Project setup
+## 技术栈
 
+- **框架**: NestJS 10.x
+- **数据库**: MySQL 8.x
+- **ORM**: TypeORM
+- **认证**: JWT + Passport
+- **文档**: Swagger/OpenAPI
+- **验证**: class-validator
+- **文件上传**: Multer
+- **事件系统**: EventEmitter2
+
+## 快速开始
+
+### 环境要求
+- Node.js >= 18.x
+- MySQL >= 8.x
+- npm >= 9.x
+
+### 安装依赖
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
-
+### 环境配置
+复制环境配置文件：
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+cp .env.example .env.local
 ```
 
-## Run tests
+配置数据库连接和其他环境变量：
+```env
+# 数据库配置
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USERNAME=root
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=argochainhub
 
-```bash
-# unit tests
-$ npm run test
+# JWT配置
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=7d
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# 应用配置
+APP_PORT=3000
+NODE_ENV=development
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### 数据库初始化
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# 创建数据库
+mysql -u root -p
+CREATE DATABASE argochainhub;
+
+# TypeORM会自动创建表结构
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 启动开发服务器
+```bash
+npm run start:dev
+```
 
-## Resources
+应用将在 http://localhost:3000 启动
 
-Check out a few resources that may come in handy when working with NestJS:
+API文档地址: http://localhost:3000/api/docs
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## API文档
 
-## Support
+项目集成了Swagger文档，在开发环境下访问 `/api/docs` 查看完整的API文档。
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### 主要API端点
 
-## Stay in touch
+#### 认证相关
+- `POST /api/v1/auth/register` - 用户注册
+- `POST /api/v1/auth/login` - 用户登录
+- `POST /api/v1/auth/change-password` - 修改密码
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+#### 企业管理
+- `GET /api/v1/companies/profile` - 获取企业信息
+- `PUT /api/v1/companies/profile` - 更新企业信息
+- `GET /api/v1/companies/suppliers` - 搜索供应商
 
-## License
+#### 产品管理
+- `GET /api/v1/products/my-products` - 获取我的产品
+- `POST /api/v1/products` - 发布产品
+- `PUT /api/v1/products/:id` - 更新产品
+- `DELETE /api/v1/products/:id` - 删除产品
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+#### 询价管理
+- `POST /api/v1/inquiries` - 创建询价单
+- `GET /api/v1/inquiries` - 获取询价单列表
+- `PATCH /api/v1/inquiries/:id/quote` - 供应商报价
+- `PATCH /api/v1/inquiries/:id/confirm` - 买家确认
+
+#### 文件管理
+- `POST /api/v1/uploads` - 上传文件
+- `GET /api/v1/uploads/my-files` - 获取我的文件
+- `GET /api/v1/uploads/:id/download` - 下载文件
+
+#### 通知系统
+- `GET /api/v1/notifications` - 获取通知列表
+- `PATCH /api/v1/notifications/:id/read` - 标记已读
+- `GET /api/v1/notifications/unread-count` - 未读数量
+
+## 数据库结构
+
+### 核心实体
+- **companies** - 企业信息
+- **users** - 用户信息
+- **products** - 产品信息
+- **inquiries** - 询价单
+- **inquiry_items** - 询价项目
+- **subscriptions** - 订阅记录
+- **orders** - 订单记录
+- **notifications** - 通知记录
+- **attachments** - 附件记录
+
+## 部署说明
+
+### 生产环境构建
+```bash
+npm run build
+```
+
+### 启动生产服务
+```bash
+npm run start:prod
+```
+
+### Docker部署
+```bash
+# 构建镜像
+docker build -t argochainhub-server .
+
+# 启动容器
+docker run -p 3000:3000 argochainhub-server
+```
+
+## 开发指南
+
+### 代码规范
+- 使用TypeScript严格模式
+- 遵循NestJS最佳实践
+- 使用class-validator进行数据验证
+- 实体使用TypeORM装饰器
+
+### 测试
+```bash
+# 单元测试
+npm run test
+
+# 端到端测试
+npm run test:e2e
+
+# 测试覆盖率
+npm run test:cov
+```
+
+### 代码检查
+```bash
+# ESLint检查
+npm run lint
+
+# TypeScript编译检查
+npm run build
+```
+
+## 贡献指南
+
+1. Fork项目
+2. 创建功能分支
+3. 提交变更
+4. 推送到分支
+5. 创建Pull Request
+
+## 许可证
+
+MIT License

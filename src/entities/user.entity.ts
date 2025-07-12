@@ -4,6 +4,7 @@ import { Company } from './company.entity';
 import { Order } from './order.entity';
 import { Communication } from './communication.entity';
 import { Attachment } from './attachment.entity';
+import { Notification } from './notification.entity';
 
 export enum UserRole {
   OWNER = 'owner',
@@ -50,6 +51,9 @@ export class User extends BaseEntity {
   @OneToMany(() => Communication, (communication) => communication.sender)
   communications: Communication[];
 
-  @OneToMany(() => Attachment, (attachment) => attachment.uploader)
+  @OneToMany(() => Attachment, (attachment) => attachment.uploadedBy)
   attachments: Attachment[];
+
+  @OneToMany(() => Notification, (notification) => notification.user)
+  notifications: Notification[];
 }
