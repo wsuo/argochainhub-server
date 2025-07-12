@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, Brackets } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import {
   Company,
@@ -43,6 +43,7 @@ import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import { CompanyQueryDto } from './dto/company-query.dto';
 import { 
   InquiryQueryDto, 
   UpdateInquiryStatusDto, 
@@ -67,7 +68,8 @@ import {
   AdminUserStatsDto 
 } from './dto/admin-user-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
-import { SupportedLanguage } from '../common/utils/language-mapper';
+import { SupportedLanguage } from '../types/multilang';
+import { MultiLangQueryUtil } from '../utils/multilang-query.util';
 
 @Injectable()
 export class AdminService {
@@ -430,13 +432,9 @@ export class AdminService {
 
   // 获取所有企业列表
   async getAllCompanies(
-    paginationDto: PaginationDto & {
-      status?: CompanyStatus;
-      type?: CompanyType;
-      search?: string;
-    },
+    queryDto: CompanyQueryDto,
   ): Promise<PaginatedResult<Company>> {
-    const { page = 1, limit = 20, status, type, search } = paginationDto;
+    const { page = 1, limit = 20, status, type, search } = queryDto;
 
     const queryBuilder = this.companyRepository
       .createQueryBuilder('company')
@@ -452,8 +450,12 @@ export class AdminService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(company.name LIKE :search OR company.email LIKE :search)',
-        { search: `%${search}%` },
+        new Brackets((qb) => {
+          // 使用多语言搜索工具搜索企业名称
+          MultiLangQueryUtil.addMultiLangSearch(qb, 'name', search, undefined, 'company');
+          // 同时搜索用户邮箱
+          qb.orWhere('users.email LIKE :emailSearch', { emailSearch: `%${search}%` });
+        }),
       );
     }
 
@@ -552,7 +554,7 @@ export class AdminService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(product.name LIKE :search OR product.activeIngredient LIKE :search)',
+        '(JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."en"\')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, \'$."zh-CN"\')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, \'$."en"\')) LIKE :search)',
         { search: `%${search}%` },
       );
     }

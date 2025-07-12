@@ -39,6 +39,7 @@ import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import { CompanyQueryDto } from './dto/company-query.dto';
 import { 
   InquiryQueryDto, 
   UpdateInquiryStatusDto 
@@ -112,22 +113,9 @@ export class AdminController {
 
   @Get('companies')
   @ApiOperation({ summary: '获取所有企业列表' })
-  @ApiQuery({ name: 'status', enum: CompanyStatus, required: false })
-  @ApiQuery({ name: 'type', enum: CompanyType, required: false })
-  @ApiQuery({ name: 'search', required: false, description: '搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getAllCompanies(
-    @Query() paginationDto: PaginationDto,
-    @Query('status') status?: CompanyStatus,
-    @Query('type') type?: CompanyType,
-    @Query('search') search?: string,
-  ) {
-    return this.adminService.getAllCompanies({
-      ...paginationDto,
-      status,
-      type,
-      search,
-    });
+  async getAllCompanies(@Query() queryDto: CompanyQueryDto) {
+    return this.adminService.getAllCompanies(queryDto);
   }
 
   @Get('companies/:id')
