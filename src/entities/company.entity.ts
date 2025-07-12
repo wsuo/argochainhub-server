@@ -6,6 +6,7 @@ import { Subscription } from './subscription.entity';
 import { Inquiry } from './inquiry.entity';
 import { SampleRequest } from './sample-request.entity';
 import { RegistrationRequest } from './registration-request.entity';
+import { MultiLangText } from '../types/multilang';
 
 export enum CompanyType {
   BUYER = 'buyer',
@@ -20,8 +21,8 @@ export enum CompanyStatus {
 
 @Entity('companies')
 export class Company extends BaseEntity {
-  @Column({ length: 255 })
-  name: string;
+  @Column('json')
+  name: MultiLangText;
 
   @Column({
     type: 'enum',
@@ -38,7 +39,7 @@ export class Company extends BaseEntity {
 
   @Column('json', { nullable: true })
   profile?: {
-    description?: string;
+    description?: MultiLangText;
     address?: string;
     phone?: string;
     website?: string;

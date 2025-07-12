@@ -24,6 +24,9 @@ export class AdminUser {
   @Column()
   updatedAt: Date;
 
+  @Column({ nullable: true })
+  lastLoginAt: Date;
+
   // 关联关系
   @OneToMany(() => AuditLog, (auditLog) => auditLog.adminUser)
   auditLogs: AuditLog[];

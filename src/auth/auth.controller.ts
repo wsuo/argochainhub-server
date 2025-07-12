@@ -6,6 +6,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AdminLoginDto } from './dto/admin-login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('认证')
@@ -61,5 +62,13 @@ export class AuthController {
   async logout() {
     // JWT无状态，客户端删除token即可
     return { message: 'Logout successful' };
+  }
+
+  @Post('admin/login')
+  @ApiOperation({ summary: '系统管理员登录' })
+  @ApiResponse({ status: 200, description: '登录成功' })
+  @ApiResponse({ status: 401, description: '登录失败' })
+  async adminLogin(@Body() adminLoginDto: AdminLoginDto) {
+    return this.authService.adminLogin(adminLoginDto);
   }
 }

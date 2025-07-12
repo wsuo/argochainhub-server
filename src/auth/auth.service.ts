@@ -6,10 +6,13 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { Company, CompanyStatus, CompanyType } from '../entities/company.entity';
+import { AdminUser } from '../entities/admin-user.entity';
 import { JwtPayload } from './jwt.strategy';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AdminLoginDto } from './dto/admin-login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { createMultiLangText } from '../types/multilang';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +21,8 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
+    @InjectRepository(AdminUser)
+    private readonly adminUserRepository: Repository<AdminUser>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -34,9 +39,9 @@ export class AuthService {
     // 哈希密码
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 创建企业
+    // 创建企业 - 注册时只提供中文名称，其他语言版本需要后续完善
     const company = this.companyRepository.create({
-      name: companyName,
+      name: createMultiLangText(companyName, '', ''),
       type: companyType,
       status: CompanyStatus.PENDING_REVIEW,
     });
@@ -149,6 +154,49 @@ export class AuthService {
         profile: user.company.profile,
         rating: user.company.rating,
         isTop100: user.company.isTop100,
+      },
+    };
+  }
+
+  async adminLogin(adminLoginDto: AdminLoginDto) {
+    const { username, password } = adminLoginDto;
+
+    // 查找管理员
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { username, isActive: true },
+    });
+
+    if (!adminUser) {
+      throw new UnauthorizedException('Invalid admin credentials or inactive account');
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(password, adminUser.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid admin credentials');
+    }
+
+    // 更新最后登录时间
+    adminUser.lastLoginAt = new Date();
+    await this.adminUserRepository.save(adminUser);
+
+    // 生成JWT (为管理员使用特殊的payload结构)
+    const payload = {
+      sub: adminUser.id,
+      username: adminUser.username,
+      role: adminUser.role,
+      type: 'admin', // 标识这是管理员token
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      admin: {
+        id: adminUser.id,
+        username: adminUser.username,
+        role: adminUser.role,
+        lastLoginAt: adminUser.lastLoginAt,
       },
     };
   }

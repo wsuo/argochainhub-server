@@ -5,6 +5,7 @@ import { Order, OrderStatus } from '../entities/order.entity';
 import { Plan } from '../entities/plan.entity';
 import { User } from '../entities/user.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
+import { getTextByLanguage } from '../types/multilang';
 
 @Injectable()
 export class OrdersService {
@@ -32,7 +33,7 @@ export class OrdersService {
       companyId: user.companyId,
       userId: user.id,
       planId: plan.id,
-      planName: plan.name,
+      planName: getTextByLanguage(plan.name, 'zh-CN'),
       amount: plan.price,
       status: OrderStatus.PENDING_PAYMENT,
     });

@@ -2,6 +2,7 @@ import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Inquiry } from './inquiry.entity';
 import { Product } from './product.entity';
+import { MultiLangText } from '../types/multilang';
 
 @Entity('inquiry_items')
 export class InquiryItem extends BaseEntity {
@@ -16,10 +17,10 @@ export class InquiryItem extends BaseEntity {
 
   @Column('json')
   productSnapshot: {
-    name: string;
-    category: string;
+    name: MultiLangText;
+    category: MultiLangText;
     formulation: string;
-    activeIngredient: string;
+    activeIngredient: MultiLangText;
     content: string;
   };
 

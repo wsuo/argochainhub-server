@@ -5,13 +5,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { User } from '../entities/user.entity';
+import { AdminUser } from '../entities/admin-user.entity';
 
 export interface JwtPayload {
   sub: number;
-  email: string;
-  companyId: number;
-  companyType: string;
+  email?: string;
+  username?: string;
+  companyId?: number;
+  companyType?: string;
   role: string;
+  type?: string; // 'admin' for AdminUser, undefined for regular User
 }
 
 @Injectable()
@@ -19,6 +22,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(AdminUser)
+    private readonly adminUserRepository: Repository<AdminUser>,
     configService: ConfigService,
   ) {
     super({
@@ -28,7 +33,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<User> {
+  async validate(payload: JwtPayload): Promise<User | AdminUser> {
+    // 如果是管理员token
+    if (payload.type === 'admin') {
+      const adminUser = await this.adminUserRepository.findOne({
+        where: { id: payload.sub, isActive: true },
+      });
+
+      if (!adminUser) {
+        throw new UnauthorizedException('Admin user not found or inactive');
+      }
+
+      return adminUser;
+    }
+
+    // 普通用户token
     const user = await this.userRepository.findOne({
       where: { id: payload.sub, isActive: true },
       relations: ['company'],

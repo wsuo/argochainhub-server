@@ -9,6 +9,7 @@ import { SearchProductsDto } from './dto/search-products.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { MyProductsDto } from './dto/my-products.dto';
+import { MultiLangQueryUtil } from '../utils/multilang-query.util';
 
 @Injectable()
 export class ProductsService {
@@ -20,7 +21,7 @@ export class ProductsService {
   async searchProducts(
     searchDto: SearchProductsDto,
   ): Promise<PaginatedResult<Product>> {
-    const { search, category, page = 1, limit = 20 } = searchDto;
+    const { search, category, language, page = 1, limit = 20 } = searchDto;
     
     const queryBuilder = this.productRepository
       .createQueryBuilder('product')
@@ -29,14 +30,15 @@ export class ProductsService {
       .andWhere('supplier.status = :supplierStatus', { supplierStatus: CompanyStatus.ACTIVE });
 
     if (search) {
-      queryBuilder.andWhere(
-        '(product.name LIKE :search OR product.activeIngredient LIKE :search OR product.description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      // 使用多语言搜索工具
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'name', search, language, 'product');
+      queryBuilder.orWhere('product.casNo LIKE :search', { search: `%${search}%` });
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'activeIngredient', search, language, 'product');
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'description', search, language, 'product');
     }
 
     if (category) {
-      queryBuilder.andWhere('product.category = :category', { category });
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'category', category, language, 'product');
     }
 
     const [products, total] = await queryBuilder
@@ -105,10 +107,11 @@ export class ProductsService {
       .where('product.supplierId = :supplierId', { supplierId: user.companyId });
 
     if (search) {
-      queryBuilder.andWhere(
-        '(product.name LIKE :search OR product.activeIngredient LIKE :search OR product.description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      // 使用多语言搜索工具
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'name', search, undefined, 'product');
+      queryBuilder.orWhere('product.casNo LIKE :search', { search: `%${search}%` });
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'activeIngredient', search, undefined, 'product');
+      MultiLangQueryUtil.addMultiLangSearch(queryBuilder, 'description', search, undefined, 'product');
     }
 
     if (status) {

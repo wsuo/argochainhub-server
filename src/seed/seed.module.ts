@@ -4,11 +4,12 @@ import { AdminUser } from '../entities/admin-user.entity';
 import { Company } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
 import { Plan } from '../entities/plan.entity';
+import { Product } from '../entities/product.entity';
 import { SeedService } from './seed.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AdminUser, Company, User, Plan]),
+    TypeOrmModule.forFeature([AdminUser, Company, User, Plan, Product]),
   ],
   providers: [SeedService],
   exports: [SeedService],

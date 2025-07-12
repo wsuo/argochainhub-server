@@ -19,6 +19,7 @@
 - 📊 **管理后台** - 企业审核、产品审核、数据统计
 - 🔄 **状态机** - 询价流程、审核流程状态管理
 - 📝 **API文档** - 完整的Swagger文档
+- 🌍 **多语言支持** - 中文、英语、西班牙语三语种支持
 
 ## 技术栈
 
@@ -116,9 +117,10 @@ API文档地址: http://localhost:3000/api/docs
 
 #### 产品管理
 - `GET /api/v1/products/my-products` - 获取我的产品
-- `POST /api/v1/products` - 发布产品
-- `PUT /api/v1/products/:id` - 更新产品
+- `POST /api/v1/products` - 发布产品（支持多语言字段）
+- `PUT /api/v1/products/:id` - 更新产品（支持多语言字段）
 - `DELETE /api/v1/products/:id` - 删除产品
+- `GET /api/v1/products/search` - 产品搜索（支持多语言搜索）
 
 #### 询价管理
 - `POST /api/v1/inquiries` - 创建询价单
@@ -138,6 +140,69 @@ API文档地址: http://localhost:3000/api/docs
 - `PATCH /api/v1/notifications/:id/read` - 标记已读
 - `GET /api/v1/notifications/unread-count` - 未读数量
 
+## 多语言支持
+
+### 支持的语言
+- 🇨🇳 **中文 (zh-CN)** - 默认语言
+- 🇺🇸 **英语 (en)** - 国际市场
+- 🇪🇸 **西班牙语 (es)** - 拉美市场
+
+### 多语言字段
+以下实体的字段支持多语言JSON格式：
+
+#### Product（产品）
+- `name` - 产品名称
+- `category` - 产品分类
+- `activeIngredient` - 有效成分
+- `description` - 产品描述
+
+#### Company（企业）
+- `name` - 企业名称
+- `profile.description` - 企业简介
+
+#### Plan（套餐）
+- `name` - 套餐名称
+
+### 多语言数据格式
+```json
+{
+  "zh-CN": "中文内容",
+  "en": "English Content", 
+  "es": "Contenido en español"
+}
+```
+
+### API使用示例
+
+#### 创建多语言产品
+```bash
+POST /api/v1/products
+{
+  "name": {
+    "zh-CN": "草甘膦原药",
+    "en": "Glyphosate Technical",
+    "es": "Glifosato Técnico"
+  },
+  "category": {
+    "zh-CN": "除草剂",
+    "en": "Herbicide", 
+    "es": "Herbicida"
+  },
+  "description": {
+    "zh-CN": "高效除草剂，广谱杀草效果好",
+    "en": "High-efficiency herbicide with broad-spectrum weed control",
+    "es": "Herbicida de alta eficiencia con control de malezas de amplio espectro"
+  }
+}
+```
+
+#### 多语言搜索
+```bash
+GET /api/v1/products/search?search=herbicide&language=en
+GET /api/v1/products/search?search=除草剂&language=zh-CN
+GET /api/v1/products/search?search=herbicida&language=es
+```
+
 ## 数据库结构
 
 ### 核心实体
@@ -156,30 +221,30 @@ API文档地址: http://localhost:3000/api/docs
 系统初始化后包含以下预设账户，可用于测试各种功能：
 
 ### 🔧 系统管理员账户
-| 角色 | 用户名 | 密码 | 权限说明 |
-|------|--------|------|----------|
-| 超级管理员 | `superadmin` | `Admin123!` | 系统最高权限 |
-| 普通管理员 | `admin` | `Admin123!` | 企业审核、产品审核等 |
+| 角色 | 用户名 | 密码 | 权限说明 | 登录接口 |
+|------|--------|------|----------|----------|
+| 超级管理员 | `superadmin` | `Admin123!` | 系统最高权限 | `POST /api/v1/auth/admin/login` |
+| 普通管理员 | `admin` | `Admin123!` | 企业审核、产品审核等 | `POST /api/v1/auth/admin/login` |
 
 ### 🏢 企业买家账户（阳光农业采购有限公司）
-| 角色 | 邮箱 | 密码 | 权限说明 |
-|------|------|------|----------|
-| 企业所有者 | `buyer.owner@yangguang-agri.com` | `User123!` | 企业最高权限 |
-| 企业管理员 | `buyer.admin@yangguang-agri.com` | `User123!` | 企业管理权限 |
-| 企业成员 | `buyer.member@yangguang-agri.com` | `User123!` | 基础业务权限 |
+| 角色 | 邮箱 | 密码 | 权限说明 | 登录接口 |
+|------|------|------|----------|----------|
+| 企业所有者 | `buyer.owner@yangguang-agri.com` | `User123!` | 企业最高权限 | `POST /api/v1/auth/login` |
+| 企业管理员 | `buyer.admin@yangguang-agri.com` | `User123!` | 企业管理权限 | `POST /api/v1/auth/login` |
+| 企业成员 | `buyer.member@yangguang-agri.com` | `User123!` | 基础业务权限 | `POST /api/v1/auth/login` |
 
 ### 🏭 企业供应商账户
 
 **绿田化工科技有限公司**：
-| 角色 | 邮箱 | 密码 | 权限说明 |
-|------|------|------|----------|
-| 企业所有者 | `supplier.owner@lutian-chem.com` | `User123!` | 企业最高权限 |
-| 企业管理员 | `supplier.admin@lutian-chem.com` | `User123!` | 企业管理权限 |
+| 角色 | 邮箱 | 密码 | 权限说明 | 登录接口 |
+|------|------|------|----------|----------|
+| 企业所有者 | `supplier.owner@lutian-chem.com` | `User123!` | 企业最高权限 | `POST /api/v1/auth/login` |
+| 企业管理员 | `supplier.admin@lutian-chem.com` | `User123!` | 企业管理权限 | `POST /api/v1/auth/login` |
 
 **华农生物科技集团**：
-| 角色 | 邮箱 | 密码 | 权限说明 |
-|------|------|------|----------|
-| 企业所有者 | `supplier2.owner@huanong-bio.com` | `User123!` | 企业最高权限 |
+| 角色 | 邮箱 | 密码 | 权限说明 | 登录接口 |
+|------|------|------|----------|----------|
+| 企业所有者 | `supplier2.owner@huanong-bio.com` | `User123!` | 企业最高权限 | `POST /api/v1/auth/login` |
 
 ### 💰 预设订阅套餐
 | 套餐名称 | 价格 | 用户数 | 产品限制 | 询价限制/月 | 支持级别 |

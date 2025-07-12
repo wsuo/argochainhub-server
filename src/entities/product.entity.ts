@@ -4,6 +4,7 @@ import { Company } from './company.entity';
 import { InquiryItem } from './inquiry-item.entity';
 import { SampleRequest } from './sample-request.entity';
 import { RegistrationRequest } from './registration-request.entity';
+import { MultiLangText } from '../types/multilang';
 
 export enum ProductStatus {
   DRAFT = 'draft',
@@ -15,11 +16,11 @@ export enum ProductStatus {
 
 @Entity('products')
 export class Product extends BaseEntity {
-  @Column({ length: 255 })
-  name: string;
+  @Column('json')
+  name: MultiLangText;
 
-  @Column({ length: 255 })
-  category: string;
+  @Column('json')
+  category: MultiLangText;
 
   @Column({ length: 255, nullable: true })
   casNo?: string;
@@ -27,14 +28,14 @@ export class Product extends BaseEntity {
   @Column({ length: 255 })
   formulation: string;
 
-  @Column({ length: 255 })
-  activeIngredient: string;
+  @Column('json')
+  activeIngredient: MultiLangText;
 
   @Column({ length: 255 })
   content: string;
 
-  @Column('text', { nullable: true })
-  description?: string;
+  @Column('json', { nullable: true })
+  description?: MultiLangText;
 
   @Column('json', { nullable: true })
   details?: {

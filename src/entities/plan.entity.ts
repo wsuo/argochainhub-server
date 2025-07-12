@@ -1,14 +1,15 @@
 import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Subscription } from './subscription.entity';
 import { Order } from './order.entity';
+import { MultiLangText } from '../types/multilang';
 
 @Entity('plans')
 export class Plan {
   @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
   id: number;
 
-  @Column({ length: 255 })
-  name: string;
+  @Column('json')
+  name: MultiLangText;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;

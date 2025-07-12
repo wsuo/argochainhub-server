@@ -18,10 +18,11 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '../entities/user.entity';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
+import { AdminRolesGuard } from '../common/guards/admin-roles.guard';
+import { AdminRoles } from '../common/decorators/admin-roles.decorator';
+import { CurrentAdmin } from '../common/decorators/current-admin.decorator';
+import { AdminUser } from '../entities/admin-user.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ReviewCompanyDto } from './dto/review-company.dto';
 import { ReviewProductDto } from './dto/review-product.dto';
@@ -30,16 +31,16 @@ import { ProductStatus } from '../entities/product.entity';
 
 @ApiTags('后台管理')
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AdminAuthGuard, AdminRolesGuard)
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@AdminRoles('admin', 'super_admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('stats')
   @ApiOperation({ summary: '获取管理统计数据' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getStats() {
+  async getStats(@CurrentAdmin() admin: AdminUser) {
     return this.adminService.getStats();
   }
 
