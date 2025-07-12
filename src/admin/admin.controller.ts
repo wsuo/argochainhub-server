@@ -47,11 +47,16 @@ import {
   SampleRequestQueryDto, 
   UpdateSampleRequestStatusDto 
 } from './dto/sample-request-management.dto';
+import { 
+  RegistrationRequestQueryDto, 
+  UpdateRegistrationRequestStatusDto 
+} from './dto/registration-request-management.dto';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { ProductStatus } from '../entities/product.entity';
 import { OrderStatus } from '../entities/order.entity';
 import { InquiryStatus } from '../entities/inquiry.entity';
 import { SampleRequestStatus } from '../entities/sample-request.entity';
+import { RegistrationRequestStatus } from '../entities/registration-request.entity';
 
 @ApiTags('后台管理')
 @Controller('admin')
@@ -534,5 +539,63 @@ export class AdminController {
   async deleteSampleRequest(@Param('id', ParseIntPipe) sampleRequestId: number) {
     await this.adminService.deleteSampleRequest(sampleRequestId);
     return { message: '样品申请删除成功' };
+  }
+
+  // 登记申请业务流程管理
+  @Get('registration-requests')
+  @ApiOperation({ summary: '获取登记申请列表' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
+  @ApiQuery({ name: 'regReqNo', required: false, description: '登记申请单号' })
+  @ApiQuery({ name: 'status', required: false, enum: RegistrationRequestStatus, description: '登记申请状态' })
+  @ApiQuery({ name: 'buyerId', required: false, description: '买方企业ID' })
+  @ApiQuery({ name: 'supplierId', required: false, description: '供应商企业ID' })
+  @ApiQuery({ name: 'productId', required: false, description: '产品ID' })
+  @ApiQuery({ name: 'targetCountry', required: false, description: '目标国家' })
+  @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getRegistrationRequests(@Query() queryDto: RegistrationRequestQueryDto) {
+    return this.adminService.getRegistrationRequests(queryDto);
+  }
+
+  @Get('registration-requests/stats')
+  @ApiOperation({ summary: '获取登记申请统计数据' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getRegistrationRequestStats() {
+    return this.adminService.getRegistrationRequestStats();
+  }
+
+  @Get('registration-requests/:id')
+  @ApiOperation({ summary: '获取登记申请详情' })
+  @ApiParam({ name: 'id', description: '登记申请ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 404, description: '登记申请不存在' })
+  async getRegistrationRequestById(@Param('id', ParseIntPipe) registrationRequestId: number) {
+    return this.adminService.getRegistrationRequestById(registrationRequestId);
+  }
+
+  @Patch('registration-requests/:id/status')
+  @ApiOperation({ summary: '更新登记申请状态' })
+  @ApiParam({ name: 'id', description: '登记申请ID' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 400, description: '状态转换不合法或参数错误' })
+  @ApiResponse({ status: 404, description: '登记申请不存在' })
+  async updateRegistrationRequestStatus(
+    @Param('id', ParseIntPipe) registrationRequestId: number,
+    @Body() updateDto: UpdateRegistrationRequestStatusDto,
+  ) {
+    return this.adminService.updateRegistrationRequestStatus(registrationRequestId, updateDto);
+  }
+
+  @Delete('registration-requests/:id')
+  @ApiOperation({ summary: '删除登记申请' })
+  @ApiParam({ name: 'id', description: '登记申请ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiResponse({ status: 400, description: '登记申请状态不允许删除' })
+  @ApiResponse({ status: 404, description: '登记申请不存在' })
+  async deleteRegistrationRequest(@Param('id', ParseIntPipe) registrationRequestId: number) {
+    await this.adminService.deleteRegistrationRequest(registrationRequestId);
+    return { message: '登记申请删除成功' };
   }
 }

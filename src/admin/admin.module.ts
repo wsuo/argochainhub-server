@@ -5,6 +5,7 @@ import { User } from '../entities/user.entity';
 import { Product } from '../entities/product.entity';
 import { Inquiry } from '../entities/inquiry.entity';
 import { SampleRequest } from '../entities/sample-request.entity';
+import { RegistrationRequest } from '../entities/registration-request.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { Order } from '../entities/order.entity';
 import { Plan } from '../entities/plan.entity';
@@ -20,6 +21,7 @@ import { VolcTranslateService } from './services/volc-translate.service';
       Product,
       Inquiry,
       SampleRequest,
+      RegistrationRequest,
       Subscription,
       Order,
       Plan,

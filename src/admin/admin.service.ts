@@ -14,6 +14,7 @@ import { User } from '../entities/user.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
 import { Inquiry, InquiryStatus } from '../entities/inquiry.entity';
 import { SampleRequest, SampleRequestStatus } from '../entities/sample-request.entity';
+import { RegistrationRequest, RegistrationRequestStatus } from '../entities/registration-request.entity';
 import {
   Subscription,
   SubscriptionStatus,
@@ -48,6 +49,11 @@ import {
   UpdateSampleRequestStatusDto, 
   SampleRequestStatsDto 
 } from './dto/sample-request-management.dto';
+import { 
+  RegistrationRequestQueryDto, 
+  UpdateRegistrationRequestStatusDto, 
+  RegistrationRequestStatsDto 
+} from './dto/registration-request-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../common/utils/language-mapper';
 
@@ -64,6 +70,8 @@ export class AdminService {
     private readonly inquiryRepository: Repository<Inquiry>,
     @InjectRepository(SampleRequest)
     private readonly sampleRequestRepository: Repository<SampleRequest>,
+    @InjectRepository(RegistrationRequest)
+    private readonly registrationRequestRepository: Repository<RegistrationRequest>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Order)
@@ -1400,6 +1408,231 @@ export class AdminService {
       [SampleRequestStatus.DELIVERED]: [], // 已送达状态不能再转换
       [SampleRequestStatus.REJECTED]: [], // 已拒绝状态不能再转换
       [SampleRequestStatus.CANCELLED]: [], // 已取消状态不能再转换
+    };
+
+    return validTransitions[currentStatus]?.includes(newStatus) ?? false;
+  }
+
+  // 登记申请业务流程管理
+  async getRegistrationRequests(
+    queryDto: RegistrationRequestQueryDto,
+  ): Promise<PaginatedResult<RegistrationRequest>> {
+    const {
+      page = 1,
+      limit = 20,
+      regReqNo,
+      status,
+      buyerId,
+      supplierId,
+      productId,
+      targetCountry,
+      createdStartDate,
+      createdEndDate,
+    } = queryDto;
+
+    const queryBuilder = this.registrationRequestRepository
+      .createQueryBuilder('registrationRequest')
+      .leftJoinAndSelect('registrationRequest.buyer', 'buyer')
+      .leftJoinAndSelect('registrationRequest.supplier', 'supplier')
+      .leftJoinAndSelect('registrationRequest.product', 'product');
+
+    if (regReqNo) {
+      queryBuilder.andWhere('registrationRequest.regReqNo LIKE :regReqNo', {
+        regReqNo: `%${regReqNo}%`,
+      });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('registrationRequest.status = :status', { status });
+    }
+
+    if (buyerId) {
+      queryBuilder.andWhere('registrationRequest.buyerId = :buyerId', { buyerId });
+    }
+
+    if (supplierId) {
+      queryBuilder.andWhere('registrationRequest.supplierId = :supplierId', { supplierId });
+    }
+
+    if (productId) {
+      queryBuilder.andWhere('registrationRequest.productId = :productId', { productId });
+    }
+
+    if (targetCountry) {
+      queryBuilder.andWhere('JSON_EXTRACT(registrationRequest.details, "$.targetCountry") LIKE :targetCountry', {
+        targetCountry: `%${targetCountry}%`,
+      });
+    }
+
+    if (createdStartDate) {
+      queryBuilder.andWhere('DATE(registrationRequest.createdAt) >= :createdStartDate', {
+        createdStartDate,
+      });
+    }
+
+    if (createdEndDate) {
+      queryBuilder.andWhere('DATE(registrationRequest.createdAt) <= :createdEndDate', {
+        createdEndDate,
+      });
+    }
+
+    const [registrationRequests, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('registrationRequest.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: registrationRequests,
+      meta: {
+        totalItems: total,
+        itemCount: registrationRequests.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async getRegistrationRequestById(registrationRequestId: number): Promise<RegistrationRequest> {
+    const registrationRequest = await this.registrationRequestRepository.findOne({
+      where: { id: registrationRequestId },
+      relations: ['buyer', 'supplier', 'product'],
+    });
+
+    if (!registrationRequest) {
+      throw new NotFoundException('Registration request not found');
+    }
+
+    return registrationRequest;
+  }
+
+  async updateRegistrationRequestStatus(
+    registrationRequestId: number,
+    updateDto: UpdateRegistrationRequestStatusDto,
+  ): Promise<RegistrationRequest> {
+    const registrationRequest = await this.registrationRequestRepository.findOne({
+      where: { id: registrationRequestId },
+      relations: ['buyer', 'supplier', 'product'],
+    });
+
+    if (!registrationRequest) {
+      throw new NotFoundException('Registration request not found');
+    }
+
+    // 验证状态转换的合理性
+    if (!this.isValidRegistrationRequestStatusTransition(registrationRequest.status, updateDto.status)) {
+      throw new BadRequestException(
+        `Invalid status transition from ${registrationRequest.status} to ${updateDto.status}`,
+      );
+    }
+
+    // 更新状态
+    registrationRequest.status = updateDto.status;
+
+    // 添加状态说明
+    if (updateDto.statusNote) {
+      const currentDetails = registrationRequest.details as any;
+      const updatedDetails = {
+        ...currentDetails,
+        statusNote: updateDto.statusNote,
+        lastUpdatedBy: updateDto.operatedBy,
+        statusHistory: [
+          ...(currentDetails.statusHistory || []),
+          {
+            status: updateDto.status,
+            note: updateDto.statusNote,
+            updatedBy: updateDto.operatedBy,
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+      };
+      registrationRequest.details = updatedDetails;
+    }
+
+    return this.registrationRequestRepository.save(registrationRequest);
+  }
+
+  async getRegistrationRequestStats(): Promise<RegistrationRequestStatsDto> {
+    const stats = await this.registrationRequestRepository
+      .createQueryBuilder('registrationRequest')
+      .select('registrationRequest.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('registrationRequest.status')
+      .getRawMany();
+
+    const result: RegistrationRequestStatsDto = {
+      pendingResponse: 0,
+      inProgress: 0,
+      completed: 0,
+      declined: 0,
+      cancelled: 0,
+      total: 0,
+    };
+
+    stats.forEach((stat) => {
+      const count = parseInt(stat.count);
+      result.total += count;
+
+      switch (stat.status) {
+        case RegistrationRequestStatus.PENDING_RESPONSE:
+          result.pendingResponse = count;
+          break;
+        case RegistrationRequestStatus.IN_PROGRESS:
+          result.inProgress = count;
+          break;
+        case RegistrationRequestStatus.COMPLETED:
+          result.completed = count;
+          break;
+        case RegistrationRequestStatus.DECLINED:
+          result.declined = count;
+          break;
+        case RegistrationRequestStatus.CANCELLED:
+          result.cancelled = count;
+          break;
+      }
+    });
+
+    return result;
+  }
+
+  async deleteRegistrationRequest(registrationRequestId: number): Promise<void> {
+    const registrationRequest = await this.registrationRequestRepository.findOne({
+      where: { id: registrationRequestId },
+    });
+
+    if (!registrationRequest) {
+      throw new NotFoundException('Registration request not found');
+    }
+
+    // 只有待回复和已取消状态的登记申请可以删除
+    if (![RegistrationRequestStatus.PENDING_RESPONSE, RegistrationRequestStatus.CANCELLED].includes(registrationRequest.status)) {
+      throw new BadRequestException(
+        'Only pending response or cancelled registration requests can be deleted',
+      );
+    }
+
+    await this.registrationRequestRepository.remove(registrationRequest);
+  }
+
+  private isValidRegistrationRequestStatusTransition(
+    currentStatus: RegistrationRequestStatus,
+    newStatus: RegistrationRequestStatus,
+  ): boolean {
+    const validTransitions: Record<RegistrationRequestStatus, RegistrationRequestStatus[]> = {
+      [RegistrationRequestStatus.PENDING_RESPONSE]: [
+        RegistrationRequestStatus.IN_PROGRESS,
+        RegistrationRequestStatus.DECLINED,
+        RegistrationRequestStatus.CANCELLED,
+      ],
+      [RegistrationRequestStatus.IN_PROGRESS]: [
+        RegistrationRequestStatus.COMPLETED,
+        RegistrationRequestStatus.DECLINED,
+        RegistrationRequestStatus.CANCELLED,
+      ],
+      [RegistrationRequestStatus.COMPLETED]: [], // 已完成状态不能再转换
+      [RegistrationRequestStatus.DECLINED]: [], // 已拒绝状态不能再转换
+      [RegistrationRequestStatus.CANCELLED]: [], // 已取消状态不能再转换
     };
 
     return validTransitions[currentStatus]?.includes(newStatus) ?? false;
