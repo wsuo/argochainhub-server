@@ -23,7 +23,7 @@ async function bootstrap() {
   // CORS配置
   app.enableCors({
     origin:
-      process.env.NODE_ENV === 'development' ? true : ['http://localhost:3001'],
+      process.env.NODE_ENV === 'development' ? true : ['http://localhost:3020'],
     credentials: true,
   });
 
@@ -42,7 +42,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = configService.get<number>('app.port') || 3000;
+  const port = configService.get<number>('app.port') || 3010;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   if (process.env.NODE_ENV === 'development') {

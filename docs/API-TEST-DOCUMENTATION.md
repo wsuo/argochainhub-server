@@ -534,3 +534,19 @@ Authorization: Bearer {access_token}
 7. **错误处理**: 测试各种异常情况的错误响应
 
 所有接口已经通过Swagger文档验证，可以通过 `/api/docs` 访问完整的API文档进行在线测试。
+
+## 环境配置
+
+### 开发环境
+
+- **后端服务URL**: http://localhost:3010
+- **API基础路径**: http://localhost:3010/api/v1
+- **Swagger文档**: http://localhost:3010/api/docs
+- **前端管理后台**: http://localhost:3020
+
+### 端口配置
+
+- **后端API服务**: 3010
+- **前端管理后台**: 3020
+- **数据库**: 3306
+- **Redis**: 6379
