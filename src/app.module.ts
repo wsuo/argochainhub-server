@@ -16,15 +16,17 @@ import { InquiriesModule } from './inquiries/inquiries.module';
 import { AdminModule } from './admin/admin.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { StorageModule } from './storage/storage.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
+import tosConfig from './config/tos.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig],
+      load: [appConfig, databaseConfig, jwtConfig, tosConfig],
       envFilePath: ['.env.local', '.env'],
     }),
     EventEmitterModule.forRoot(),
@@ -46,6 +48,7 @@ import jwtConfig from './config/jwt.config';
     AdminModule,
     UploadsModule,
     NotificationsModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

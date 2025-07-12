@@ -28,6 +28,7 @@
 - **认证**: JWT + Passport
 - **文档**: Swagger/OpenAPI
 - **验证**: class-validator
+- **文件存储**: 火山引擎TOS对象存储
 - **文件上传**: Multer
 - **事件系统**: EventEmitter2
 
@@ -61,6 +62,14 @@ DATABASE_NAME=argochainhub
 # JWT配置
 JWT_SECRET=your_jwt_secret
 JWT_EXPIRES_IN=7d
+
+# 火山引擎TOS对象存储配置
+VOLC_ACCESS_KEY_ID=your_access_key_id
+VOLC_ACCESS_KEY_SECRET=your_access_key_secret
+TOS_REGION=cn-beijing
+TOS_ENDPOINT=https://tos-s3-cn-beijing.volces.com
+TOS_BUCKET=your_bucket_name
+TOS_REQUEST_TIMEOUT=60000
 
 # 应用配置
 APP_PORT=3000
@@ -117,7 +126,9 @@ API文档地址: http://localhost:3000/api/docs
 #### 文件管理
 - `POST /api/v1/uploads` - 上传文件
 - `GET /api/v1/uploads/my-files` - 获取我的文件
+- `GET /api/v1/uploads/:id/url` - 获取文件访问URL
 - `GET /api/v1/uploads/:id/download` - 下载文件
+- `GET /api/v1/uploads/:id/preview` - 预览文件（图片）
 
 #### 通知系统
 - `GET /api/v1/notifications` - 获取通知列表

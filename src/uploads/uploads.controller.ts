@@ -102,6 +102,24 @@ export class UploadsController {
     return this.uploadsService.getFileById(user, id);
   }
 
+  @Get(':id/url')
+  @ApiOperation({ summary: '获取文件访问URL' })
+  @ApiParam({ name: 'id', description: '文件ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 404, description: '文件不存在' })
+  @ApiResponse({ status: 403, description: '无访问权限' })
+  async getFileUrl(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const attachment = await this.uploadsService.getFileById(user, id);
+    return {
+      id: attachment.id,
+      url: attachment.url,
+      filename: attachment.filename,
+    };
+  }
+
   @Get(':id/download')
   @ApiOperation({ summary: '下载文件' })
   @ApiParam({ name: 'id', description: '文件ID' })
@@ -113,7 +131,7 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    const { stream, attachment } = await this.uploadsService.getFileStream(user, id);
+    const { buffer, attachment } = await this.uploadsService.getFileStream(user, id);
     
     res.set({
       'Content-Type': attachment.mimetype,
@@ -121,7 +139,7 @@ export class UploadsController {
       'Content-Length': attachment.size.toString(),
     });
 
-    res.send(stream);
+    res.send(buffer);
   }
 
   @Get(':id/preview')
@@ -135,7 +153,7 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    const { stream, attachment } = await this.uploadsService.getFileStream(user, id);
+    const { buffer, attachment } = await this.uploadsService.getFileStream(user, id);
     
     // 只允许预览图片文件
     if (!attachment.mimetype.startsWith('image/')) {
@@ -147,7 +165,7 @@ export class UploadsController {
       'Cache-Control': 'public, max-age=3600',
     });
 
-    res.send(stream);
+    res.send(buffer);
   }
 
   @Delete(':id')

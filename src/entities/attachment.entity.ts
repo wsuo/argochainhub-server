@@ -26,7 +26,10 @@ export class Attachment extends BaseEntity {
   size: number;
 
   @Column({ length: 500 })
-  path: string;
+  storageKey: string;
+
+  @Column({ length: 1000, nullable: true })
+  url?: string;
 
   @Column({
     type: 'enum',
