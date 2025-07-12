@@ -43,10 +43,15 @@ import {
   InquiryQueryDto, 
   UpdateInquiryStatusDto 
 } from './dto/inquiry-management.dto';
+import { 
+  SampleRequestQueryDto, 
+  UpdateSampleRequestStatusDto 
+} from './dto/sample-request-management.dto';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { ProductStatus } from '../entities/product.entity';
 import { OrderStatus } from '../entities/order.entity';
 import { InquiryStatus } from '../entities/inquiry.entity';
+import { SampleRequestStatus } from '../entities/sample-request.entity';
 
 @ApiTags('后台管理')
 @Controller('admin')
@@ -472,5 +477,62 @@ export class AdminController {
   async deleteInquiry(@Param('id', ParseIntPipe) inquiryId: number) {
     await this.adminService.deleteInquiry(inquiryId);
     return { message: '询价单删除成功' };
+  }
+
+  // 样品申请业务流程管理
+  @Get('sample-requests')
+  @ApiOperation({ summary: '获取样品申请列表' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
+  @ApiQuery({ name: 'sampleReqNo', required: false, description: '样品申请单号' })
+  @ApiQuery({ name: 'status', required: false, enum: SampleRequestStatus, description: '样品申请状态' })
+  @ApiQuery({ name: 'buyerId', required: false, description: '买方企业ID' })
+  @ApiQuery({ name: 'supplierId', required: false, description: '供应商企业ID' })
+  @ApiQuery({ name: 'productId', required: false, description: '产品ID' })
+  @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getSampleRequests(@Query() queryDto: SampleRequestQueryDto) {
+    return this.adminService.getSampleRequests(queryDto);
+  }
+
+  @Get('sample-requests/stats')
+  @ApiOperation({ summary: '获取样品申请统计数据' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getSampleRequestStats() {
+    return this.adminService.getSampleRequestStats();
+  }
+
+  @Get('sample-requests/:id')
+  @ApiOperation({ summary: '获取样品申请详情' })
+  @ApiParam({ name: 'id', description: '样品申请ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 404, description: '样品申请不存在' })
+  async getSampleRequestById(@Param('id', ParseIntPipe) sampleRequestId: number) {
+    return this.adminService.getSampleRequestById(sampleRequestId);
+  }
+
+  @Patch('sample-requests/:id/status')
+  @ApiOperation({ summary: '更新样品申请状态' })
+  @ApiParam({ name: 'id', description: '样品申请ID' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 400, description: '状态转换不合法或参数错误' })
+  @ApiResponse({ status: 404, description: '样品申请不存在' })
+  async updateSampleRequestStatus(
+    @Param('id', ParseIntPipe) sampleRequestId: number,
+    @Body() updateDto: UpdateSampleRequestStatusDto,
+  ) {
+    return this.adminService.updateSampleRequestStatus(sampleRequestId, updateDto);
+  }
+
+  @Delete('sample-requests/:id')
+  @ApiOperation({ summary: '删除样品申请' })
+  @ApiParam({ name: 'id', description: '样品申请ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiResponse({ status: 400, description: '样品申请状态不允许删除' })
+  @ApiResponse({ status: 404, description: '样品申请不存在' })
+  async deleteSampleRequest(@Param('id', ParseIntPipe) sampleRequestId: number) {
+    await this.adminService.deleteSampleRequest(sampleRequestId);
+    return { message: '样品申请删除成功' };
   }
 }

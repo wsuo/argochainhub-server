@@ -13,6 +13,7 @@ import {
 import { User } from '../entities/user.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
 import { Inquiry, InquiryStatus } from '../entities/inquiry.entity';
+import { SampleRequest, SampleRequestStatus } from '../entities/sample-request.entity';
 import {
   Subscription,
   SubscriptionStatus,
@@ -42,6 +43,11 @@ import {
   UpdateInquiryStatusDto, 
   InquiryStatsDto 
 } from './dto/inquiry-management.dto';
+import { 
+  SampleRequestQueryDto, 
+  UpdateSampleRequestStatusDto, 
+  SampleRequestStatsDto 
+} from './dto/sample-request-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../common/utils/language-mapper';
 
@@ -56,6 +62,8 @@ export class AdminService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Inquiry)
     private readonly inquiryRepository: Repository<Inquiry>,
+    @InjectRepository(SampleRequest)
+    private readonly sampleRequestRepository: Repository<SampleRequest>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Order)
@@ -1173,6 +1181,225 @@ export class AdminService {
       [InquiryStatus.DECLINED]: [], // 已拒绝状态不能再转换
       [InquiryStatus.EXPIRED]: [], // 已过期状态不能再转换
       [InquiryStatus.CANCELLED]: [], // 已取消状态不能再转换
+    };
+
+    return validTransitions[currentStatus]?.includes(newStatus) ?? false;
+  }
+
+  // 样品申请业务流程管理
+  async getSampleRequests(
+    queryDto: SampleRequestQueryDto,
+  ): Promise<PaginatedResult<SampleRequest>> {
+    const {
+      page = 1,
+      limit = 20,
+      sampleReqNo,
+      status,
+      buyerId,
+      supplierId,
+      productId,
+      createdStartDate,
+      createdEndDate,
+    } = queryDto;
+
+    const queryBuilder = this.sampleRequestRepository
+      .createQueryBuilder('sampleRequest')
+      .leftJoinAndSelect('sampleRequest.buyer', 'buyer')
+      .leftJoinAndSelect('sampleRequest.supplier', 'supplier')
+      .leftJoinAndSelect('sampleRequest.product', 'product');
+
+    if (sampleReqNo) {
+      queryBuilder.andWhere('sampleRequest.sampleReqNo LIKE :sampleReqNo', {
+        sampleReqNo: `%${sampleReqNo}%`,
+      });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('sampleRequest.status = :status', { status });
+    }
+
+    if (buyerId) {
+      queryBuilder.andWhere('sampleRequest.buyerId = :buyerId', { buyerId });
+    }
+
+    if (supplierId) {
+      queryBuilder.andWhere('sampleRequest.supplierId = :supplierId', { supplierId });
+    }
+
+    if (productId) {
+      queryBuilder.andWhere('sampleRequest.productId = :productId', { productId });
+    }
+
+    if (createdStartDate) {
+      queryBuilder.andWhere('DATE(sampleRequest.createdAt) >= :createdStartDate', {
+        createdStartDate,
+      });
+    }
+
+    if (createdEndDate) {
+      queryBuilder.andWhere('DATE(sampleRequest.createdAt) <= :createdEndDate', {
+        createdEndDate,
+      });
+    }
+
+    const [sampleRequests, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('sampleRequest.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: sampleRequests,
+      meta: {
+        totalItems: total,
+        itemCount: sampleRequests.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async getSampleRequestById(sampleRequestId: number): Promise<SampleRequest> {
+    const sampleRequest = await this.sampleRequestRepository.findOne({
+      where: { id: sampleRequestId },
+      relations: ['buyer', 'supplier', 'product'],
+    });
+
+    if (!sampleRequest) {
+      throw new NotFoundException('Sample request not found');
+    }
+
+    return sampleRequest;
+  }
+
+  async updateSampleRequestStatus(
+    sampleRequestId: number,
+    updateDto: UpdateSampleRequestStatusDto,
+  ): Promise<SampleRequest> {
+    const sampleRequest = await this.sampleRequestRepository.findOne({
+      where: { id: sampleRequestId },
+      relations: ['buyer', 'supplier', 'product'],
+    });
+
+    if (!sampleRequest) {
+      throw new NotFoundException('Sample request not found');
+    }
+
+    // 验证状态转换的合理性
+    if (!this.isValidSampleRequestStatusTransition(sampleRequest.status, updateDto.status)) {
+      throw new BadRequestException(
+        `Invalid status transition from ${sampleRequest.status} to ${updateDto.status}`,
+      );
+    }
+
+    // 更新状态
+    sampleRequest.status = updateDto.status;
+
+    // 根据状态更新相关详情
+    if (updateDto.status === SampleRequestStatus.SHIPPED && updateDto.trackingInfo) {
+      sampleRequest.trackingInfo = updateDto.trackingInfo;
+    }
+
+    if (updateDto.status === SampleRequestStatus.REJECTED && updateDto.rejectReason) {
+      // 创建新的details对象，保留现有字段并添加拒绝相关信息
+      const updatedDetails = {
+        ...sampleRequest.details,
+        rejectReason: updateDto.rejectReason,
+        rejectedBy: updateDto.operatedBy,
+      };
+      sampleRequest.details = updatedDetails as any;
+    }
+
+    return this.sampleRequestRepository.save(sampleRequest);
+  }
+
+  async getSampleRequestStats(): Promise<SampleRequestStatsDto> {
+    const stats = await this.sampleRequestRepository
+      .createQueryBuilder('sampleRequest')
+      .select('sampleRequest.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('sampleRequest.status')
+      .getRawMany();
+
+    const result: SampleRequestStatsDto = {
+      pendingApproval: 0,
+      approved: 0,
+      shipped: 0,
+      delivered: 0,
+      rejected: 0,
+      cancelled: 0,
+      total: 0,
+    };
+
+    stats.forEach((stat) => {
+      const count = parseInt(stat.count);
+      result.total += count;
+
+      switch (stat.status) {
+        case SampleRequestStatus.PENDING_APPROVAL:
+          result.pendingApproval = count;
+          break;
+        case SampleRequestStatus.APPROVED:
+          result.approved = count;
+          break;
+        case SampleRequestStatus.SHIPPED:
+          result.shipped = count;
+          break;
+        case SampleRequestStatus.DELIVERED:
+          result.delivered = count;
+          break;
+        case SampleRequestStatus.REJECTED:
+          result.rejected = count;
+          break;
+        case SampleRequestStatus.CANCELLED:
+          result.cancelled = count;
+          break;
+      }
+    });
+
+    return result;
+  }
+
+  async deleteSampleRequest(sampleRequestId: number): Promise<void> {
+    const sampleRequest = await this.sampleRequestRepository.findOne({
+      where: { id: sampleRequestId },
+    });
+
+    if (!sampleRequest) {
+      throw new NotFoundException('Sample request not found');
+    }
+
+    // 只有待审核和已取消状态的样品申请可以删除
+    if (![SampleRequestStatus.PENDING_APPROVAL, SampleRequestStatus.CANCELLED].includes(sampleRequest.status)) {
+      throw new BadRequestException(
+        'Only pending approval or cancelled sample requests can be deleted',
+      );
+    }
+
+    await this.sampleRequestRepository.remove(sampleRequest);
+  }
+
+  private isValidSampleRequestStatusTransition(
+    currentStatus: SampleRequestStatus,
+    newStatus: SampleRequestStatus,
+  ): boolean {
+    const validTransitions: Record<SampleRequestStatus, SampleRequestStatus[]> = {
+      [SampleRequestStatus.PENDING_APPROVAL]: [
+        SampleRequestStatus.APPROVED,
+        SampleRequestStatus.REJECTED,
+        SampleRequestStatus.CANCELLED,
+      ],
+      [SampleRequestStatus.APPROVED]: [
+        SampleRequestStatus.SHIPPED,
+        SampleRequestStatus.CANCELLED,
+      ],
+      [SampleRequestStatus.SHIPPED]: [
+        SampleRequestStatus.DELIVERED,
+      ],
+      [SampleRequestStatus.DELIVERED]: [], // 已送达状态不能再转换
+      [SampleRequestStatus.REJECTED]: [], // 已拒绝状态不能再转换
+      [SampleRequestStatus.CANCELLED]: [], // 已取消状态不能再转换
     };
 
     return validTransitions[currentStatus]?.includes(newStatus) ?? false;

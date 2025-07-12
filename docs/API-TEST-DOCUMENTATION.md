@@ -663,6 +663,262 @@ Authorization: Bearer {access_token}
 
 ---
 
+## 样品申请业务流程管理接口
+
+### 1. 获取样品申请列表
+**GET** `/api/admin/sample-requests?page=1&limit=20&status=pending_approval&buyerId=1&supplierId=2`
+
+查询参数：
+- `page`: 页码 (可选)
+- `limit`: 每页条数 (可选)
+- `sampleReqNo`: 样品申请单号 (可选)
+- `status`: 样品申请状态 (可选) - pending_approval/approved/shipped/delivered/rejected/cancelled
+- `buyerId`: 买方企业ID (可选)
+- `supplierId`: 供应商企业ID (可选)
+- `productId`: 产品ID (可选)
+- `createdStartDate`: 创建开始日期 (可选) - YYYY-MM-DD
+- `createdEndDate`: 创建结束日期 (可选) - YYYY-MM-DD
+
+响应示例：
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "sampleReqNo": "SAM2024010001",
+      "quantity": 1.000,
+      "unit": "kg",
+      "status": "pending_approval",
+      "details": {
+        "purpose": "新产品测试使用",
+        "shippingAddress": "上海市浦东新区张江高科技园区",
+        "shippingMethod": "快递",
+        "willingnessToPay": {
+          "paid": true,
+          "amount": 50.00
+        }
+      },
+      "trackingInfo": null,
+      "productSnapshot": {
+        "name": "高效杀虫剂",
+        "category": "杀虫剂",
+        "formulation": "乳油",
+        "activeIngredient": "毒死蜱",
+        "content": "40%"
+      },
+      "deadline": "2024-02-01",
+      "createdAt": "2024-01-15T08:00:00.000Z",
+      "updatedAt": "2024-01-15T08:00:00.000Z",
+      "buyer": {
+        "id": 1,
+        "name": {
+          "zh": "农业技术有限公司",
+          "en": "Agriculture Technology Co., Ltd."
+        },
+        "type": "buyer"
+      },
+      "supplier": {
+        "id": 2,
+        "name": {
+          "zh": "化工制品有限公司",
+          "en": "Chemical Products Co., Ltd."
+        },
+        "type": "supplier"
+      },
+      "product": {
+        "id": 1,
+        "name": {
+          "zh": "高效杀虫剂",
+          "en": "High Efficiency Insecticide"
+        },
+        "category": {
+          "zh": "杀虫剂",
+          "en": "Insecticide"
+        }
+      }
+    }
+  ],
+  "meta": {
+    "totalItems": 30,
+    "itemCount": 1,
+    "itemsPerPage": 20,
+    "totalPages": 2,
+    "currentPage": 1
+  }
+}
+```
+
+### 2. 获取样品申请统计数据
+**GET** `/api/admin/sample-requests/stats`
+
+响应示例：
+```json
+{
+  "pendingApproval": 15,
+  "approved": 8,
+  "shipped": 5,
+  "delivered": 10,
+  "rejected": 3,
+  "cancelled": 2,
+  "total": 43
+}
+```
+
+### 3. 获取样品申请详情
+**GET** `/api/admin/sample-requests/1`
+
+响应示例：
+```json
+{
+  "id": 1,
+  "sampleReqNo": "SAM2024010001",
+  "quantity": 1.000,
+  "unit": "kg",
+  "status": "shipped",
+  "details": {
+    "purpose": "新产品测试使用",
+    "shippingAddress": "上海市浦东新区张江高科技园区科学大道100号",
+    "shippingMethod": "快递",
+    "willingnessToPay": {
+      "paid": true,
+      "amount": 50.00
+    }
+  },
+  "trackingInfo": {
+    "carrier": "SF Express",
+    "trackingNumber": "SF1234567890"
+  },
+  "productSnapshot": {
+    "name": "高效杀虫剂",
+    "category": "杀虫剂",
+    "formulation": "乳油",
+    "activeIngredient": "毒死蜱",
+    "content": "40%"
+  },
+  "deadline": "2024-02-01",
+  "createdAt": "2024-01-15T08:00:00.000Z",
+  "updatedAt": "2024-01-18T14:30:00.000Z",
+  "buyer": {
+    "id": 1,
+    "name": {
+      "zh": "农业技术有限公司",
+      "en": "Agriculture Technology Co., Ltd."
+    },
+    "type": "buyer",
+    "profile": {
+      "description": {
+        "zh": "专业农业技术服务公司",
+        "en": "Professional agricultural technology service company"
+      },
+      "address": "上海市浦东新区",
+      "phone": "+86-21-12345678"
+    }
+  },
+  "supplier": {
+    "id": 2,
+    "name": {
+      "zh": "化工制品有限公司",
+      "en": "Chemical Products Co., Ltd."
+    },
+    "type": "supplier"
+  },
+  "product": {
+    "id": 1,
+    "name": {
+      "zh": "高效杀虫剂",
+      "en": "High Efficiency Insecticide"
+    },
+    "category": {
+      "zh": "杀虫剂",
+      "en": "Insecticide"
+    },
+    "formulation": "乳油",
+    "content": "40%"
+  }
+}
+```
+
+### 4. 更新样品申请状态
+**PATCH** `/api/admin/sample-requests/1/status`
+
+#### 批准操作
+请求体：
+```json
+{
+  "status": "approved",
+  "operatedBy": "admin_user"
+}
+```
+
+#### 发货操作
+请求体：
+```json
+{
+  "status": "shipped",
+  "operatedBy": "admin_user",
+  "trackingInfo": {
+    "carrier": "SF Express",
+    "trackingNumber": "SF1234567890"
+  }
+}
+```
+
+#### 送达操作
+请求体：
+```json
+{
+  "status": "delivered",
+  "operatedBy": "admin_user"
+}
+```
+
+#### 拒绝操作
+请求体：
+```json
+{
+  "status": "rejected",
+  "operatedBy": "admin_user",
+  "rejectReason": "样品库存不足，暂时无法提供"
+}
+```
+
+#### 取消操作
+请求体：
+```json
+{
+  "status": "cancelled",
+  "operatedBy": "admin_user"
+}
+```
+
+响应示例：
+```json
+{
+  "id": 1,
+  "sampleReqNo": "SAM2024010001",
+  "status": "shipped",
+  "trackingInfo": {
+    "carrier": "SF Express",
+    "trackingNumber": "SF1234567890"
+  },
+  "updatedAt": "2024-01-18T14:30:00.000Z"
+}
+```
+
+### 5. 删除样品申请
+**DELETE** `/api/admin/sample-requests/1`
+
+注意：只有状态为 `pending_approval` 或 `cancelled` 的样品申请可以删除。
+
+响应示例：
+```json
+{
+  "message": "样品申请删除成功"
+}
+```
+
+---
+
 ## 用户管理接口
 
 ### 1. 获取所有用户列表
