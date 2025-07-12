@@ -13,7 +13,6 @@ export enum InquiryStatus {
 }
 
 @Entity('inquiries')
-@Index(['inquiryNo'], { unique: true })
 export class Inquiry extends BaseEntity {
   @Column({ length: 255, unique: true })
   inquiryNo: string;

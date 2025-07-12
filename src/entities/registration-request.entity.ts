@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Company } from './company.entity';
 import { Product } from './product.entity';
@@ -12,7 +12,6 @@ export enum RegistrationRequestStatus {
 }
 
 @Entity('registration_requests')
-@Index(['regReqNo'], { unique: true })
 export class RegistrationRequest extends BaseEntity {
   @Column({ length: 255, unique: true })
   regReqNo: string;

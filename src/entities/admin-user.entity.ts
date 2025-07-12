@@ -1,8 +1,7 @@
-import { Entity, Column, OneToMany, PrimaryGeneratedColumn, Index } from 'typeorm';
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { AuditLog } from './audit-log.entity';
 
 @Entity('admin_users')
-@Index(['username'], { unique: true })
 export class AdminUser {
   @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
   id: number;

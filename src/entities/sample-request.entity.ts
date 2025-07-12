@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Company } from './company.entity';
 import { Product } from './product.entity';
@@ -13,7 +13,6 @@ export enum SampleRequestStatus {
 }
 
 @Entity('sample_requests')
-@Index(['sampleReqNo'], { unique: true })
 export class SampleRequest extends BaseEntity {
   @Column({ length: 255, unique: true })
   sampleReqNo: string;

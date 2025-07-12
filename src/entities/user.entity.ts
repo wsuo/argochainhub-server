@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Company } from './company.entity';
 import { Order } from './order.entity';
@@ -13,7 +13,6 @@ export enum UserRole {
 }
 
 @Entity('users')
-@Index(['email'], { unique: true })
 export class User extends BaseEntity {
   @Column({ length: 255, unique: true })
   email: string;
