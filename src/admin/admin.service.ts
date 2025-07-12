@@ -2,9 +2,12 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import {
   Company,
   CompanyStatus,
@@ -15,6 +18,7 @@ import { Product, ProductStatus } from '../entities/product.entity';
 import { Inquiry, InquiryStatus } from '../entities/inquiry.entity';
 import { SampleRequest, SampleRequestStatus } from '../entities/sample-request.entity';
 import { RegistrationRequest, RegistrationRequestStatus } from '../entities/registration-request.entity';
+import { AdminUser } from '../entities/admin-user.entity';
 import {
   Subscription,
   SubscriptionStatus,
@@ -54,6 +58,14 @@ import {
   UpdateRegistrationRequestStatusDto, 
   RegistrationRequestStatsDto 
 } from './dto/registration-request-management.dto';
+import { 
+  AdminUserQueryDto, 
+  CreateAdminUserDto, 
+  UpdateAdminUserDto, 
+  ChangePasswordDto, 
+  ResetPasswordDto, 
+  AdminUserStatsDto 
+} from './dto/admin-user-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../common/utils/language-mapper';
 
@@ -72,6 +84,8 @@ export class AdminService {
     private readonly sampleRequestRepository: Repository<SampleRequest>,
     @InjectRepository(RegistrationRequest)
     private readonly registrationRequestRepository: Repository<RegistrationRequest>,
+    @InjectRepository(AdminUser)
+    private readonly adminUserRepository: Repository<AdminUser>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Order)
@@ -1636,5 +1650,299 @@ export class AdminService {
     };
 
     return validTransitions[currentStatus]?.includes(newStatus) ?? false;
+  }
+
+  // 管理员账户管理
+  async getAdminUsers(
+    queryDto: AdminUserQueryDto,
+  ): Promise<PaginatedResult<AdminUser>> {
+    const {
+      page = 1,
+      limit = 20,
+      username,
+      role,
+      isActive,
+      createdStartDate,
+      createdEndDate,
+    } = queryDto;
+
+    const queryBuilder = this.adminUserRepository
+      .createQueryBuilder('adminUser');
+
+    if (username) {
+      queryBuilder.andWhere('adminUser.username LIKE :username', {
+        username: `%${username}%`,
+      });
+    }
+
+    if (role) {
+      queryBuilder.andWhere('adminUser.role = :role', { role });
+    }
+
+    if (isActive !== undefined) {
+      queryBuilder.andWhere('adminUser.isActive = :isActive', { isActive });
+    }
+
+    if (createdStartDate) {
+      queryBuilder.andWhere('DATE(adminUser.createdAt) >= :createdStartDate', {
+        createdStartDate,
+      });
+    }
+
+    if (createdEndDate) {
+      queryBuilder.andWhere('DATE(adminUser.createdAt) <= :createdEndDate', {
+        createdEndDate,
+      });
+    }
+
+    const [adminUsers, total] = await queryBuilder
+      .select([
+        'adminUser.id',
+        'adminUser.username',
+        'adminUser.role',
+        'adminUser.isActive',
+        'adminUser.createdAt',
+        'adminUser.updatedAt',
+        'adminUser.lastLoginAt',
+      ])
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('adminUser.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: adminUsers,
+      meta: {
+        totalItems: total,
+        itemCount: adminUsers.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async getAdminUserById(adminUserId: number): Promise<AdminUser> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: adminUserId },
+      select: [
+        'id',
+        'username',
+        'role',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+        'lastLoginAt',
+      ],
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+
+    return adminUser;
+  }
+
+  async createAdminUser(createAdminUserDto: CreateAdminUserDto): Promise<AdminUser> {
+    // 检查用户名是否已存在
+    const existingUser = await this.adminUserRepository.findOne({
+      where: { username: createAdminUserDto.username },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Username already exists');
+    }
+
+    // 加密密码
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(createAdminUserDto.password, saltRounds);
+
+    const adminUser = this.adminUserRepository.create({
+      username: createAdminUserDto.username,
+      password: hashedPassword,
+      role: createAdminUserDto.role,
+      isActive: createAdminUserDto.isActive ?? true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedUser = await this.adminUserRepository.save(adminUser);
+
+    // 返回时不包含密码
+    const { password, ...userWithoutPassword } = savedUser;
+    return userWithoutPassword as AdminUser;
+  }
+
+  async updateAdminUser(
+    adminUserId: number,
+    updateAdminUserDto: UpdateAdminUserDto,
+  ): Promise<AdminUser> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: adminUserId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+
+    // 如果更新用户名，检查是否已存在
+    if (updateAdminUserDto.username && updateAdminUserDto.username !== adminUser.username) {
+      const existingUser = await this.adminUserRepository.findOne({
+        where: { username: updateAdminUserDto.username },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('Username already exists');
+      }
+    }
+
+    Object.assign(adminUser, updateAdminUserDto);
+    adminUser.updatedAt = new Date();
+
+    const savedUser = await this.adminUserRepository.save(adminUser);
+
+    // 返回时不包含密码
+    const { password, ...userWithoutPassword } = savedUser;
+    return userWithoutPassword as AdminUser;
+  }
+
+  async changePassword(
+    adminUserId: number,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: adminUserId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+
+    // 验证当前密码
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      adminUser.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // 加密新密码
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, saltRounds);
+
+    adminUser.password = hashedNewPassword;
+    adminUser.updatedAt = new Date();
+
+    await this.adminUserRepository.save(adminUser);
+  }
+
+  async resetPassword(
+    adminUserId: number,
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<void> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: adminUserId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+
+    // 加密新密码
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(resetPasswordDto.newPassword, saltRounds);
+
+    adminUser.password = hashedNewPassword;
+    adminUser.updatedAt = new Date();
+
+    await this.adminUserRepository.save(adminUser);
+  }
+
+  async toggleAdminUserStatus(adminUserId: number): Promise<AdminUser> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: adminUserId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+
+    adminUser.isActive = !adminUser.isActive;
+    adminUser.updatedAt = new Date();
+
+    const savedUser = await this.adminUserRepository.save(adminUser);
+
+    // 返回时不包含密码
+    const { password, ...userWithoutPassword } = savedUser;
+    return userWithoutPassword as AdminUser;
+  }
+
+  async deleteAdminUser(adminUserId: number): Promise<void> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: adminUserId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+
+    // 检查是否为超级管理员的最后一个账户
+    if (adminUser.role === 'super_admin') {
+      const superAdminCount = await this.adminUserRepository.count({
+        where: { role: 'super_admin', isActive: true },
+      });
+
+      if (superAdminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot delete the last active super admin user',
+        );
+      }
+    }
+
+    await this.adminUserRepository.remove(adminUser);
+  }
+
+  async getAdminUserStats(): Promise<AdminUserStatsDto> {
+    const totalAdmins = await this.adminUserRepository.count();
+    const activeAdmins = await this.adminUserRepository.count({
+      where: { isActive: true },
+    });
+    const inactiveAdmins = totalAdmins - activeAdmins;
+
+    const roleStats = await this.adminUserRepository
+      .createQueryBuilder('adminUser')
+      .select('adminUser.role', 'role')
+      .addSelect('COUNT(*)', 'count')
+      .where('adminUser.isActive = :isActive', { isActive: true })
+      .groupBy('adminUser.role')
+      .getRawMany();
+
+    const result: AdminUserStatsDto = {
+      totalAdmins,
+      activeAdmins,
+      inactiveAdmins,
+      superAdmins: 0,
+      admins: 0,
+      moderators: 0,
+    };
+
+    roleStats.forEach((stat) => {
+      const count = parseInt(stat.count);
+      switch (stat.role) {
+        case 'super_admin':
+          result.superAdmins = count;
+          break;
+        case 'admin':
+          result.admins = count;
+          break;
+        case 'moderator':
+          result.moderators = count;
+          break;
+      }
+    });
+
+    return result;
   }
 }

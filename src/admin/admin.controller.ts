@@ -51,6 +51,13 @@ import {
   RegistrationRequestQueryDto, 
   UpdateRegistrationRequestStatusDto 
 } from './dto/registration-request-management.dto';
+import { 
+  AdminUserQueryDto, 
+  CreateAdminUserDto, 
+  UpdateAdminUserDto, 
+  ChangePasswordDto, 
+  ResetPasswordDto 
+} from './dto/admin-user-management.dto';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { ProductStatus } from '../entities/product.entity';
 import { OrderStatus } from '../entities/order.entity';
@@ -597,5 +604,105 @@ export class AdminController {
   async deleteRegistrationRequest(@Param('id', ParseIntPipe) registrationRequestId: number) {
     await this.adminService.deleteRegistrationRequest(registrationRequestId);
     return { message: '登记申请删除成功' };
+  }
+
+  // 管理员账户管理
+  @Get('admin-users')
+  @ApiOperation({ summary: '获取管理员用户列表' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
+  @ApiQuery({ name: 'username', required: false, description: '用户名搜索' })
+  @ApiQuery({ name: 'role', required: false, description: '角色筛选', enum: ['admin', 'super_admin', 'moderator'] })
+  @ApiQuery({ name: 'isActive', required: false, description: '账户状态' })
+  @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getAdminUsers(@Query() queryDto: AdminUserQueryDto) {
+    return this.adminService.getAdminUsers(queryDto);
+  }
+
+  @Get('admin-users/stats')
+  @ApiOperation({ summary: '获取管理员用户统计数据' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getAdminUserStats() {
+    return this.adminService.getAdminUserStats();
+  }
+
+  @Get('admin-users/:id')
+  @ApiOperation({ summary: '获取管理员用户详情' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async getAdminUserById(@Param('id', ParseIntPipe) adminUserId: number) {
+    return this.adminService.getAdminUserById(adminUserId);
+  }
+
+  @Post('admin-users')
+  @ApiOperation({ summary: '创建管理员用户' })
+  @ApiResponse({ status: 201, description: '创建成功' })
+  @ApiResponse({ status: 400, description: '参数错误' })
+  @ApiResponse({ status: 409, description: '用户名已存在' })
+  async createAdminUser(@Body() createAdminUserDto: CreateAdminUserDto) {
+    return this.adminService.createAdminUser(createAdminUserDto);
+  }
+
+  @Put('admin-users/:id')
+  @ApiOperation({ summary: '更新管理员用户信息' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  @ApiResponse({ status: 409, description: '用户名已存在' })
+  async updateAdminUser(
+    @Param('id', ParseIntPipe) adminUserId: number,
+    @Body() updateAdminUserDto: UpdateAdminUserDto,
+  ) {
+    return this.adminService.updateAdminUser(adminUserId, updateAdminUserDto);
+  }
+
+  @Patch('admin-users/:id/password')
+  @ApiOperation({ summary: '修改管理员用户密码' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '密码修改成功' })
+  @ApiResponse({ status: 401, description: '当前密码错误' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async changePassword(
+    @Param('id', ParseIntPipe) adminUserId: number,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    await this.adminService.changePassword(adminUserId, changePasswordDto);
+    return { message: '密码修改成功' };
+  }
+
+  @Patch('admin-users/:id/reset-password')
+  @ApiOperation({ summary: '重置管理员用户密码' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '密码重置成功' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async resetPassword(
+    @Param('id', ParseIntPipe) adminUserId: number,
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ) {
+    await this.adminService.resetPassword(adminUserId, resetPasswordDto);
+    return { message: '密码重置成功' };
+  }
+
+  @Patch('admin-users/:id/toggle-status')
+  @ApiOperation({ summary: '切换管理员用户状态' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '状态切换成功' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async toggleAdminUserStatus(@Param('id', ParseIntPipe) adminUserId: number) {
+    return this.adminService.toggleAdminUserStatus(adminUserId);
+  }
+
+  @Delete('admin-users/:id')
+  @ApiOperation({ summary: '删除管理员用户' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiResponse({ status: 400, description: '不能删除最后一个超级管理员' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async deleteAdminUser(@Param('id', ParseIntPipe) adminUserId: number) {
+    await this.adminService.deleteAdminUser(adminUserId);
+    return { message: '管理员用户删除成功' };
   }
 }
