@@ -8,6 +8,7 @@ import { Subscription } from '../entities/subscription.entity';
 import { Order } from '../entities/order.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { VolcTranslateService } from './services/volc-translate.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { AdminService } from './admin.service';
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
-  exports: [AdminService],
+  providers: [AdminService, VolcTranslateService],
+  exports: [AdminService, VolcTranslateService],
 })
 export class AdminModule {}

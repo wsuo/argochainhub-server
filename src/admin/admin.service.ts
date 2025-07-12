@@ -15,6 +15,9 @@ import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { ReviewCompanyDto } from './dto/review-company.dto';
 import { ReviewProductDto } from './dto/review-product.dto';
 import { AdminStatsDto } from './dto/admin-stats.dto';
+import { TranslateRequestDto, LanguageDetectionDto } from './dto/translate.dto';
+import { VolcTranslateService } from './services/volc-translate.service';
+import { SupportedLanguage } from '../common/utils/language-mapper';
 
 @Injectable()
 export class AdminService {
@@ -31,6 +34,7 @@ export class AdminService {
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    private readonly volcTranslateService: VolcTranslateService,
   ) {}
 
   // 获取管理统计数据
@@ -367,5 +371,15 @@ export class AdminService {
     }
 
     return this.productRepository.save(product);
+  }
+
+  // 翻译文本
+  async translateText(translateDto: TranslateRequestDto): Promise<string> {
+    return this.volcTranslateService.translateText(translateDto);
+  }
+
+  // 检测语言
+  async detectLanguage(detectionDto: LanguageDetectionDto): Promise<{ language: SupportedLanguage; confidence: number }> {
+    return this.volcTranslateService.detectLanguage(detectionDto);
   }
 }

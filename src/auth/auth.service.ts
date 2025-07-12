@@ -39,9 +39,9 @@ export class AuthService {
     // 哈希密码
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 创建企业 - 注册时只提供中文名称，其他语言版本需要后续完善
+    // 创建企业 - 使用用户提供的多语言企业名称
     const company = this.companyRepository.create({
-      name: createMultiLangText(companyName, '', ''),
+      name: companyName,
       type: companyType,
       status: CompanyStatus.PENDING_REVIEW,
     });

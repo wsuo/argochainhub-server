@@ -26,6 +26,7 @@ import { AdminUser } from '../entities/admin-user.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ReviewCompanyDto } from './dto/review-company.dto';
 import { ReviewProductDto } from './dto/review-product.dto';
+import { TranslateRequestDto, TranslateResponseDto, LanguageDetectionDto, LanguageDetectionResponseDto } from './dto/translate.dto';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { ProductStatus } from '../entities/product.entity';
 
@@ -35,7 +36,9 @@ import { ProductStatus } from '../entities/product.entity';
 @ApiBearerAuth()
 @AdminRoles('admin', 'super_admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+  ) {}
 
   @Get('stats')
   @ApiOperation({ summary: '获取管理统计数据' })
@@ -152,5 +155,44 @@ export class AdminController {
       ...paginationDto,
       search,
     });
+  }
+
+  // 翻译服务接口
+  @Post('utilities/translate')
+  @ApiOperation({ summary: '翻译文本' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '翻译成功',
+    type: TranslateResponseDto
+  })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
+  @ApiResponse({ status: 429, description: '请求过于频繁' })
+  @ApiResponse({ status: 500, description: '翻译服务不可用' })
+  async translateText(@Body() translateDto: TranslateRequestDto): Promise<TranslateResponseDto> {
+    const translatedText = await this.adminService.translateText(translateDto);
+    return {
+      data: {
+        translated_text: translatedText,
+      },
+    };
+  }
+
+  @Post('utilities/detect-language')
+  @ApiOperation({ summary: '检测文本语言' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '检测成功',
+    type: LanguageDetectionResponseDto
+  })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
+  @ApiResponse({ status: 500, description: '语言检测服务不可用' })
+  async detectLanguage(@Body() detectionDto: LanguageDetectionDto): Promise<LanguageDetectionResponseDto> {
+    const result = await this.adminService.detectLanguage(detectionDto);
+    return {
+      data: {
+        detected_language: result.language,
+        confidence: result.confidence,
+      },
+    };
   }
 }
