@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException, InternalServerErrorException }
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import * as crypto from 'crypto-js';
+import { Signer } from '@volcengine/openapi';
 import { TranslateRequestDto, LanguageDetectionDto } from '../dto/translate.dto';
 import { toVolcLanguageCode, toSystemLanguageCode, SupportedLanguage } from '../../common/utils/language-mapper';
 
@@ -32,22 +33,28 @@ export class VolcTranslateService {
   private readonly logger = new Logger(VolcTranslateService.name);
   private redis: Redis | null;
   private readonly accessKeyId: string;
-  private readonly accessKeySecret: string;
-  private readonly region: string = 'cn-north-1';
-  private readonly service: string = 'translate';
-  private readonly host: string = 'translate.volcengineapi.com';
+  private readonly secretKey: string;
+  private readonly region: string = 'cn-beijing';
+  private readonly host: string = 'open.volcengineapi.com';
   private readonly cacheTTL: number;
   private readonly rateLimit: number;
 
   constructor(private readonly configService: ConfigService) {
     this.accessKeyId = this.configService.get<string>('VOLC_ACCESS_KEY_ID')!;
-    this.accessKeySecret = this.configService.get<string>('VOLC_ACCESS_KEY_SECRET')!;
+    this.secretKey = this.configService.get<string>('VOLC_ACCESS_KEY_SECRET')!;
+    
     this.cacheTTL = this.configService.get<number>('TRANSLATE_CACHE_TTL', 86400); // 24小时
     this.rateLimit = this.configService.get<number>('TRANSLATE_RATE_LIMIT', 100); // 每分钟100次
 
-    if (!this.accessKeyId || !this.accessKeySecret) {
+    if (!this.accessKeyId || !this.secretKey) {
       throw new Error('火山引擎配置缺失：VOLC_ACCESS_KEY_ID 和 VOLC_ACCESS_KEY_SECRET 必须配置');
     }
+
+    this.logger.log('火山引擎翻译服务初始化成功', {
+      keyId: this.accessKeyId.substring(0, 10) + '...',
+      secretLength: this.secretKey.length,
+      region: this.region
+    });
 
     // 初始化Redis连接
     this.initRedis();
@@ -92,36 +99,45 @@ export class VolcTranslateService {
     await this.checkRateLimit();
 
     try {
-      // 准备请求参数
-      const requestBody = {
-        TextList: [text],
-        TargetLanguage: toVolcLanguageCode(target_lang),
-        ...(source_lang && { SourceLanguage: toVolcLanguageCode(source_lang) }),
-      };
+      this.logger.debug('发送翻译请求:', { 
+        textLength: text.length, 
+        sourceLang: source_lang, 
+        targetLang: target_lang 
+      });
 
-      // 调用火山引擎API
-      const response = await this.callVolcApi('TranslateText', requestBody);
+      // 调用火山引擎翻译API
+      const response = await this.callTranslateApi([text], source_lang, target_lang);
 
-      if (response.ResponseMetadata.Error) {
-        throw new BadRequestException(`翻译失败: ${response.ResponseMetadata.Error.Message}`);
-      }
+      this.logger.debug('收到翻译响应:', { 
+        requestId: response.ResponseMetadata?.RequestId,
+        hasTranslations: !!response.TranslationList?.length 
+      });
 
       if (!response.TranslationList || response.TranslationList.length === 0) {
         throw new InternalServerErrorException('翻译服务返回空结果');
       }
 
       const translatedText = response.TranslationList[0].Translation;
+      this.logger.debug('翻译成功:', { 
+        original: text.substring(0, 50), 
+        translated: translatedText.substring(0, 50) 
+      });
 
       // 保存到缓存
       await this.saveToCache(cacheKey, translatedText);
 
       return translatedText;
     } catch (error) {
-      this.logger.error('翻译请求失败', error);
+      this.logger.error('翻译请求失败:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+      
       if (error instanceof BadRequestException || error instanceof InternalServerErrorException) {
         throw error;
       }
-      throw new InternalServerErrorException('翻译服务不可用');
+      throw new InternalServerErrorException(`翻译服务不可用: ${error.message}`);
     }
   }
 
@@ -132,15 +148,14 @@ export class VolcTranslateService {
     const { text } = detectionDto;
 
     try {
-      const requestBody = {
-        TextList: [text],
-      };
+      this.logger.debug('发送语言检测请求:', { textLength: text.length });
 
-      const response = await this.callVolcApi('LangDetect', requestBody);
+      const response = await this.callDetectApi([text]);
 
-      if (response.ResponseMetadata.Error) {
-        throw new BadRequestException(`语言检测失败: ${response.ResponseMetadata.Error.Message}`);
-      }
+      this.logger.debug('收到语言检测响应:', { 
+        requestId: response.ResponseMetadata?.RequestId,
+        hasDetections: !!response.DetectedLanguageList?.length 
+      });
 
       if (!response.DetectedLanguageList || response.DetectedLanguageList.length === 0) {
         throw new InternalServerErrorException('语言检测服务返回空结果');
@@ -149,98 +164,154 @@ export class VolcTranslateService {
       const detection = response.DetectedLanguageList[0];
       const systemLang = toSystemLanguageCode(detection.Language as any);
 
+      this.logger.debug('语言检测成功:', { 
+        detected: detection.Language, 
+        mapped: systemLang, 
+        confidence: detection.Confidence 
+      });
+
       return {
         language: systemLang,
         confidence: detection.Confidence,
       };
     } catch (error) {
-      this.logger.error('语言检测请求失败', error);
+      this.logger.error('语言检测请求失败:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+      
       if (error instanceof BadRequestException || error instanceof InternalServerErrorException) {
         throw error;
       }
-      throw new InternalServerErrorException('语言检测服务不可用');
+      throw new InternalServerErrorException(`语言检测服务不可用: ${error.message}`);
     }
   }
 
   /**
-   * 调用火山引擎API
+   * 调用翻译API
+   */
+  private async callTranslateApi(textList: string[], sourceLang?: string, targetLang?: string): Promise<VolcApiResponse> {
+    try {
+      // 准备请求体
+      const requestBody: any = {
+        TargetLanguage: toVolcLanguageCode(targetLang! as SupportedLanguage),
+        TextList: textList
+      };
+
+      if (sourceLang) {
+        requestBody.SourceLanguage = toVolcLanguageCode(sourceLang as SupportedLanguage);
+      }
+
+      this.logger.debug('发送翻译API请求:', { 
+        textCount: textList.length,
+        targetLang: requestBody.TargetLanguage,
+        sourceLang: requestBody.SourceLanguage 
+      });
+
+      const response = await this.callVolcApi('TranslateText', requestBody);
+      return response;
+    } catch (error) {
+      this.logger.error('callTranslateApi执行失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 调用语言检测API
+   */
+  private async callDetectApi(textList: string[]): Promise<VolcApiResponse> {
+    try {
+      const requestBody = {
+        TextList: textList
+      };
+
+      this.logger.debug('发送语言检测API请求:', { 
+        textCount: textList.length
+      });
+
+      const response = await this.callVolcApi('LangDetect', requestBody);
+      return response;
+    } catch (error) {
+      this.logger.error('callDetectApi执行失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 使用官方SDK调用火山引擎API
    */
   private async callVolcApi(action: string, body: any): Promise<VolcApiResponse> {
-    const url = `https://${this.host}/`;
-    const method = 'POST';
-    const timestamp = Math.floor(Date.now() / 1000);
-    const bodyStr = JSON.stringify(body);
+    try {
+      // 准备请求参数（按照官方示例格式）
+      const openApiRequestData = {
+        method: "POST" as const,
+        region: this.region,
+        params: {
+          Action: action,
+          Version: '2020-06-01'
+        }
+      };
 
-    // 生成签名
-    const authorization = this.generateSignature(method, '/', bodyStr, timestamp);
+      const credentials = {
+        accessKeyId: this.accessKeyId,
+        secretKey: this.secretKey,
+        sessionToken: ""
+      };
 
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': authorization,
-      'X-Date': new Date(timestamp * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z'),
-    };
+      // 使用官方SDK进行签名
+      const signer = new Signer(openApiRequestData, 'translate');
+      
+      // 使用Query签名方式（按照官方示例）
+      const signedQueryString = signer.getSignUrl(credentials);
 
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: bodyStr,
-    });
+      // 构建完整URL
+      const url = `https://${this.host}/?${signedQueryString}`;
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      this.logger.debug('发送火山引擎API请求:', { 
+        url: url.substring(0, 200) + '...',
+        action,
+        bodyLength: JSON.stringify(body).length
+      });
+
+      // 发送HTTP请求
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      const responseText = await response.text();
+      
+      this.logger.debug('收到火山引擎API响应:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        bodyLength: responseText.length 
+      });
+
+      if (!response.ok) {
+        this.logger.error('火山引擎API请求失败:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          body: responseText.substring(0, 500)
+        });
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${responseText}`);
+      }
+
+      const result = JSON.parse(responseText);
+      
+      // 检查API错误
+      if (result.ResponseMetadata?.Error) {
+        throw new BadRequestException(`火山引擎API错误: ${result.ResponseMetadata.Error.Message} (Code: ${result.ResponseMetadata.Error.Code})`);
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error('callVolcApi执行失败:', error);
+      throw error;
     }
-
-    return response.json();
-  }
-
-  /**
-   * 生成火山引擎API v4签名
-   */
-  private generateSignature(method: string, path: string, body: string, timestamp: number): string {
-    const date = new Date(timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '');
-    const dateTime = new Date(timestamp * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
-
-    // 1. 创建规范请求
-    const canonicalHeaders = [
-      `content-type:application/json`,
-      `host:${this.host}`,
-      `x-date:${dateTime}`,
-    ].join('\n');
-
-    const signedHeaders = 'content-type;host;x-date';
-    const hashedPayload = crypto.SHA256(body).toString(crypto.enc.Hex);
-
-    const canonicalRequest = [
-      method,
-      path,
-      '', // query string
-      canonicalHeaders,
-      '', // 空行
-      signedHeaders,
-      hashedPayload,
-    ].join('\n');
-
-    // 2. 创建待签名字符串
-    const algorithm = 'HMAC-SHA256';
-    const credentialScope = `${date}/${this.region}/${this.service}/request`;
-    const hashedCanonicalRequest = crypto.SHA256(canonicalRequest).toString(crypto.enc.Hex);
-
-    const stringToSign = [
-      algorithm,
-      dateTime,
-      credentialScope,
-      hashedCanonicalRequest,
-    ].join('\n');
-
-    // 3. 计算签名
-    const kDate = crypto.HmacSHA256(date, this.accessKeySecret);
-    const kRegion = crypto.HmacSHA256(this.region, kDate);
-    const kService = crypto.HmacSHA256(this.service, kRegion);
-    const kSigning = crypto.HmacSHA256('request', kService);
-    const signature = crypto.HmacSHA256(stringToSign, kSigning).toString(crypto.enc.Hex);
-
-    // 4. 生成Authorization头
-    return `${algorithm} Credential=${this.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
   }
 
   /**
