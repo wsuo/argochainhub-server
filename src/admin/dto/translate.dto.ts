@@ -1,11 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
-import { SupportedLanguage, getSupportedLanguages } from '../../common/utils/language-mapper';
+import {
+  SupportedLanguage,
+  getSupportedLanguages,
+} from '../../common/utils/language-mapper';
 
 export class TranslateRequestDto {
   @ApiProperty({
     description: '需要翻译的文本',
-    example: '需要翻译的原文'
+    example: '需要翻译的原文',
   })
   @IsString()
   @IsNotEmpty()
@@ -14,7 +17,7 @@ export class TranslateRequestDto {
   @ApiPropertyOptional({
     description: '源语言代码，如果不提供则自动检测',
     example: 'zh-CN',
-    enum: getSupportedLanguages()
+    enum: getSupportedLanguages(),
   })
   @IsOptional()
   @IsString()
@@ -24,7 +27,7 @@ export class TranslateRequestDto {
   @ApiProperty({
     description: '目标语言代码',
     example: 'en',
-    enum: getSupportedLanguages()
+    enum: getSupportedLanguages(),
   })
   @IsString()
   @IsNotEmpty()
@@ -36,8 +39,8 @@ export class TranslateResponseDto {
   @ApiProperty({
     description: '翻译结果',
     example: {
-      translated_text: 'Translated text from the service.'
-    }
+      translated_text: 'Translated text from the service.',
+    },
   })
   data: {
     translated_text: string;
@@ -47,7 +50,7 @@ export class TranslateResponseDto {
 export class LanguageDetectionDto {
   @ApiProperty({
     description: '需要检测语言的文本',
-    example: 'Hello world'
+    example: 'Hello world',
   })
   @IsString()
   @IsNotEmpty()
@@ -59,8 +62,8 @@ export class LanguageDetectionResponseDto {
     description: '语言检测结果',
     example: {
       detected_language: 'en',
-      confidence: 0.99
-    }
+      confidence: 0.99,
+    },
   })
   data: {
     detected_language: SupportedLanguage;

@@ -5,7 +5,7 @@ import { User } from './user.entity';
 export enum NotificationType {
   SYSTEM = 'system',
   INQUIRY_NEW = 'inquiry_new',
-  INQUIRY_QUOTED = 'inquiry_quoted', 
+  INQUIRY_QUOTED = 'inquiry_quoted',
   INQUIRY_CONFIRMED = 'inquiry_confirmed',
   INQUIRY_DECLINED = 'inquiry_declined',
   PRODUCT_APPROVED = 'product_approved',

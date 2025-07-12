@@ -5,7 +5,7 @@ import { Product } from './product.entity';
 
 export enum AttachmentType {
   PRODUCT_IMAGE = 'product_image',
-  COMPANY_CERTIFICATE = 'company_certificate', 
+  COMPANY_CERTIFICATE = 'company_certificate',
   SAMPLE_DOCUMENT = 'sample_document',
   REGISTRATION_DOCUMENT = 'registration_document',
   OTHER = 'other',

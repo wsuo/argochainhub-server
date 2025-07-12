@@ -38,13 +38,13 @@ export class AdminStatsDto {
   @ApiProperty({ description: '订单总数' })
   totalOrders: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '企业类型统计',
     type: [CompanyTypeStatsDto],
   })
   companyTypeStats: CompanyTypeStatsDto[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '询价状态统计',
     type: [InquiryStatusStatsDto],
   })

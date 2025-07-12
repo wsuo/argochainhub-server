@@ -22,7 +22,8 @@ async function bootstrap() {
 
   // CORS配置
   app.enableCors({
-    origin: process.env.NODE_ENV === 'development' ? true : ['http://localhost:3001'],
+    origin:
+      process.env.NODE_ENV === 'development' ? true : ['http://localhost:3001'],
     credentials: true,
   });
 

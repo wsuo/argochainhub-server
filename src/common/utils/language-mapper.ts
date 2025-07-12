@@ -8,27 +8,34 @@ export type VolcLanguageCode = 'zh' | 'en' | 'es';
 
 export const LANGUAGE_MAPPING: Record<SupportedLanguage, VolcLanguageCode> = {
   'zh-CN': 'zh',
-  'en': 'en',
-  'es': 'es',
+  en: 'en',
+  es: 'es',
 };
 
-export const VOLC_TO_SYSTEM_MAPPING: Record<VolcLanguageCode, SupportedLanguage> = {
-  'zh': 'zh-CN',
-  'en': 'en',
-  'es': 'es',
+export const VOLC_TO_SYSTEM_MAPPING: Record<
+  VolcLanguageCode,
+  SupportedLanguage
+> = {
+  zh: 'zh-CN',
+  en: 'en',
+  es: 'es',
 };
 
 /**
  * 将系统语言代码转换为火山引擎语言代码
  */
-export function toVolcLanguageCode(systemLang: SupportedLanguage): VolcLanguageCode {
+export function toVolcLanguageCode(
+  systemLang: SupportedLanguage,
+): VolcLanguageCode {
   return LANGUAGE_MAPPING[systemLang];
 }
 
 /**
  * 将火山引擎语言代码转换为系统语言代码
  */
-export function toSystemLanguageCode(volcLang: VolcLanguageCode): SupportedLanguage {
+export function toSystemLanguageCode(
+  volcLang: VolcLanguageCode,
+): SupportedLanguage {
   return VOLC_TO_SYSTEM_MAPPING[volcLang];
 }
 

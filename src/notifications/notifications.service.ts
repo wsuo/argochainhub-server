@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification, NotificationType, NotificationStatus } from '../entities/notification.entity';
+import {
+  Notification,
+  NotificationType,
+  NotificationStatus,
+} from '../entities/notification.entity';
 import { User } from '../entities/user.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -51,14 +55,14 @@ export class NotificationsService {
       where: { companyId },
     });
 
-    const notifications = users.map(user => 
+    const notifications = users.map((user) =>
       this.notificationRepository.create({
         userId: user.id,
         type,
         title,
         content,
         data,
-      })
+      }),
     );
 
     return this.notificationRepository.save(notifications);

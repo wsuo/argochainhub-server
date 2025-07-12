@@ -1,20 +1,28 @@
-import { registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
+import {
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
+} from 'class-validator';
 import { MultiLangText } from '../../types/multilang';
-import { getSupportedLanguages, isSupportedLanguage } from '../utils/language-mapper';
+import {
+  getSupportedLanguages,
+  isSupportedLanguage,
+} from '../utils/language-mapper';
 
 /**
  * 验证多语言文本字段的装饰器
  * 确保至少包含zh-CN字段且非空，所有提供的语言文本都不为空
  */
 export function IsValidMultiLangText(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidMultiLangText',
       target: object.constructor,
       propertyName: propertyName,
       constraints: [],
       options: {
-        message: 'Multi-language text must contain at least zh-CN field and all provided language texts must be non-empty',
+        message:
+          'Multi-language text must contain at least zh-CN field and all provided language texts must be non-empty',
         ...validationOptions,
       },
       validator: {
@@ -27,7 +35,11 @@ export function IsValidMultiLangText(validationOptions?: ValidationOptions) {
           const multiLangText = value as MultiLangText;
 
           // 检查是否包含zh-CN字段且非空
-          if (!multiLangText['zh-CN'] || typeof multiLangText['zh-CN'] !== 'string' || multiLangText['zh-CN'].trim() === '') {
+          if (
+            !multiLangText['zh-CN'] ||
+            typeof multiLangText['zh-CN'] !== 'string' ||
+            multiLangText['zh-CN'].trim() === ''
+          ) {
             return false;
           }
 
@@ -57,14 +69,15 @@ export function IsValidMultiLangText(validationOptions?: ValidationOptions) {
  * 如果提供了值，则必须符合多语言文本格式
  */
 export function IsOptionalMultiLangText(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isOptionalMultiLangText',
       target: object.constructor,
       propertyName: propertyName,
       constraints: [],
       options: {
-        message: 'Optional multi-language text must be valid format if provided',
+        message:
+          'Optional multi-language text must be valid format if provided',
         ...validationOptions,
       },
       validator: {

@@ -1,9 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Company, CompanyType, CompanyStatus } from '../entities/company.entity';
+import {
+  Company,
+  CompanyType,
+  CompanyStatus,
+} from '../entities/company.entity';
 import { User } from '../entities/user.entity';
-import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
+import {
+  Subscription,
+  SubscriptionStatus,
+} from '../entities/subscription.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
@@ -44,7 +55,7 @@ export class CompaniesService {
 
     // 更新企业信息
     Object.assign(company, updateDto);
-    
+
     return this.companyRepository.save(company);
   }
 
@@ -95,7 +106,7 @@ export class CompaniesService {
     searchDto: SearchCompaniesDto,
   ): Promise<PaginatedResult<Company>> {
     const { search, page = 1, limit = 20 } = searchDto;
-    
+
     const queryBuilder = this.companyRepository
       .createQueryBuilder('company')
       .where('company.type = :type', { type: CompanyType.SUPPLIER })

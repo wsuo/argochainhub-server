@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
+import {
+  Subscription,
+  SubscriptionStatus,
+} from '../entities/subscription.entity';
 import { Inquiry } from '../entities/inquiry.entity';
 import { SampleRequest } from '../entities/sample-request.entity';
 import { RegistrationRequest } from '../entities/registration-request.entity';
@@ -37,7 +40,10 @@ export class QuotaService {
     private readonly productRepository: Repository<Product>,
   ) {}
 
-  async checkQuota(companyId: number, quotaType: QuotaType): Promise<QuotaCheckResult> {
+  async checkQuota(
+    companyId: number,
+    quotaType: QuotaType,
+  ): Promise<QuotaCheckResult> {
     // 获取当前有效订阅
     const activeSubscription = await this.subscriptionRepository.findOne({
       where: {
@@ -80,11 +86,17 @@ export class QuotaService {
         break;
       case QuotaType.SAMPLE_REQUEST:
         limit = specs.sampleRequestsMonthly || 0;
-        currentUsage = await this.getCurrentMonthlyUsage(companyId, 'sample_request');
+        currentUsage = await this.getCurrentMonthlyUsage(
+          companyId,
+          'sample_request',
+        );
         break;
       case QuotaType.REGISTRATION_REQUEST:
         limit = specs.registrationRequestsMonthly || 0;
-        currentUsage = await this.getCurrentMonthlyUsage(companyId, 'registration_request');
+        currentUsage = await this.getCurrentMonthlyUsage(
+          companyId,
+          'registration_request',
+        );
         break;
       case QuotaType.PRODUCT:
         limit = specs.productsLimit || 0;
@@ -115,10 +127,21 @@ export class QuotaService {
     };
   }
 
-  private async getCurrentMonthlyUsage(companyId: number, type: string): Promise<number> {
+  private async getCurrentMonthlyUsage(
+    companyId: number,
+    type: string,
+  ): Promise<number> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     switch (type) {
       case 'inquiry':
@@ -173,9 +196,18 @@ export class QuotaService {
     }
 
     const specs = activeSubscription.plan.specs;
-    const inquiryUsage = await this.getCurrentMonthlyUsage(companyId, 'inquiry');
-    const sampleRequestUsage = await this.getCurrentMonthlyUsage(companyId, 'sample_request');
-    const registrationRequestUsage = await this.getCurrentMonthlyUsage(companyId, 'registration_request');
+    const inquiryUsage = await this.getCurrentMonthlyUsage(
+      companyId,
+      'inquiry',
+    );
+    const sampleRequestUsage = await this.getCurrentMonthlyUsage(
+      companyId,
+      'sample_request',
+    );
+    const registrationRequestUsage = await this.getCurrentMonthlyUsage(
+      companyId,
+      'registration_request',
+    );
     const productUsage = await this.getCurrentProductCount(companyId);
 
     return {
@@ -191,12 +223,18 @@ export class QuotaService {
         sampleRequests: {
           used: sampleRequestUsage,
           limit: specs.sampleRequestsMonthly || 0,
-          remaining: Math.max(0, (specs.sampleRequestsMonthly || 0) - sampleRequestUsage),
+          remaining: Math.max(
+            0,
+            (specs.sampleRequestsMonthly || 0) - sampleRequestUsage,
+          ),
         },
         registrationRequests: {
           used: registrationRequestUsage,
           limit: specs.registrationRequestsMonthly || 0,
-          remaining: Math.max(0, (specs.registrationRequestsMonthly || 0) - registrationRequestUsage),
+          remaining: Math.max(
+            0,
+            (specs.registrationRequestsMonthly || 0) - registrationRequestUsage,
+          ),
         },
         products: {
           used: productUsage,

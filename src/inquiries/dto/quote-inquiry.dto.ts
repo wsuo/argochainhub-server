@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsPositive, IsString, IsObject, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsObject,
+  IsDateString,
+} from 'class-validator';
 
 export class QuoteInquiryDto {
   @ApiProperty({

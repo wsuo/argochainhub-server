@@ -5,9 +5,7 @@ import { StorageService } from './storage.service';
 import tosConfig from '../config/tos.config';
 
 @Module({
-  imports: [
-    ConfigModule.forFeature(tosConfig),
-  ],
+  imports: [ConfigModule.forFeature(tosConfig)],
   providers: [TosService, StorageService],
   exports: [StorageService],
 })

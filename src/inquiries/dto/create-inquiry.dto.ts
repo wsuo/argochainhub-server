@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsPositive, IsString, IsArray, ValidateNested, IsObject, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsArray,
+  ValidateNested,
+  IsObject,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class InquiryItemDto {
@@ -20,7 +29,11 @@ export class InquiryItemDto {
   @IsNotEmpty()
   unit: string;
 
-  @ApiProperty({ example: '25kg/袋装', description: '包装要求', required: false })
+  @ApiProperty({
+    example: '25kg/袋装',
+    description: '包装要求',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   packagingReq?: string;

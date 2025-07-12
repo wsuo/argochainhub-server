@@ -1,11 +1,20 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
-import { Company, CompanyStatus, CompanyType } from '../entities/company.entity';
+import {
+  Company,
+  CompanyStatus,
+  CompanyType,
+} from '../entities/company.entity';
 import { AdminUser } from '../entities/admin-user.entity';
 import { JwtPayload } from './jwt.strategy';
 import { RegisterDto } from './dto/register.dto';
@@ -31,7 +40,9 @@ export class AuthService {
     const { email, password, userName, companyName, companyType } = registerDto;
 
     // 检查邮箱是否已存在
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
@@ -73,7 +84,9 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials or inactive account');
+      throw new UnauthorizedException(
+        'Invalid credentials or inactive account',
+      );
     }
 
     // 验证密码
@@ -167,7 +180,9 @@ export class AuthService {
     });
 
     if (!adminUser) {
-      throw new UnauthorizedException('Invalid admin credentials or inactive account');
+      throw new UnauthorizedException(
+        'Invalid admin credentials or inactive account',
+      );
     }
 
     // 验证密码

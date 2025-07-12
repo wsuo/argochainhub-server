@@ -24,7 +24,10 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
-import { NotificationType, NotificationStatus } from '../entities/notification.entity';
+import {
+  NotificationType,
+  NotificationStatus,
+} from '../entities/notification.entity';
 
 @ApiTags('通知管理')
 @Controller('notifications')

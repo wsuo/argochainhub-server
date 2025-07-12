@@ -1,4 +1,10 @@
-import { IsEnum, IsNumber, IsString, IsOptional, IsObject } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsObject,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { NotificationType } from '../../entities/notification.entity';
 

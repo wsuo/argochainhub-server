@@ -17,8 +17,15 @@ import { UploadsService } from './uploads.service';
       useFactory: async (configService: ConfigService) => ({
         storage: memoryStorage(), // 使用内存存储，然后上传到云存储
         fileFilter: (req, file, callback) => {
-          if (!file.originalname.match(/\.(jpg|jpeg|png|gif|pdf|doc|docx|xls|xlsx)$/)) {
-            return callback(new Error('Only image and document files are allowed!'), false);
+          if (
+            !file.originalname.match(
+              /\.(jpg|jpeg|png|gif|pdf|doc|docx|xls|xlsx)$/,
+            )
+          ) {
+            return callback(
+              new Error('Only image and document files are allowed!'),
+              false,
+            );
           }
           callback(null, true);
         },

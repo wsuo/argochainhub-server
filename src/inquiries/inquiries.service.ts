@@ -1,10 +1,19 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Inquiry, InquiryStatus } from '../entities/inquiry.entity';
 import { InquiryItem } from '../entities/inquiry-item.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
-import { Company, CompanyType, CompanyStatus } from '../entities/company.entity';
+import {
+  Company,
+  CompanyType,
+  CompanyStatus,
+} from '../entities/company.entity';
 import { User } from '../entities/user.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
@@ -25,7 +34,10 @@ export class InquiriesService {
     private readonly companyRepository: Repository<Company>,
   ) {}
 
-  async createInquiry(user: User, createInquiryDto: CreateInquiryDto): Promise<Inquiry> {
+  async createInquiry(
+    user: User,
+    createInquiryDto: CreateInquiryDto,
+  ): Promise<Inquiry> {
     // 验证企业类型
     if (user.company.type !== CompanyType.BUYER) {
       throw new ForbiddenException('Only buyers can create inquiries');
@@ -47,7 +59,7 @@ export class InquiriesService {
     }
 
     // 验证产品并创建快照
-    const productIds = items.map(item => item.productId);
+    const productIds = items.map((item) => item.productId);
     const products = await this.productRepository
       .createQueryBuilder('product')
       .where('product.id IN (:...productIds)', { productIds })
@@ -56,7 +68,9 @@ export class InquiriesService {
       .getMany();
 
     if (products.length !== productIds.length) {
-      throw new BadRequestException('Some products not found or not from this supplier');
+      throw new BadRequestException(
+        'Some products not found or not from this supplier',
+      );
     }
 
     // 生成询价单号
@@ -76,7 +90,7 @@ export class InquiriesService {
 
     // 创建询价项目
     for (const itemDto of items) {
-      const product = products.find(p => p.id === itemDto.productId);
+      const product = products.find((p) => p.id === itemDto.productId);
       if (product) {
         const inquiryItem = this.inquiryItemRepository.create({
           inquiryId: savedInquiry.id,
@@ -104,7 +118,7 @@ export class InquiriesService {
     searchDto: SearchInquiriesDto,
   ): Promise<PaginatedResult<Inquiry>> {
     const { status, page = 1, limit = 20 } = searchDto;
-    
+
     const queryBuilder = this.inquiryRepository
       .createQueryBuilder('inquiry')
       .leftJoinAndSelect('inquiry.buyer', 'buyer')
@@ -113,9 +127,13 @@ export class InquiriesService {
 
     // 根据用户企业类型确定查询条件
     if (user.company.type === CompanyType.BUYER) {
-      queryBuilder.where('inquiry.buyerId = :companyId', { companyId: user.companyId });
+      queryBuilder.where('inquiry.buyerId = :companyId', {
+        companyId: user.companyId,
+      });
     } else if (user.company.type === CompanyType.SUPPLIER) {
-      queryBuilder.where('inquiry.supplierId = :companyId', { companyId: user.companyId });
+      queryBuilder.where('inquiry.supplierId = :companyId', {
+        companyId: user.companyId,
+      });
     } else {
       throw new ForbiddenException('Invalid company type for inquiry access');
     }
@@ -153,14 +171,23 @@ export class InquiriesService {
     }
 
     // 验证访问权限
-    if (inquiry.buyerId !== user.companyId && inquiry.supplierId !== user.companyId) {
-      throw new ForbiddenException('You do not have permission to access this inquiry');
+    if (
+      inquiry.buyerId !== user.companyId &&
+      inquiry.supplierId !== user.companyId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to access this inquiry',
+      );
     }
 
     return inquiry;
   }
 
-  async quoteInquiry(user: User, id: number, quoteDto: QuoteInquiryDto): Promise<Inquiry> {
+  async quoteInquiry(
+    user: User,
+    id: number,
+    quoteDto: QuoteInquiryDto,
+  ): Promise<Inquiry> {
     const inquiry = await this.getInquiryDetail(user, id);
 
     // 验证权限：只有供应商能报价
@@ -170,7 +197,9 @@ export class InquiriesService {
 
     // 验证状态：只有待报价状态可以报价
     if (inquiry.status !== InquiryStatus.PENDING_QUOTE) {
-      throw new BadRequestException(`Cannot quote inquiry with status '${inquiry.status}'`);
+      throw new BadRequestException(
+        `Cannot quote inquiry with status '${inquiry.status}'`,
+      );
     }
 
     // 检查截止日期
@@ -195,26 +224,38 @@ export class InquiriesService {
 
     // 验证状态：只有已报价状态可以确认
     if (inquiry.status !== InquiryStatus.QUOTED) {
-      throw new BadRequestException(`Cannot confirm inquiry with status '${inquiry.status}'`);
+      throw new BadRequestException(
+        `Cannot confirm inquiry with status '${inquiry.status}'`,
+      );
     }
 
     inquiry.status = InquiryStatus.CONFIRMED;
     return this.inquiryRepository.save(inquiry);
   }
 
-  async declineInquiry(user: User, id: number, declineDto: DeclineInquiryDto): Promise<Inquiry> {
+  async declineInquiry(
+    user: User,
+    id: number,
+    declineDto: DeclineInquiryDto,
+  ): Promise<Inquiry> {
     const inquiry = await this.getInquiryDetail(user, id);
 
     // 验证权限
-    const canDecline = inquiry.buyerId === user.companyId || inquiry.supplierId === user.companyId;
+    const canDecline =
+      inquiry.buyerId === user.companyId ||
+      inquiry.supplierId === user.companyId;
     if (!canDecline) {
-      throw new ForbiddenException('You do not have permission to decline this inquiry');
+      throw new ForbiddenException(
+        'You do not have permission to decline this inquiry',
+      );
     }
 
     // 验证状态
     const validStatuses = [InquiryStatus.PENDING_QUOTE, InquiryStatus.QUOTED];
     if (!validStatuses.includes(inquiry.status)) {
-      throw new BadRequestException(`Cannot decline inquiry with status '${inquiry.status}'`);
+      throw new BadRequestException(
+        `Cannot decline inquiry with status '${inquiry.status}'`,
+      );
     }
 
     // 记录拒绝原因到details中
@@ -238,7 +279,9 @@ export class InquiriesService {
 
     // 验证状态：只有待报价状态可以取消
     if (inquiry.status !== InquiryStatus.PENDING_QUOTE) {
-      throw new BadRequestException(`Cannot cancel inquiry with status '${inquiry.status}'`);
+      throw new BadRequestException(
+        `Cannot cancel inquiry with status '${inquiry.status}'`,
+      );
     }
 
     inquiry.status = InquiryStatus.CANCELLED;
@@ -247,7 +290,9 @@ export class InquiriesService {
 
   private generateInquiryNumber(): string {
     const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
     return `INQ${timestamp}${random}`;
   }
 }

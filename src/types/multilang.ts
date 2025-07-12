@@ -1,7 +1,7 @@
 export interface MultiLangText {
   'zh-CN': string;
-  'en': string;
-  'es': string;
+  en: string;
+  es: string;
 }
 
 export type SupportedLanguage = 'zh-CN' | 'en' | 'es';
@@ -15,8 +15,8 @@ export function createMultiLangText(
 ): MultiLangText {
   return {
     'zh-CN': zhCN,
-    'en': en,
-    'es': es,
+    en: en,
+    es: es,
   };
 }
 

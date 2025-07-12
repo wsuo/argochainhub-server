@@ -18,11 +18,9 @@ export class StorageService {
     type: string,
     customKey?: string,
   ): Promise<UploadResult> {
-    const key = customKey || this.tosService.generateFileName(
-      file.originalname,
-      userId,
-      type,
-    );
+    const key =
+      customKey ||
+      this.tosService.generateFileName(file.originalname, userId, type);
 
     const metadata = {
       'original-name': file.originalname,

@@ -6,6 +6,7 @@ import { Product } from '../entities/product.entity';
 import { Inquiry } from '../entities/inquiry.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { Order } from '../entities/order.entity';
+import { Plan } from '../entities/plan.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { VolcTranslateService } from './services/volc-translate.service';
@@ -19,6 +20,7 @@ import { VolcTranslateService } from './services/volc-translate.service';
       Inquiry,
       Subscription,
       Order,
+      Plan,
     ]),
   ],
   controllers: [AdminController],

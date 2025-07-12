@@ -86,7 +86,12 @@ export class UploadsController {
     @Query() paginationDto: PaginationDto,
     @Query('relatedId', ParseIntPipe) relatedId?: number,
   ) {
-    return this.uploadsService.getFilesByType(user, type, relatedId, paginationDto);
+    return this.uploadsService.getFilesByType(
+      user,
+      type,
+      relatedId,
+      paginationDto,
+    );
   }
 
   @Get(':id')
@@ -131,8 +136,11 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    const { buffer, attachment } = await this.uploadsService.getFileStream(user, id);
-    
+    const { buffer, attachment } = await this.uploadsService.getFileStream(
+      user,
+      id,
+    );
+
     res.set({
       'Content-Type': attachment.mimetype,
       'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.originalName)}"`,
@@ -153,8 +161,11 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    const { buffer, attachment } = await this.uploadsService.getFileStream(user, id);
-    
+    const { buffer, attachment } = await this.uploadsService.getFileStream(
+      user,
+      id,
+    );
+
     // 只允许预览图片文件
     if (!attachment.mimetype.startsWith('image/')) {
       throw new BadRequestException('File type not supported for preview');

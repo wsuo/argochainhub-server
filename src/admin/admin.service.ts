@@ -4,18 +4,39 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Company, CompanyStatus, CompanyType } from '../entities/company.entity';
+import { Repository, LessThan } from 'typeorm';
+import {
+  Company,
+  CompanyStatus,
+  CompanyType,
+} from '../entities/company.entity';
 import { User } from '../entities/user.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
 import { Inquiry, InquiryStatus } from '../entities/inquiry.entity';
-import { Subscription } from '../entities/subscription.entity';
-import { Order } from '../entities/order.entity';
+import {
+  Subscription,
+  SubscriptionStatus,
+  SubscriptionType,
+} from '../entities/subscription.entity';
+import { Order, OrderStatus } from '../entities/order.entity';
+import { Plan } from '../entities/plan.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { ReviewCompanyDto } from './dto/review-company.dto';
 import { ReviewProductDto } from './dto/review-product.dto';
 import { AdminStatsDto } from './dto/admin-stats.dto';
+import {
+  DashboardChartsDto,
+  UserGrowthDataDto,
+  CompanyRegistrationDataDto,
+  RevenueDataDto,
+  InquiryTrendDataDto,
+  ProductCategoryStatsDto,
+} from './dto/dashboard-charts.dto';
 import { TranslateRequestDto, LanguageDetectionDto } from './dto/translate.dto';
+import { CreateSubscriptionDto } from './dto/subscription-management.dto';
+import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
+import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
+import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../common/utils/language-mapper';
 
@@ -34,8 +55,233 @@ export class AdminService {
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Plan)
+    private readonly planRepository: Repository<Plan>,
     private readonly volcTranslateService: VolcTranslateService,
   ) {}
+
+  // 获取仪表盘图表数据
+  async getDashboardCharts(): Promise<DashboardChartsDto> {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // 用户增长数据
+    const userGrowthData = await this.getUserGrowthData(thirtyDaysAgo, now);
+
+    // 企业注册数据
+    const companyRegistrationData = await this.getCompanyRegistrationData(
+      thirtyDaysAgo,
+      now,
+    );
+
+    // 收入数据
+    const revenueData = await this.getRevenueData(thirtyDaysAgo, now);
+
+    // 询价趋势数据
+    const inquiryTrendData = await this.getInquiryTrendData(thirtyDaysAgo, now);
+
+    // 产品分类统计
+    const productCategoryStats = await this.getProductCategoryStats();
+
+    return {
+      userGrowth: userGrowthData,
+      companyRegistration: companyRegistrationData,
+      revenue: revenueData,
+      inquiryTrend: inquiryTrendData,
+      productCategoryStats: productCategoryStats,
+    };
+  }
+
+  private async getUserGrowthData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<UserGrowthDataDto[]> {
+    const data = await this.userRepository
+      .createQueryBuilder('user')
+      .select('DATE(user.createdAt)', 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('user.createdAt >= :startDate', { startDate })
+      .andWhere('user.createdAt <= :endDate', { endDate })
+      .groupBy('DATE(user.createdAt)')
+      .orderBy('DATE(user.createdAt)', 'ASC')
+      .getRawMany();
+
+    const result: UserGrowthDataDto[] = [];
+    let totalUsers = 0;
+
+    // 获取起始日期之前的用户总数
+    const previousUsers = await this.userRepository.count({
+      where: { createdAt: LessThan(startDate) },
+    });
+    totalUsers = previousUsers;
+
+    // 生成连续日期数据
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const dateStr = current.toISOString().split('T')[0];
+      const dayData = data.find((d: any) => d.date === dateStr);
+      const newUsers = dayData ? parseInt(dayData.count as string) : 0;
+      totalUsers += newUsers;
+
+      result.push({
+        date: dateStr,
+        newUsers,
+        totalUsers,
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private async getCompanyRegistrationData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<CompanyRegistrationDataDto[]> {
+    const data = await this.companyRepository
+      .createQueryBuilder('company')
+      .select('DATE(company.createdAt)', 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('company.createdAt >= :startDate', { startDate })
+      .andWhere('company.createdAt <= :endDate', { endDate })
+      .groupBy('DATE(company.createdAt)')
+      .orderBy('DATE(company.createdAt)', 'ASC')
+      .getRawMany();
+
+    const result: CompanyRegistrationDataDto[] = [];
+    let totalCompanies = 0;
+
+    // 获取起始日期之前的企业总数
+    const previousCompanies = await this.companyRepository.count({
+      where: { createdAt: LessThan(startDate) },
+    });
+    totalCompanies = previousCompanies;
+
+    // 生成连续日期数据
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const dateStr = current.toISOString().split('T')[0];
+      const dayData = data.find((d) => d.date === dateStr);
+      const newCompanies = dayData ? parseInt(dayData.count) : 0;
+      totalCompanies += newCompanies;
+
+      result.push({
+        date: dateStr,
+        newCompanies,
+        totalCompanies,
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private async getRevenueData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<RevenueDataDto[]> {
+    const data = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('DATE(order.createdAt)', 'date')
+      .addSelect('SUM(order.amount)', 'revenue')
+      .addSelect('COUNT(*)', 'orderCount')
+      .where('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
+      .andWhere('order.status = :status', { status: 'completed' })
+      .groupBy('DATE(order.createdAt)')
+      .orderBy('DATE(order.createdAt)', 'ASC')
+      .getRawMany();
+
+    const result: RevenueDataDto[] = [];
+    const current = new Date(startDate);
+
+    while (current <= endDate) {
+      const dateStr = current.toISOString().split('T')[0];
+      const dayData = data.find((d) => d.date === dateStr);
+
+      result.push({
+        date: dateStr,
+        revenue: dayData ? parseFloat(dayData.revenue) || 0 : 0,
+        orderCount: dayData ? parseInt(dayData.orderCount) : 0,
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private async getInquiryTrendData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<InquiryTrendDataDto[]> {
+    const inquiryData = await this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .select('DATE(inquiry.createdAt)', 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('inquiry.createdAt >= :startDate', { startDate })
+      .andWhere('inquiry.createdAt <= :endDate', { endDate })
+      .groupBy('DATE(inquiry.createdAt)')
+      .orderBy('DATE(inquiry.createdAt)', 'ASC')
+      .getRawMany();
+
+    const matchedData = await this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .select('DATE(inquiry.updatedAt)', 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('inquiry.updatedAt >= :startDate', { startDate })
+      .andWhere('inquiry.updatedAt <= :endDate', { endDate })
+      .andWhere('inquiry.status = :status', { status: InquiryStatus.CONFIRMED })
+      .groupBy('DATE(inquiry.updatedAt)')
+      .orderBy('DATE(inquiry.updatedAt)', 'ASC')
+      .getRawMany();
+
+    const result: InquiryTrendDataDto[] = [];
+    const current = new Date(startDate);
+
+    while (current <= endDate) {
+      const dateStr = current.toISOString().split('T')[0];
+      const inquiryDayData = inquiryData.find((d) => d.date === dateStr);
+      const matchedDayData = matchedData.find((d) => d.date === dateStr);
+
+      result.push({
+        date: dateStr,
+        inquiryCount: inquiryDayData ? parseInt(inquiryDayData.count) : 0,
+        matchedCount: matchedDayData ? parseInt(matchedDayData.count) : 0,
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private async getProductCategoryStats(): Promise<ProductCategoryStatsDto[]> {
+    const data = await this.productRepository
+      .createQueryBuilder('product')
+      .select('product.category', 'category')
+      .addSelect('COUNT(*)', 'count')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .groupBy('product.category')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    const totalProducts = data.reduce(
+      (sum, item) => sum + parseInt(item.count),
+      0,
+    );
+
+    return data.map((item) => ({
+      category: item.category,
+      count: parseInt(item.count),
+      percentage:
+        totalProducts > 0
+          ? Math.round((parseInt(item.count) / totalProducts) * 100 * 100) / 100
+          : 0,
+    }));
+  }
 
   // 获取管理统计数据
   async getStats(): Promise<AdminStatsDto> {
@@ -85,11 +331,11 @@ export class AdminService {
       pendingProducts,
       totalInquiries,
       totalOrders,
-      companyTypeStats: companyTypeStats.map(item => ({
+      companyTypeStats: companyTypeStats.map((item) => ({
         type: item.type,
         count: parseInt(item.count),
       })),
-      inquiryStatusStats: inquiryStatusStats.map(item => ({
+      inquiryStatusStats: inquiryStatusStats.map((item) => ({
         status: item.status,
         count: parseInt(item.count),
       })),
@@ -149,9 +395,9 @@ export class AdminService {
 
   // 获取所有企业列表
   async getAllCompanies(
-    paginationDto: PaginationDto & { 
-      status?: CompanyStatus; 
-      type?: CompanyType; 
+    paginationDto: PaginationDto & {
+      status?: CompanyStatus;
+      type?: CompanyType;
       search?: string;
     },
   ): Promise<PaginatedResult<Company>> {
@@ -351,6 +597,20 @@ export class AdminService {
     return this.companyRepository.save(company);
   }
 
+  // 获取企业详情
+  async getCompanyById(companyId: number): Promise<Company> {
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+      relations: ['users', 'subscriptions', 'subscriptions.plan'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    return company;
+  }
+
   // 禁用/启用产品
   async toggleProductStatus(productId: number): Promise<Product> {
     const product = await this.productRepository.findOne({
@@ -373,13 +633,330 @@ export class AdminService {
     return this.productRepository.save(product);
   }
 
+  // 获取产品详情
+  async getProductById(productId: number): Promise<Product> {
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+      relations: ['supplier', 'inquiryItems', 'inquiryItems.inquiry'],
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  // 获取用户详情
+  async getUserById(userId: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['company', 'orders', 'inquiries'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
   // 翻译文本
   async translateText(translateDto: TranslateRequestDto): Promise<string> {
     return this.volcTranslateService.translateText(translateDto);
   }
 
   // 检测语言
-  async detectLanguage(detectionDto: LanguageDetectionDto): Promise<{ language: SupportedLanguage; confidence: number }> {
+  async detectLanguage(
+    detectionDto: LanguageDetectionDto,
+  ): Promise<{ language: SupportedLanguage; confidence: number }> {
     return this.volcTranslateService.detectLanguage(detectionDto);
+  }
+
+  // 订阅管理
+  async getCompanySubscriptions(
+    companyId: number,
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResult<Subscription>> {
+    const { page = 1, limit = 20 } = paginationDto;
+
+    // 检查企业是否存在
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const [subscriptions, total] =
+      await this.subscriptionRepository.findAndCount({
+        where: { companyId },
+        relations: ['plan', 'order'],
+        skip: (page - 1) * limit,
+        take: limit,
+        order: { createdAt: 'DESC' },
+      });
+
+    return {
+      data: subscriptions,
+      meta: {
+        totalItems: total,
+        itemCount: subscriptions.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async createSubscriptionForCompany(
+    companyId: number,
+    createDto: CreateSubscriptionDto,
+  ): Promise<Subscription> {
+    // 检查企业是否存在
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    // 检查计划是否存在
+    const plan = await this.planRepository.findOne({
+      where: { id: createDto.planId },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    // 计算订阅日期
+    const startDate = createDto.startDate || new Date();
+    const endDate = new Date(
+      startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000,
+    );
+
+    // 创建订阅
+    const subscription = this.subscriptionRepository.create({
+      companyId,
+      planId: createDto.planId,
+      startDate,
+      endDate,
+      type: SubscriptionType.GIFT, // 管理员手动添加的都是赠送类型
+      status: SubscriptionStatus.ACTIVE,
+    });
+
+    return this.subscriptionRepository.save(subscription);
+  }
+
+  async cancelSubscription(subscriptionId: number): Promise<Subscription> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id: subscriptionId },
+      relations: ['plan'],
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    if (subscription.status === SubscriptionStatus.CANCELLED) {
+      throw new BadRequestException('Subscription already cancelled');
+    }
+
+    subscription.status = SubscriptionStatus.CANCELLED;
+    return this.subscriptionRepository.save(subscription);
+  }
+
+  // 订单管理
+  async getAllOrders(
+    paginationDto: PaginationDto & {
+      status?: OrderStatus;
+      search?: string;
+    },
+  ): Promise<PaginatedResult<Order>> {
+    const { page = 1, limit = 20, status, search } = paginationDto;
+
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.company', 'company')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('order.plan', 'plan');
+
+    if (status) {
+      queryBuilder.andWhere('order.status = :status', { status });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(order.orderNo LIKE :search OR company.name LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [orders, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('order.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: orders,
+      meta: {
+        totalItems: total,
+        itemCount: orders.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async getOrderById(orderId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['company', 'user', 'plan', 'subscriptions'],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
+
+  // 会员计划管理
+  async getAllPlans(
+    paginationDto: PaginationDto & {
+      includeInactive?: boolean;
+    },
+  ): Promise<PaginatedResult<Plan>> {
+    const { page = 1, limit = 20, includeInactive = false } = paginationDto;
+
+    const queryBuilder = this.planRepository.createQueryBuilder('plan');
+
+    if (!includeInactive) {
+      queryBuilder.where('plan.isActive = :isActive', { isActive: true });
+    }
+
+    const [plans, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('plan.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return {
+      data: plans,
+      meta: {
+        totalItems: total,
+        itemCount: plans.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
+  }
+
+  async createPlan(createPlanDto: CreatePlanDto): Promise<Plan> {
+    const plan = this.planRepository.create({
+      ...createPlanDto,
+      isActive: createPlanDto.isActive ?? true,
+    });
+
+    return this.planRepository.save(plan);
+  }
+
+  async updatePlan(
+    planId: number,
+    updatePlanDto: UpdatePlanDto,
+  ): Promise<Plan> {
+    const plan = await this.planRepository.findOne({
+      where: { id: planId },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    Object.assign(plan, updatePlanDto);
+    return this.planRepository.save(plan);
+  }
+
+  async togglePlanStatus(planId: number): Promise<Plan> {
+    const plan = await this.planRepository.findOne({
+      where: { id: planId },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    plan.isActive = !plan.isActive;
+    return this.planRepository.save(plan);
+  }
+
+  // 企业CRUD管理
+  async createCompany(createCompanyDto: CreateCompanyDto): Promise<Company> {
+    const company = this.companyRepository.create(createCompanyDto);
+    return this.companyRepository.save(company);
+  }
+
+  async updateCompany(
+    companyId: number,
+    updateCompanyDto: UpdateCompanyDto,
+  ): Promise<Company> {
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    Object.assign(company, updateCompanyDto);
+    return this.companyRepository.save(company);
+  }
+
+  // 产品CRUD管理
+  async createProduct(createProductDto: CreateProductDto): Promise<Product> {
+    // 检查供应商是否存在
+    const supplier = await this.companyRepository.findOne({
+      where: { id: createProductDto.supplierId },
+    });
+
+    if (!supplier) {
+      throw new NotFoundException('Supplier company not found');
+    }
+
+    const product = this.productRepository.create(createProductDto);
+    return this.productRepository.save(product);
+  }
+
+  async updateProduct(
+    productId: number,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    // 如果更新了供应商ID，需要验证供应商是否存在
+    if (updateProductDto.supplierId) {
+      const supplier = await this.companyRepository.findOne({
+        where: { id: updateProductDto.supplierId },
+      });
+
+      if (!supplier) {
+        throw new NotFoundException('Supplier company not found');
+      }
+    }
+
+    Object.assign(product, updateProductDto);
+    return this.productRepository.save(product);
   }
 }

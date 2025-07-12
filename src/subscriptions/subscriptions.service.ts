@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Subscription, SubscriptionStatus, SubscriptionType } from '../entities/subscription.entity';
+import {
+  Subscription,
+  SubscriptionStatus,
+  SubscriptionType,
+} from '../entities/subscription.entity';
 import { Plan } from '../entities/plan.entity';
 import { User } from '../entities/user.entity';
 import { QuotaService } from '../quota/quota.service';

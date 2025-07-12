@@ -37,7 +37,7 @@ export class TosService {
 
   constructor(private readonly configService: ConfigService) {
     this.config = this.configService.get<TosConfig>('tos')!;
-    
+
     this.tosClient = new TosClient({
       region: this.config.region,
       endpoint: this.config.endpoint,
@@ -151,16 +151,18 @@ export class TosService {
     if (this.config.cdnDomain) {
       return `${this.config.cdnDomain}/${key}`;
     }
-    
+
     // 构建标准的TOS访问URL
     return `${this.config.endpoint}/${this.config.bucket}/${key}`;
   }
 
   generateFileName(originalName: string, userId: number, type: string): string {
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
     const ext = originalName.split('.').pop() || '';
-    
+
     return `${type}/${userId}/${timestamp}-${random}.${ext}`;
   }
 

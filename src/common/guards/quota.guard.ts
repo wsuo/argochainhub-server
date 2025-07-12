@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { QUOTA_TYPE_KEY } from '../decorators/quota-type.decorator';
 import { QuotaService, QuotaType } from '../../quota/quota.service';
@@ -21,7 +26,7 @@ export class QuotaGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    
+
     if (!user || !user.company) {
       throw new ForbiddenException('User or company not found');
     }

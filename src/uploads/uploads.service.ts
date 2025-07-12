@@ -111,9 +111,7 @@ export class UploadsService {
       };
     }
 
-    return queryBuilder
-      .orderBy('attachment.createdAt', 'DESC')
-      .getMany();
+    return queryBuilder.orderBy('attachment.createdAt', 'DESC').getMany();
   }
 
   async getFileById(user: User, id: number): Promise<Attachment> {
@@ -151,21 +149,29 @@ export class UploadsService {
     await this.attachmentRepository.remove(attachment);
   }
 
-  async getFileStream(user: User, id: number): Promise<{
+  async getFileStream(
+    user: User,
+    id: number,
+  ): Promise<{
     buffer: Buffer;
     attachment: Attachment;
   }> {
     const attachment = await this.getFileById(user, id);
-    
+
     try {
-      const { buffer } = await this.storageService.getFile(attachment.storageKey);
+      const { buffer } = await this.storageService.getFile(
+        attachment.storageKey,
+      );
       return { buffer, attachment };
     } catch (error) {
       throw new NotFoundException('File not found in storage');
     }
   }
 
-  private async checkFileAccess(user: User, attachment: Attachment): Promise<void> {
+  private async checkFileAccess(
+    user: User,
+    attachment: Attachment,
+  ): Promise<void> {
     switch (attachment.type) {
       case AttachmentType.COMPANY_CERTIFICATE:
         // 企业证书只能访问自己公司的

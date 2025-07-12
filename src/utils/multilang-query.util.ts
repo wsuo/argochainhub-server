@@ -37,8 +37,8 @@ export class MultiLangQueryUtil {
       // 搜索所有语言
       qb.andWhere(
         `(JSON_UNQUOTE(JSON_EXTRACT(${alias}.${fieldName}, '$."zh-CN"')) LIKE :${paramName} OR ` +
-        `JSON_UNQUOTE(JSON_EXTRACT(${alias}.${fieldName}, '$."en"')) LIKE :${paramName} OR ` +
-        `JSON_UNQUOTE(JSON_EXTRACT(${alias}.${fieldName}, '$."es"')) LIKE :${paramName})`,
+          `JSON_UNQUOTE(JSON_EXTRACT(${alias}.${fieldName}, '$."en"')) LIKE :${paramName} OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(${alias}.${fieldName}, '$."es"')) LIKE :${paramName})`,
         { [paramName]: `%${searchTerm}%` },
       );
     }
@@ -62,7 +62,7 @@ export class MultiLangQueryUtil {
     entityAlias?: string,
   ): SelectQueryBuilder<T> {
     const alias = entityAlias || qb.alias;
-    
+
     qb.orderBy(
       `JSON_UNQUOTE(JSON_EXTRACT(${alias}.${fieldName}, '$.${language}'))`,
       order,

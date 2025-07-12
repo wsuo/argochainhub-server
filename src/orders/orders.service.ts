@@ -82,7 +82,9 @@ export class OrdersService {
 
   private generateOrderNumber(): string {
     const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
     return `ORD${timestamp}${random}`;
   }
 

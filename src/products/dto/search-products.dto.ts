@@ -14,10 +14,10 @@ export class SearchProductsDto extends PaginationDto {
   @IsString()
   category?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: '搜索语言',
     enum: ['zh-CN', 'en', 'es'],
-    example: 'zh-CN'
+    example: 'zh-CN',
   })
   @IsOptional()
   @IsEnum(['zh-CN', 'en', 'es'])
