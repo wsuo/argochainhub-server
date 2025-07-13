@@ -184,6 +184,11 @@ export class DictionaryItemQueryDto extends PaginationDto {
   @IsOptional()
   code?: string;
 
+  @ApiPropertyOptional({ description: '通用搜索（搜索代码和名称）' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
   @ApiPropertyOptional({ description: '是否激活' })
   @IsBoolean()
   @IsOptional()

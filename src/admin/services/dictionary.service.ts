@@ -160,7 +160,7 @@ export class DictionaryService {
     categoryCode: string,
     queryDto: DictionaryItemQueryDto,
   ): Promise<PaginatedResult<DictionaryItem>> {
-    const { page = 1, limit = 20, code, isActive, isSystem, parentId } = queryDto;
+    const { page = 1, limit = 20, code, search, isActive, isSystem, parentId } = queryDto;
 
     // 首先获取分类
     const category = await this.getCategoryByCode(categoryCode);
@@ -173,6 +173,18 @@ export class DictionaryService {
 
     if (code) {
       queryBuilder.andWhere('item.code LIKE :code', { code: `%${code}%` });
+    }
+
+    // 通用搜索：搜索代码和名称
+    if (search) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('item.code LIKE :search', { search: `%${search}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(item.name, "$.zh-CN")) LIKE :search', { search: `%${search}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(item.name, "$.en")) LIKE :search', { search: `%${search}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(item.name, "$.es")) LIKE :search', { search: `%${search}%` });
+        })
+      );
     }
 
     if (isActive !== undefined) {
