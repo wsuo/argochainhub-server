@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { TimezoneInterceptor } from './common/interceptors/timezone.interceptor';
 
 // 设置应用程序时区为东八区
 process.env.TZ = 'Asia/Shanghai';
@@ -10,6 +11,9 @@ process.env.TZ = 'Asia/Shanghai';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // 全局时区转换拦截器
+  app.useGlobalInterceptors(new TimezoneInterceptor());
 
   // 全局验证管道
   app.useGlobalPipes(
