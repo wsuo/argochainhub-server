@@ -46,7 +46,28 @@ export class UploadsController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: '文件上传',
-    type: UploadFileDto,
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: '上传的文件',
+        },
+        type: {
+          type: 'string',
+          enum: Object.values(AttachmentType),
+          description: '文件类型',
+          example: AttachmentType.PRODUCT_IMAGE,
+        },
+        relatedId: {
+          type: 'number',
+          description: '关联ID（如产品ID、公司ID等）',
+          example: 123,
+        },
+      },
+      required: ['file', 'type'],
+    },
   })
   @ApiResponse({ status: 201, description: '上传成功' })
   @ApiResponse({ status: 400, description: '文件格式不支持或文件过大' })

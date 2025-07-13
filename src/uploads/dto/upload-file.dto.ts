@@ -5,13 +5,6 @@ import { AttachmentType } from '../../entities/attachment.entity';
 
 export class UploadFileDto {
   @ApiProperty({
-    description: '文件',
-    type: 'string',
-    format: 'binary',
-  })
-  file: any;
-
-  @ApiProperty({
     description: '文件类型',
     enum: AttachmentType,
     example: AttachmentType.PRODUCT_IMAGE,
