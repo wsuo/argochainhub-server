@@ -152,22 +152,38 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
-  async getProfile(user: User) {
+  async getProfile(user: User | AdminUser) {
+    // 检查是否为管理员用户
+    if ('username' in user && !('email' in user)) {
+      // AdminUser 类型
+      const adminUser = user as AdminUser;
+      return {
+        id: adminUser.id,
+        username: adminUser.username,
+        role: adminUser.role,
+        lastLoginAt: adminUser.lastLoginAt,
+        type: 'admin',
+      };
+    }
+
+    // 普通用户类型
+    const regularUser = user as User;
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      lastLoginAt: user.lastLoginAt,
-      company: {
-        id: user.company.id,
-        name: user.company.name,
-        type: user.company.type,
-        status: user.company.status,
-        profile: user.company.profile,
-        rating: user.company.rating,
-        isTop100: user.company.isTop100,
-      },
+      id: regularUser.id,
+      email: regularUser.email,
+      name: regularUser.name,
+      role: regularUser.role,
+      lastLoginAt: regularUser.lastLoginAt,
+      type: 'user',
+      company: regularUser.company ? {
+        id: regularUser.company.id,
+        name: regularUser.company.name,
+        type: regularUser.company.type,
+        status: regularUser.company.status,
+        profile: regularUser.company.profile,
+        rating: regularUser.company.rating,
+        isTop100: regularUser.company.isTop100,
+      } : null,
     };
   }
 
