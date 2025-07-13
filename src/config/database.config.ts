@@ -13,7 +13,7 @@ export default registerAs(
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     synchronize: process.env.NODE_ENV === 'development',
     logging: process.env.NODE_ENV === 'development',
-    timezone: '+00:00',
+    timezone: '+08:00',
     charset: 'utf8mb4',
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
     migrationsRun: false,
