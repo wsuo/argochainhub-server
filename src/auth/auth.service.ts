@@ -37,7 +37,24 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, password, userName, companyName, companyType } = registerDto;
+    const { 
+      email, 
+      password, 
+      userName, 
+      companyName, 
+      companyType,
+      country,
+      businessCategories,
+      businessScope,
+      companySize,
+      mainProducts,
+      mainSuppliers,
+      annualImportExportValue,
+      registrationNumber,
+      taxNumber,
+      businessLicenseUrl,
+      companyPhotosUrls
+    } = registerDto;
 
     // 检查邮箱是否已存在
     const existingUser = await this.userRepository.findOne({
@@ -50,11 +67,22 @@ export class AuthService {
     // 哈希密码
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 创建企业 - 使用用户提供的多语言企业名称
+    // 创建企业 - 使用用户提供的多语言企业名称和详细信息
     const company = this.companyRepository.create({
       name: companyName,
       type: companyType,
       status: CompanyStatus.PENDING_REVIEW,
+      country,
+      businessCategories,
+      businessScope,
+      companySize,
+      mainProducts,
+      mainSuppliers,
+      annualImportExportValue,
+      registrationNumber,
+      taxNumber,
+      businessLicenseUrl,
+      companyPhotosUrls,
     });
     const savedCompany = await this.companyRepository.save(company);
 
@@ -183,6 +211,17 @@ export class AuthService {
         profile: regularUser.company.profile,
         rating: regularUser.company.rating,
         isTop100: regularUser.company.isTop100,
+        country: regularUser.company.country,
+        businessCategories: regularUser.company.businessCategories,
+        businessScope: regularUser.company.businessScope,
+        companySize: regularUser.company.companySize,
+        mainProducts: regularUser.company.mainProducts,
+        mainSuppliers: regularUser.company.mainSuppliers,
+        annualImportExportValue: regularUser.company.annualImportExportValue,
+        registrationNumber: regularUser.company.registrationNumber,
+        taxNumber: regularUser.company.taxNumber,
+        businessLicenseUrl: regularUser.company.businessLicenseUrl,
+        companyPhotosUrls: regularUser.company.companyPhotosUrls,
       } : null,
     };
   }

@@ -19,6 +19,14 @@ export enum CompanyStatus {
   DISABLED = 'disabled',
 }
 
+export enum CompanySize {
+  STARTUP = 'startup',          // 初创企业 (1-10人)
+  SMALL = 'small',              // 小型企业 (11-50人)
+  MEDIUM = 'medium',            // 中型企业 (51-200人)
+  LARGE = 'large',              // 大型企业 (201-1000人)
+  ENTERPRISE = 'enterprise',    // 大型集团 (1000+人)
+}
+
 @Entity('companies')
 export class Company extends BaseEntity {
   @Column('json')
@@ -37,6 +45,7 @@ export class Company extends BaseEntity {
   })
   status: CompanyStatus;
 
+  // 基础档案信息
   @Column('json', { nullable: true })
   profile?: {
     description?: MultiLangText;
@@ -51,6 +60,65 @@ export class Company extends BaseEntity {
 
   @Column({ default: false })
   isTop100: boolean;
+
+  // 新增详细信息字段
+  @Column({ type: 'varchar', length: 10, nullable: true, comment: '国家代码' })
+  country?: string;
+
+  @Column('json', { nullable: true, comment: '业务类别（多个）' })
+  businessCategories?: string[];
+
+  @Column('json', { nullable: true, comment: '业务范围描述' })
+  businessScope?: MultiLangText;
+
+  @Column({ 
+    type: 'enum', 
+    enum: CompanySize, 
+    nullable: true, 
+    comment: '公司规模' 
+  })
+  companySize?: CompanySize;
+
+  @Column('json', { nullable: true, comment: '主要产品/采购产品' })
+  mainProducts?: MultiLangText;
+
+  @Column('json', { nullable: true, comment: '主要供应商（采购商填写）' })
+  mainSuppliers?: MultiLangText;
+
+  @Column('decimal', { 
+    precision: 15, 
+    scale: 2, 
+    nullable: true, 
+    comment: '年进口/出口额（美元）' 
+  })
+  annualImportExportValue?: number;
+
+  @Column({ 
+    type: 'varchar', 
+    length: 100, 
+    nullable: true, 
+    comment: '注册证号' 
+  })
+  registrationNumber?: string;
+
+  @Column({ 
+    type: 'varchar', 
+    length: 100, 
+    nullable: true, 
+    comment: '税号' 
+  })
+  taxNumber?: string;
+
+  @Column({ 
+    type: 'varchar', 
+    length: 500, 
+    nullable: true, 
+    comment: '营业执照图片地址' 
+  })
+  businessLicenseUrl?: string;
+
+  @Column('json', { nullable: true, comment: '公司照片地址列表' })
+  companyPhotosUrls?: string[];
 
   // 关联关系
   @OneToMany(() => User, (user) => user.company)
