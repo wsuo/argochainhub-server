@@ -62,6 +62,9 @@ export class Company extends BaseEntity {
   isTop100: boolean;
 
   // 新增详细信息字段
+  @Column({ type: 'varchar', length: 100, nullable: true, comment: '企业邮箱' })
+  email?: string;
+
   @Column({ type: 'varchar', length: 10, nullable: true, comment: '国家代码' })
   country?: string;
 

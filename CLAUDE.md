@@ -3,3 +3,17 @@
 如果接口出现后端内部错误，不要只给前端返回 ‘Internal server error’，要说明具体原因，中文展示友好的错误原因。
 
 如果在业务开发的过程中，遇到新的枚举值，请你首先检查数据库的字典管理中有没有定义，如果没有，需要定义新的字典，并为其增加字典值，必须和项目中定义的枚举值保持一致，同时需要在完成任务后说明新增的字典。
+
+# 数据库配置
+DB_HOST=100.72.60.117
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=root
+DB_DATABASE=argochainhub
+
+# 获取Token
+/api/v1/auth/admin/login
+{
+  "username": "superadmin",
+  "password": "Admin123!"
+}
