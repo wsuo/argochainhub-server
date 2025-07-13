@@ -180,9 +180,7 @@ export class DictionaryService {
       queryBuilder.andWhere(
         new Brackets((qb) => {
           qb.where('item.code LIKE :search', { search: `%${search}%` })
-            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(item.name, "$.zh-CN")) LIKE :search', { search: `%${search}%` })
-            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(item.name, "$.en")) LIKE :search', { search: `%${search}%` })
-            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(item.name, "$.es")) LIKE :search', { search: `%${search}%` });
+            .orWhere('CAST(item.name AS CHAR) LIKE :searchName', { searchName: `%${search}%` });
         })
       );
     }
