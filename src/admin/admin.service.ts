@@ -452,7 +452,12 @@ export class AdminService {
       queryBuilder.andWhere(
         new Brackets((qb) => {
           // 使用多语言搜索工具搜索企业名称
-          MultiLangQueryUtil.addMultiLangSearch(qb, 'name', search, undefined, 'company');
+          qb.andWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."zh-CN"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."en"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."es"')) LIKE :nameSearch)`,
+            { nameSearch: `%${search}%` },
+          );
           // 同时搜索用户邮箱
           qb.orWhere('users.email LIKE :emailSearch', { emailSearch: `%${search}%` });
         }),
