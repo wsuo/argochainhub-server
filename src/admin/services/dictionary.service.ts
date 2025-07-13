@@ -35,8 +35,7 @@ export class DictionaryService {
     const { page = 1, limit = 20, code, isActive, isSystem } = queryDto;
 
     const queryBuilder = this.dictionaryCategoryRepository
-      .createQueryBuilder('category')
-      .leftJoinAndSelect('category.items', 'items', 'items.isActive = :itemsActive', { itemsActive: true });
+      .createQueryBuilder('category');
 
     if (code) {
       queryBuilder.andWhere('category.code LIKE :code', { code: `%${code}%` });
@@ -57,8 +56,25 @@ export class DictionaryService {
       .addOrderBy('category.createdAt', 'DESC')
       .getManyAndCount();
 
+    // 为每个分类添加字典项数量
+    const categoriesWithItemCount = await Promise.all(
+      categories.map(async (category) => {
+        const itemCount = await this.dictionaryItemRepository.count({
+          where: {
+            categoryId: category.id,
+            isActive: true,
+          },
+        });
+
+        return {
+          ...category,
+          itemCount,
+        };
+      })
+    );
+
     return {
-      data: categories,
+      data: categoriesWithItemCount,
       meta: {
         totalItems: total,
         itemCount: categories.length,
