@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TosClient } from '@volcengine/tos-sdk';
+import { TosClient, DataTransferType } from '@volcengine/tos-sdk';
+import * as fs from 'fs';
 
 export interface TosConfig {
   region: string;
@@ -27,6 +28,13 @@ export interface FileInfo {
   lastModified: Date;
   contentType: string;
   etag: string;
+}
+
+export interface UploadProgress {
+  type: 'started' | 'progress' | 'completed' | 'failed';
+  totalBytes: number;
+  consumedBytes: number;
+  percentage: number;
 }
 
 @Injectable()
@@ -75,6 +83,79 @@ export class TosService {
       };
     } catch (error) {
       this.logger.error(`Failed to upload file ${key}:`, error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+  }
+
+  async uploadFileFromPath(
+    key: string,
+    filePath: string,
+    contentType: string,
+    metadata?: Record<string, string>,
+    onProgress?: (progress: UploadProgress) => void,
+  ): Promise<UploadResult> {
+    try {
+      // 获取文件大小
+      const fileStats = fs.statSync(filePath);
+      const fileSize = fileStats.size;
+
+      const response = await this.tosClient.putObjectFromFile({
+        bucket: this.config.bucket,
+        key: key,
+        filePath: filePath,
+        contentType: contentType,
+        meta: metadata,
+        // 配置上传进度回调
+        dataTransferStatusChange: (event) => {
+          if (onProgress) {
+            let progressType: UploadProgress['type'];
+            switch (event.type) {
+              case DataTransferType.Started:
+                progressType = 'started';
+                break;
+              case DataTransferType.Rw:
+                progressType = 'progress';
+                break;
+              case DataTransferType.Succeed:
+                progressType = 'completed';
+                break;
+              case DataTransferType.Failed:
+                progressType = 'failed';
+                break;
+              default:
+                progressType = 'progress';
+            }
+
+            const percentage = event.totalBytes > 0 
+              ? Math.round((event.consumedBytes / event.totalBytes) * 100)
+              : 0;
+
+            onProgress({
+              type: progressType,
+              totalBytes: event.totalBytes || fileSize,
+              consumedBytes: event.consumedBytes || 0,
+              percentage,
+            });
+
+            // 记录进度日志
+            if (progressType === 'progress' && percentage % 10 === 0) {
+              this.logger.log(`Upload progress for ${key}: ${percentage}%`);
+            }
+          }
+        },
+      });
+
+      const url = this.getFileUrl(key);
+
+      return {
+        key,
+        url,
+        bucket: this.config.bucket,
+        etag: response.headers?.etag || '',
+        size: fileSize,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to upload file from path ${filePath}:`, error);
       throw new Error(`Upload failed: ${error.message}`);
     }
   }

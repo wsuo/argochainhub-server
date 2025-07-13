@@ -30,16 +30,25 @@ export class UploadsService {
     }
 
     try {
-      // 上传到云存储
-      const uploadResult = await this.storageService.uploadFile(
+      // 使用本地文件上传到TOS，支持进度回调
+      const uploadResult = await this.storageService.uploadFileFromPath(
         {
-          buffer: file.buffer,
+          path: file.path,
           originalname: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
         },
         user.id,
         type,
+        undefined,
+        (progress) => {
+          // 记录上传进度（可以后续扩展为实时推送给前端）
+          if (progress.type === 'progress' && progress.percentage % 20 === 0) {
+            console.log(`Upload progress for ${file.originalname}: ${progress.percentage}%`);
+          } else if (progress.type === 'completed') {
+            console.log(`Upload completed for ${file.originalname}`);
+          }
+        },
       );
 
       // 保存到数据库
@@ -57,6 +66,14 @@ export class UploadsService {
 
       return this.attachmentRepository.save(attachment);
     } catch (error) {
+      // 如果上传失败，确保删除临时文件
+      if (file.path && require('fs').existsSync(file.path)) {
+        try {
+          require('fs').unlinkSync(file.path);
+        } catch (unlinkError) {
+          console.warn(`Failed to delete temporary file ${file.path}:`, unlinkError);
+        }
+      }
       throw new BadRequestException(`Upload failed: ${error.message}`);
     }
   }
