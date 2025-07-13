@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TosClient, DataTransferType } from '@volcengine/tos-sdk';
+import { TosClient, TosClientError, TosServerError, DataTransferType } from '@volcengine/tos-sdk';
 import * as fs from 'fs';
 
 export interface TosConfig {
@@ -46,11 +46,12 @@ export class TosService {
   constructor(private readonly configService: ConfigService) {
     this.config = this.configService.get<TosConfig>('tos')!;
 
+    // 按照官方文档初始化TOS客户端
     this.tosClient = new TosClient({
-      region: this.config.region,
-      endpoint: this.config.endpoint,
       accessKeyId: this.config.accessKeyId,
       accessKeySecret: this.config.accessKeySecret,
+      region: this.config.region,
+      endpoint: this.config.endpoint,
       requestTimeout: this.config.requestTimeout,
     });
 
@@ -99,36 +100,50 @@ export class TosService {
       const fileStats = fs.statSync(filePath);
       const fileSize = fileStats.size;
 
+      this.logger.log(`Starting upload: ${key} (${fileSize} bytes)`);
+
+      // 使用官方文档的putObjectFromFile方法
       const response = await this.tosClient.putObjectFromFile({
         bucket: this.config.bucket,
         key: key,
         filePath: filePath,
         contentType: contentType,
+        // 自定义元数据
         meta: metadata,
-        // 配置上传进度回调
+        // 进度回调
         dataTransferStatusChange: (event) => {
           if (onProgress) {
             let progressType: UploadProgress['type'];
+            let percentage = 0;
+
             switch (event.type) {
               case DataTransferType.Started:
                 progressType = 'started';
+                this.logger.log(`Upload started: ${key}`);
                 break;
               case DataTransferType.Rw:
                 progressType = 'progress';
+                percentage = event.totalBytes > 0 
+                  ? Math.round((event.consumedBytes / event.totalBytes) * 100)
+                  : 0;
+                
+                // 只记录关键进度节点
+                if (percentage % 25 === 0) {
+                  this.logger.log(`Upload progress ${key}: ${percentage}%`);
+                }
                 break;
               case DataTransferType.Succeed:
                 progressType = 'completed';
+                percentage = 100;
+                this.logger.log(`Upload completed: ${key}`);
                 break;
               case DataTransferType.Failed:
                 progressType = 'failed';
+                this.logger.error(`Upload failed: ${key}`);
                 break;
               default:
                 progressType = 'progress';
             }
-
-            const percentage = event.totalBytes > 0 
-              ? Math.round((event.consumedBytes / event.totalBytes) * 100)
-              : 0;
 
             onProgress({
               type: progressType,
@@ -136,11 +151,6 @@ export class TosService {
               consumedBytes: event.consumedBytes || 0,
               percentage,
             });
-
-            // 记录进度日志
-            if (progressType === 'progress' && percentage % 10 === 0) {
-              this.logger.log(`Upload progress for ${key}: ${percentage}%`);
-            }
           }
         },
       });
@@ -155,8 +165,35 @@ export class TosService {
         size: fileSize,
       };
     } catch (error) {
-      this.logger.error(`Failed to upload file from path ${filePath}:`, error);
+      // 上传失败回调
+      if (onProgress) {
+        onProgress({
+          type: 'failed',
+          totalBytes: 0,
+          consumedBytes: 0,
+          percentage: 0,
+        });
+      }
+      
+      // 使用官方推荐的错误处理方式
+      this.handleTosError(error, `Upload failed for ${key}`);
       throw new Error(`Upload failed: ${error.message}`);
+    }
+  }
+
+  // 官方推荐的错误处理方法
+  private handleTosError(error: any, context: string): void {
+    if (error instanceof TosClientError) {
+      this.logger.error(`${context} - Client Error:`, error.message);
+    } else if (error instanceof TosServerError) {
+      this.logger.error(`${context} - Server Error:`, {
+        requestId: error.requestId,
+        statusCode: error.statusCode,
+        code: error.code,
+        message: error.message,
+      });
+    } else {
+      this.logger.error(`${context} - Unexpected Error:`, error.message);
     }
   }
 
@@ -233,8 +270,8 @@ export class TosService {
       return `${this.config.cdnDomain}/${key}`;
     }
 
-    // 构建标准的TOS访问URL
-    return `${this.config.endpoint}/${this.config.bucket}/${key}`;
+    // 构建标准的TOS访问URL: https://{bucket}.{endpoint}/{key}
+    return `https://${this.config.bucket}.${this.config.endpoint}/${key}`;
   }
 
   generateFileName(originalName: string, userId: number, type: string): string {
