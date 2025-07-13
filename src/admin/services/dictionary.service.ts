@@ -30,7 +30,7 @@ export class DictionaryService {
 
   // 字典分类管理
   async getCategories(
-    queryDto: DictionaryCategoryQueryDto & PaginationDto,
+    queryDto: DictionaryCategoryQueryDto,
   ): Promise<PaginatedResult<DictionaryCategory>> {
     const { page = 1, limit = 20, code, isActive, isSystem } = queryDto;
 
@@ -142,7 +142,7 @@ export class DictionaryService {
   // 字典项管理
   async getItems(
     categoryCode: string,
-    queryDto: DictionaryItemQueryDto & PaginationDto,
+    queryDto: DictionaryItemQueryDto,
   ): Promise<PaginatedResult<DictionaryItem>> {
     const { page = 1, limit = 20, code, isActive, isSystem, parentId } = queryDto;
 

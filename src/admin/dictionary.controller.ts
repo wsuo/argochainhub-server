@@ -19,7 +19,6 @@ import {
 } from '@nestjs/swagger';
 import { DictionaryService } from './services/dictionary.service';
 import { CountryDictionaryService } from './services/country-dictionary.service';
-import { PaginationDto } from '../common/dto/pagination.dto';
 import {
   CreateDictionaryCategoryDto,
   UpdateDictionaryCategoryDto,
@@ -40,14 +39,8 @@ export class DictionaryController {
   @Get('categories')
   @ApiOperation({ summary: '获取字典分类列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getCategories(
-    @Query() queryDto: DictionaryCategoryQueryDto,
-    @Query() paginationDto: PaginationDto,
-  ) {
-    return this.dictionaryService.getCategories({
-      ...queryDto,
-      ...paginationDto,
-    });
+  async getCategories(@Query() queryDto: DictionaryCategoryQueryDto) {
+    return this.dictionaryService.getCategories(queryDto);
   }
 
   @Get('categories/:code')
@@ -91,12 +84,8 @@ export class DictionaryController {
   async getItems(
     @Param('categoryCode') categoryCode: string,
     @Query() queryDto: DictionaryItemQueryDto,
-    @Query() paginationDto: PaginationDto,
   ) {
-    return this.dictionaryService.getItems(categoryCode, {
-      ...queryDto,
-      ...paginationDto,
-    });
+    return this.dictionaryService.getItems(categoryCode, queryDto);
   }
 
   @Post(':categoryCode/items')

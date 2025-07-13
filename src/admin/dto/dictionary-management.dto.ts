@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean, IsNumber, ValidateNested, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MultiLangText } from '../../types/multilang';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class MultiLangTextDto {
   @ApiProperty({ description: '中文', example: '示例文本' })
@@ -160,7 +161,7 @@ export class BatchImportDictionaryItemDto {
 }
 
 // 查询DTO
-export class DictionaryCategoryQueryDto {
+export class DictionaryCategoryQueryDto extends PaginationDto {
   @ApiPropertyOptional({ description: '分类代码搜索' })
   @IsString()
   @IsOptional()
@@ -177,7 +178,7 @@ export class DictionaryCategoryQueryDto {
   isSystem?: boolean;
 }
 
-export class DictionaryItemQueryDto {
+export class DictionaryItemQueryDto extends PaginationDto {
   @ApiPropertyOptional({ description: '字典项代码搜索' })
   @IsString()
   @IsOptional()
