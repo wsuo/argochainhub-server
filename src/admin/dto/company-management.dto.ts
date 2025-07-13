@@ -68,6 +68,11 @@ export class CreateCompanyDto {
   @IsObject()
   mainProducts?: MultiLangText;
 
+  @ApiProperty({ description: '主要供应商（多语言）', required: false })
+  @IsOptional()
+  @IsObject()
+  mainSuppliers?: MultiLangText;
+
   @ApiProperty({ description: '年进出口额（美元）', required: false })
   @IsOptional()
   @IsNumber()
@@ -160,6 +165,11 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsObject()
   mainProducts?: MultiLangText;
+
+  @ApiProperty({ description: '主要供应商（多语言）', required: false })
+  @IsOptional()
+  @IsObject()
+  mainSuppliers?: MultiLangText;
 
   @ApiProperty({ description: '年进出口额（美元）', required: false })
   @IsOptional()
