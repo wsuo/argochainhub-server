@@ -71,7 +71,22 @@ POST /api/v1/admin/dictionaries/business_type/batch
 # 11. 获取指定分类的字典项 (前端用)
 GET /api/v1/dictionaries/business_type
 
-# 12. 获取包含国旗的国家列表
+# 12. 获取企业规模字典
+GET /api/v1/dictionaries/company_size
+
+# 13. 获取企业类型字典
+GET /api/v1/dictionaries/company_type
+
+# 14. 获取企业状态字典
+GET /api/v1/dictionaries/company_status
+
+# 15. 获取产品分类字典
+GET /api/v1/dictionaries/product_category
+
+# 16. 获取剂型类型字典
+GET /api/v1/dictionaries/formulation_type
+
+# 17. 获取包含国旗的国家列表
 GET /api/v1/dictionaries/countries/with-flags
 ```
 
@@ -167,6 +182,74 @@ curl -X GET "http://localhost:3010/api/v1/dictionaries/formulation_type" \
   -H "accept: application/json"
 ```
 
+### 5. 获取企业规模字典 ✅
+
+```bash
+curl -X GET "http://localhost:3010/api/v1/dictionaries/company_size" \
+  -H "accept: application/json"
+```
+
+**预期响应：**
+```json
+[
+  {
+    "id": "286",
+    "code": "startup",
+    "name": {
+      "zh-CN": "初创企业 (1-10人)",
+      "en": "Startup (1-10 employees)",
+      "es": "Startup (1-10 empleados)"
+    },
+    "isActive": true,
+    "sortOrder": 1
+  },
+  {
+    "id": "287",
+    "code": "small",
+    "name": {
+      "zh-CN": "小型企业 (11-50人)",
+      "en": "Small Enterprise (11-50 employees)",
+      "es": "Pequeña Empresa (11-50 empleados)"
+    },
+    "isActive": true,
+    "sortOrder": 2
+  },
+  {
+    "id": "288",
+    "code": "medium",
+    "name": {
+      "zh-CN": "中型企业 (51-200人)",
+      "en": "Medium Enterprise (51-200 employees)",
+      "es": "Empresa Mediana (51-200 empleados)"
+    },
+    "isActive": true,
+    "sortOrder": 3
+  },
+  {
+    "id": "289",
+    "code": "large",
+    "name": {
+      "zh-CN": "大型企业 (201-1000人)",
+      "en": "Large Enterprise (201-1000 employees)",
+      "es": "Gran Empresa (201-1000 empleados)"
+    },
+    "isActive": true,
+    "sortOrder": 4
+  },
+  {
+    "id": "290",
+    "code": "enterprise",
+    "name": {
+      "zh-CN": "大型集团 (1000+人)",
+      "en": "Enterprise Group (1000+ employees)",
+      "es": "Grupo Empresarial (1000+ empleados)"
+    },
+    "isActive": true,
+    "sortOrder": 5
+  }
+]
+```
+
 ## 🏗️ 数据结构说明
 
 ### 字典分类 (DictionaryCategory)
@@ -228,6 +311,7 @@ curl -X GET "http://localhost:3010/api/v1/dictionaries/formulation_type" \
 | business_type | 业务类别 | 13 | 农化行业业务分类 |
 | company_status | 企业状态 | 3 | 企业审核状态 |
 | company_type | 企业类型 | 2 | 买家/供应商 |
+| company_size | 企业规模 | 5 | 按员工数量分类 |
 | product_status | 产品状态 | 5 | 产品生命周期状态 |
 | formulation_type | 剂型类型 | 6 | 农药产品剂型 |
 | product_category | 产品分类 | 6 | 农化产品功能分类 |

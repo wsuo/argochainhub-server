@@ -21,6 +21,7 @@ export class DictionaryInitService {
       await this.initializeBusinessTypes();
       await this.initializeCompanyStatuses();
       await this.initializeCompanyTypes();
+      await this.initializeCompanySize();
       await this.initializeProductStatuses();
       await this.initializeFormulationTypes();
       await this.initializeProductCategories();
@@ -83,6 +84,21 @@ export class DictionaryInitService {
         sortOrder: 3,
       },
       {
+        code: 'company_size',
+        name: {
+          'zh-CN': '企业规模',
+          en: 'Company Size',
+          es: 'Tamaño de Empresa',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '企业规模分类（按员工数量）',
+          en: 'Company size classification (by employee count)',
+          es: 'Clasificación del tamaño de empresa (por número de empleados)',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 4,
+      },
+      {
         code: 'product_status',
         name: {
           'zh-CN': '产品状态',
@@ -95,7 +111,7 @@ export class DictionaryInitService {
           es: 'Estado de revisión y publicación del producto',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 4,
+        sortOrder: 5,
       },
       {
         code: 'formulation_type',
@@ -110,7 +126,7 @@ export class DictionaryInitService {
           es: 'Clasificación de formulación de productos pesticidas',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 5,
+        sortOrder: 6,
       },
       {
         code: 'product_category',
@@ -125,7 +141,7 @@ export class DictionaryInitService {
           es: 'Clasificación funcional de productos agroquímicos',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 6,
+        sortOrder: 7,
       },
       {
         code: 'countries',
@@ -140,7 +156,7 @@ export class DictionaryInitService {
           es: 'Lista de países y regiones del mundo',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 7,
+        sortOrder: 8,
       },
     ];
 
@@ -513,6 +529,58 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('product_category', productCategories);
+  }
+
+  private async initializeCompanySize(): Promise<void> {
+    const companySizes = [
+      {
+        code: 'startup',
+        name: {
+          'zh-CN': '初创企业 (1-10人)',
+          en: 'Startup (1-10 employees)',
+          es: 'Startup (1-10 empleados)',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'small',
+        name: {
+          'zh-CN': '小型企业 (11-50人)',
+          en: 'Small Enterprise (11-50 employees)',
+          es: 'Pequeña Empresa (11-50 empleados)',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'medium',
+        name: {
+          'zh-CN': '中型企业 (51-200人)',
+          en: 'Medium Enterprise (51-200 employees)',
+          es: 'Empresa Mediana (51-200 empleados)',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'large',
+        name: {
+          'zh-CN': '大型企业 (201-1000人)',
+          en: 'Large Enterprise (201-1000 employees)',
+          es: 'Gran Empresa (201-1000 empleados)',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'enterprise',
+        name: {
+          'zh-CN': '大型集团 (1000+人)',
+          en: 'Enterprise Group (1000+ employees)',
+          es: 'Grupo Empresarial (1000+ empleados)',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+    ];
+
+    await this.batchCreateItems('company_size', companySizes);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {
