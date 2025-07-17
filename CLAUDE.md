@@ -17,3 +17,5 @@ DB_DATABASE=argochainhub
   "username": "superadmin",
   "password": "Admin123!"
 }
+
+如果遇到一次解决不了的问题，出现第二次，就需要增加调试信息，然后让我提供给你日志，你再来分析处理，不要急于修改问题，要活得足够多的信息后再决定如何解决。
