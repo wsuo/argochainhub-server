@@ -57,7 +57,7 @@ export class SeedService {
       {
         username: 'superadmin',
         password: await bcrypt.hash('Admin123!', 10),
-        role: 'super_admin',
+        role: 'super_admin' as const,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -65,7 +65,7 @@ export class SeedService {
       {
         username: 'admin',
         password: await bcrypt.hash('Admin123!', 10),
-        role: 'admin',
+        role: 'admin' as const,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),

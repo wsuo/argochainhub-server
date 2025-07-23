@@ -70,6 +70,8 @@ import { InquiryStatus } from '../entities/inquiry.entity';
 import { SampleRequestStatus } from '../entities/sample-request.entity';
 import { RegistrationRequestStatus } from '../entities/registration-request.entity';
 import { AdminPermission } from '../types/permissions';
+import { ProductQueryDto } from './dto/product-query.dto';
+import { UserQueryDto } from './dto/user-query.dto';
 
 @ApiTags('后台管理')
 @Controller('admin')
@@ -100,8 +102,8 @@ export class AdminController {
   @Get('companies/pending')
   @ApiOperation({ summary: '获取待审核企业列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getPendingCompanies(@Query() paginationDto: PaginationDto) {
-    return this.adminService.getPendingCompanies(paginationDto);
+  async getPendingCompanies(@Query() queryDto: CompanyQueryDto) {
+    return this.adminService.getPendingCompanies(queryDto);
   }
 
   @Post('companies/:id/review')
@@ -144,8 +146,8 @@ export class AdminController {
   @Get('products/pending')
   @ApiOperation({ summary: '获取待审核产品列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getPendingProducts(@Query() paginationDto: PaginationDto) {
-    return this.adminService.getPendingProducts(paginationDto);
+  async getPendingProducts(@Query() queryDto: ProductQueryDto) {
+    return this.adminService.getPendingProducts(queryDto);
   }
 
   @Post('products/:id/review')
@@ -162,22 +164,9 @@ export class AdminController {
 
   @Get('products')
   @ApiOperation({ summary: '获取所有产品列表' })
-  @ApiQuery({ name: 'status', enum: ProductStatus, required: false })
-  @ApiQuery({ name: 'category', required: false, description: '产品分类' })
-  @ApiQuery({ name: 'search', required: false, description: '搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getAllProducts(
-    @Query() paginationDto: PaginationDto,
-    @Query('status') status?: ProductStatus,
-    @Query('category') category?: string,
-    @Query('search') search?: string,
-  ) {
-    return this.adminService.getAllProducts({
-      ...paginationDto,
-      status,
-      category,
-      search,
-    });
+  async getAllProducts(@Query() queryDto: ProductQueryDto) {
+    return this.adminService.getAllProducts(queryDto);
   }
 
   @Get('products/:id')
@@ -200,16 +189,9 @@ export class AdminController {
 
   @Get('users')
   @ApiOperation({ summary: '获取所有用户列表' })
-  @ApiQuery({ name: 'search', required: false, description: '搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getAllUsers(
-    @Query() paginationDto: PaginationDto,
-    @Query('search') search?: string,
-  ) {
-    return this.adminService.getAllUsers({
-      ...paginationDto,
-      search,
-    });
+  async getAllUsers(@Query() queryDto: UserQueryDto) {
+    return this.adminService.getAllUsers(queryDto);
   }
 
   @Get('users/:id')

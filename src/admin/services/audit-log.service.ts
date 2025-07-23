@@ -123,19 +123,24 @@ export class AuditLogService {
     }
 
     // 分页
-    const offset = (dto.page - 1) * dto.limit;
-    queryBuilder.skip(offset).take(dto.limit);
+    const page = dto.page || 1;
+    const limit = dto.limit || 20;
+    const offset = (page - 1) * limit;
+    queryBuilder.skip(offset).take(limit);
 
     const [logs, total] = await queryBuilder.getManyAndCount();
 
-    const items = logs.map(log => this.mapToResponseDto(log));
+    const data = logs.map(log => this.mapToResponseDto(log));
 
     return {
-      items,
-      total,
-      page: dto.page,
-      limit: dto.limit,
-      totalPages: Math.ceil(total / dto.limit),
+      data,
+      meta: {
+        totalItems: total,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
   }
 

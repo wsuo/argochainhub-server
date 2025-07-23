@@ -44,6 +44,8 @@ import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
 import { CompanyQueryDto } from './dto/company-query.dto';
+import { ProductQueryDto } from './dto/product-query.dto';
+import { UserQueryDto } from './dto/user-query.dto';
 import { 
   InquiryQueryDto, 
   UpdateInquiryStatusDto, 
@@ -387,17 +389,120 @@ export class AdminService {
 
   // 获取待审核企业列表
   async getPendingCompanies(
-    paginationDto: PaginationDto,
+    queryDto: CompanyQueryDto,
   ): Promise<PaginatedResult<Company>> {
-    const { page = 1, limit = 20 } = paginationDto;
+    const { 
+      page = 1, 
+      limit = 20, 
+      search,
+      country,
+      businessTypes,
+      size,
+      type,
+      isTop100,
+      createdStartDate,
+      createdEndDate,
+      minRating,
+      maxRating,
+      hasEmail,
+      hasWebsite,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC'
+    } = queryDto;
 
-    const [companies, total] = await this.companyRepository.findAndCount({
-      where: { status: CompanyStatus.PENDING_REVIEW },
-      relations: ['users'],
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-    });
+    const queryBuilder = this.companyRepository
+      .createQueryBuilder('company')
+      .leftJoinAndSelect('company.users', 'users')
+      .where('company.status = :status', { status: CompanyStatus.PENDING_REVIEW });
+
+    // 附加筛选条件
+    if (type) {
+      queryBuilder.andWhere('company.type = :type', { type });
+    }
+
+    if (country) {
+      queryBuilder.andWhere('company.country = :country', { country });
+    }
+
+    if (businessTypes && businessTypes.length > 0) {
+      queryBuilder.andWhere('JSON_OVERLAPS(company.businessTypes, :businessTypes)', { 
+        businessTypes: JSON.stringify(businessTypes) 
+      });
+    }
+
+    if (size) {
+      queryBuilder.andWhere('company.size = :size', { size });
+    }
+
+    if (isTop100 !== undefined) {
+      queryBuilder.andWhere('company.isTop100 = :isTop100', { isTop100 });
+    }
+
+    if (createdStartDate && createdEndDate) {
+      queryBuilder.andWhere('company.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: new Date(createdStartDate),
+        endDate: new Date(createdEndDate + ' 23:59:59'),
+      });
+    }
+
+    if (minRating !== undefined) {
+      queryBuilder.andWhere('company.rating >= :minRating', { minRating });
+    }
+
+    if (maxRating !== undefined) {
+      queryBuilder.andWhere('company.rating <= :maxRating', { maxRating });
+    }
+
+    if (hasEmail !== undefined) {
+      if (hasEmail) {
+        queryBuilder.andWhere('company.email IS NOT NULL AND company.email != ""');
+      } else {
+        queryBuilder.andWhere('(company.email IS NULL OR company.email = "")');
+      }
+    }
+
+    if (hasWebsite !== undefined) {
+      if (hasWebsite) {
+        queryBuilder.andWhere('JSON_UNQUOTE(JSON_EXTRACT(company.profile, "$.website")) IS NOT NULL');
+      } else {
+        queryBuilder.andWhere('JSON_UNQUOTE(JSON_EXTRACT(company.profile, "$.website")) IS NULL');
+      }
+    }
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          // 搜索企业名称（多语言）
+          qb.andWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."zh-CN"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."en"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."es"')) LIKE :nameSearch)`,
+            { nameSearch: `%${search}%` },
+          );
+          // 搜索企业描述
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(company.profile, '$."description"."zh-CN"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.profile, '$."description"."en"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.profile, '$."description"."es"')) LIKE :descSearch)`,
+            { descSearch: `%${search}%` },
+          );
+          // 搜索用户邮箱
+          qb.orWhere('users.email LIKE :emailSearch', { emailSearch: `%${search}%` });
+          // 搜索企业邮箱
+          qb.orWhere('company.email LIKE :companyEmailSearch', { companyEmailSearch: `%${search}%` });
+        }),
+      );
+    }
+
+    // 排序
+    const sortField = sortBy === 'name' ? 'JSON_UNQUOTE(JSON_EXTRACT(company.name, \'$."zh-CN"\'))' : `company.${sortBy}`;
+    queryBuilder.orderBy(sortField, sortOrder);
+
+    const [companies, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
 
     return {
       data: companies,
@@ -440,12 +545,32 @@ export class AdminService {
   async getAllCompanies(
     queryDto: CompanyQueryDto,
   ): Promise<PaginatedResult<Company>> {
-    const { page = 1, limit = 20, status, type, search } = queryDto;
+    const { 
+      page = 1, 
+      limit = 20, 
+      status, 
+      type, 
+      search,
+      country,
+      businessTypes,
+      size,
+      verified,
+      isTop100,
+      createdStartDate,
+      createdEndDate,
+      minRating,
+      maxRating,
+      hasEmail,
+      hasWebsite,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC'
+    } = queryDto;
 
     const queryBuilder = this.companyRepository
       .createQueryBuilder('company')
       .leftJoinAndSelect('company.users', 'users');
 
+    // 基础筛选条件
     if (status) {
       queryBuilder.andWhere('company.status = :status', { status });
     }
@@ -454,26 +579,92 @@ export class AdminService {
       queryBuilder.andWhere('company.type = :type', { type });
     }
 
+    if (country) {
+      queryBuilder.andWhere('company.country = :country', { country });
+    }
+
+    if (businessTypes && businessTypes.length > 0) {
+      queryBuilder.andWhere('JSON_OVERLAPS(company.businessTypes, :businessTypes)', { 
+        businessTypes: JSON.stringify(businessTypes) 
+      });
+    }
+
+    if (size) {
+      queryBuilder.andWhere('company.size = :size', { size });
+    }
+
+    if (verified !== undefined) {
+      queryBuilder.andWhere('company.verified = :verified', { verified });
+    }
+
+    if (isTop100 !== undefined) {
+      queryBuilder.andWhere('company.isTop100 = :isTop100', { isTop100 });
+    }
+
+    if (createdStartDate && createdEndDate) {
+      queryBuilder.andWhere('company.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: new Date(createdStartDate),
+        endDate: new Date(createdEndDate + ' 23:59:59'),
+      });
+    }
+
+    if (minRating !== undefined) {
+      queryBuilder.andWhere('company.rating >= :minRating', { minRating });
+    }
+
+    if (maxRating !== undefined) {
+      queryBuilder.andWhere('company.rating <= :maxRating', { maxRating });
+    }
+
+    if (hasEmail !== undefined) {
+      if (hasEmail) {
+        queryBuilder.andWhere('company.email IS NOT NULL AND company.email != ""');
+      } else {
+        queryBuilder.andWhere('(company.email IS NULL OR company.email = "")');
+      }
+    }
+
+    if (hasWebsite !== undefined) {
+      if (hasWebsite) {
+        queryBuilder.andWhere('JSON_UNQUOTE(JSON_EXTRACT(company.profile, "$.website")) IS NOT NULL');
+      } else {
+        queryBuilder.andWhere('JSON_UNQUOTE(JSON_EXTRACT(company.profile, "$.website")) IS NULL');
+      }
+    }
+
+    // 搜索条件
     if (search) {
       queryBuilder.andWhere(
         new Brackets((qb) => {
-          // 使用多语言搜索工具搜索企业名称
+          // 搜索企业名称（多语言）
           qb.andWhere(
             `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."zh-CN"')) LIKE :nameSearch OR ` +
               `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."en"')) LIKE :nameSearch OR ` +
               `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$."es"')) LIKE :nameSearch)`,
             { nameSearch: `%${search}%` },
           );
-          // 同时搜索用户邮箱
+          // 搜索企业描述
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(company.profile, '$."description"."zh-CN"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.profile, '$."description"."en"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(company.profile, '$."description"."es"')) LIKE :descSearch)`,
+            { descSearch: `%${search}%` },
+          );
+          // 搜索用户邮箱
           qb.orWhere('users.email LIKE :emailSearch', { emailSearch: `%${search}%` });
+          // 搜索企业邮箱
+          qb.orWhere('company.email LIKE :companyEmailSearch', { companyEmailSearch: `%${search}%` });
         }),
       );
     }
 
+    // 排序
+    const sortField = sortBy === 'name' ? 'JSON_UNQUOTE(JSON_EXTRACT(company.name, \'$."zh-CN"\'))' : `company.${sortBy}`;
+    queryBuilder.orderBy(sortField, sortOrder);
+
     const [companies, total] = await queryBuilder
       .skip((page - 1) * limit)
       .take(limit)
-      .orderBy('company.createdAt', 'DESC')
       .getManyAndCount();
 
     return {
@@ -490,17 +681,146 @@ export class AdminService {
 
   // 获取待审核产品列表
   async getPendingProducts(
-    paginationDto: PaginationDto,
+    queryDto: ProductQueryDto,
   ): Promise<PaginatedResult<Product>> {
-    const { page = 1, limit = 20 } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      category,
+      formulation,
+      activeIngredient,
+      casNo,
+      companyId,
+      companyType,
+      country,
+      minPrice,
+      maxPrice,
+      hasStock,
+      createdStartDate,
+      createdEndDate,
+      certified,
+      packagingSpecs,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC'
+    } = queryDto;
 
-    const [products, total] = await this.productRepository.findAndCount({
-      where: { status: ProductStatus.PENDING_REVIEW },
-      relations: ['supplier'],
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-    });
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.supplier', 'supplier')
+      .where('product.status = :status', { status: ProductStatus.PENDING_REVIEW });
+
+    // 附加筛选条件
+    if (category) {
+      queryBuilder.andWhere(
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."zh-CN"')) LIKE :category OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."en"')) LIKE :category OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."es"')) LIKE :category)`,
+        { category: `%${category}%` }
+      );
+    }
+
+    if (formulation) {
+      queryBuilder.andWhere('product.formulation = :formulation', { formulation });
+    }
+
+    if (activeIngredient) {
+      queryBuilder.andWhere(
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."zh-CN"')) LIKE :activeIngredient OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."en"')) LIKE :activeIngredient OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."es"')) LIKE :activeIngredient)`,
+        { activeIngredient: `%${activeIngredient}%` }
+      );
+    }
+
+    if (casNo) {
+      queryBuilder.andWhere('product.casNo = :casNo', { casNo });
+    }
+
+    if (companyId) {
+      queryBuilder.andWhere('supplier.id = :companyId', { companyId });
+    }
+
+    if (companyType) {
+      queryBuilder.andWhere('supplier.type = :companyType', { companyType });
+    }
+
+    if (country) {
+      queryBuilder.andWhere('supplier.country = :country', { country });
+    }
+
+    if (minPrice !== undefined) {
+      queryBuilder.andWhere('product.price >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      queryBuilder.andWhere('product.price <= :maxPrice', { maxPrice });
+    }
+
+    if (hasStock !== undefined) {
+      if (hasStock) {
+        queryBuilder.andWhere('product.stock > 0');
+      } else {
+        queryBuilder.andWhere('(product.stock IS NULL OR product.stock <= 0)');
+      }
+    }
+
+    if (certified !== undefined) {
+      queryBuilder.andWhere('product.certified = :certified', { certified });
+    }
+
+    if (packagingSpecs && packagingSpecs.length > 0) {
+      queryBuilder.andWhere('JSON_OVERLAPS(JSON_EXTRACT(product.details, "$.packagingSpecs"), :packagingSpecs)', {
+        packagingSpecs: JSON.stringify(packagingSpecs)
+      });
+    }
+
+    if (createdStartDate && createdEndDate) {
+      queryBuilder.andWhere('product.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: new Date(createdStartDate),
+        endDate: new Date(createdEndDate + ' 23:59:59'),
+      });
+    }
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          // 搜索产品名称（多语言）
+          qb.andWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."zh-CN"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."en"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."es"')) LIKE :nameSearch)`,
+            { nameSearch: `%${search}%` }
+          );
+          // 搜索产品描述
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."zh-CN"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."en"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."es"')) LIKE :descSearch)`,
+            { descSearch: `%${search}%` }
+          );
+          // 搜索CAS号
+          qb.orWhere('product.casNo LIKE :casSearch', { casSearch: `%${search}%` });
+          // 搜索企业名称
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."zh-CN"')) LIKE :supplierSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."en"')) LIKE :supplierSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."es"')) LIKE :supplierSearch)`,
+            { supplierSearch: `%${search}%` }
+          );
+        })
+      );
+    }
+
+    // 排序
+    const sortField = sortBy === 'name' ? 'JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\'))' : `product.${sortBy}`;
+    queryBuilder.orderBy(sortField, sortOrder);
+
+    const [products, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
 
     return {
       data: products,
@@ -543,37 +863,165 @@ export class AdminService {
 
   // 获取所有产品列表
   async getAllProducts(
-    paginationDto: PaginationDto & {
-      status?: ProductStatus;
-      category?: string;
-      search?: string;
-    },
+    queryDto: ProductQueryDto,
   ): Promise<PaginatedResult<Product>> {
-    const { page = 1, limit = 20, status, category, search } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      search,
+      category,
+      formulation,
+      activeIngredient,
+      casNo,
+      companyId,
+      companyType,
+      country,
+      minPrice,
+      maxPrice,
+      hasStock,
+      createdStartDate,
+      createdEndDate,
+      updatedStartDate,
+      updatedEndDate,
+      certified,
+      packagingSpecs,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC'
+    } = queryDto;
 
     const queryBuilder = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.supplier', 'supplier');
 
+    // 基础筛选条件
     if (status) {
       queryBuilder.andWhere('product.status = :status', { status });
     }
 
     if (category) {
-      queryBuilder.andWhere('product.category = :category', { category });
-    }
-
-    if (search) {
       queryBuilder.andWhere(
-        '(JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."en"\')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, \'$."zh-CN"\')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, \'$."en"\')) LIKE :search)',
-        { search: `%${search}%` },
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."zh-CN"')) LIKE :category OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."en"')) LIKE :category OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."es"')) LIKE :category)`,
+        { category: `%${category}%` }
       );
     }
+
+    if (formulation) {
+      queryBuilder.andWhere('product.formulation = :formulation', { formulation });
+    }
+
+    if (activeIngredient) {
+      queryBuilder.andWhere(
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."zh-CN"')) LIKE :activeIngredient OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."en"')) LIKE :activeIngredient OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."es"')) LIKE :activeIngredient)`,
+        { activeIngredient: `%${activeIngredient}%` }
+      );
+    }
+
+    if (casNo) {
+      queryBuilder.andWhere('product.casNo = :casNo', { casNo });
+    }
+
+    if (companyId) {
+      queryBuilder.andWhere('supplier.id = :companyId', { companyId });
+    }
+
+    if (companyType) {
+      queryBuilder.andWhere('supplier.type = :companyType', { companyType });
+    }
+
+    if (country) {
+      queryBuilder.andWhere('supplier.country = :country', { country });
+    }
+
+    if (minPrice !== undefined) {
+      queryBuilder.andWhere('product.price >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      queryBuilder.andWhere('product.price <= :maxPrice', { maxPrice });
+    }
+
+    if (hasStock !== undefined) {
+      if (hasStock) {
+        queryBuilder.andWhere('product.stock > 0');
+      } else {
+        queryBuilder.andWhere('(product.stock IS NULL OR product.stock <= 0)');
+      }
+    }
+
+    if (certified !== undefined) {
+      queryBuilder.andWhere('product.certified = :certified', { certified });
+    }
+
+    if (packagingSpecs && packagingSpecs.length > 0) {
+      queryBuilder.andWhere('JSON_OVERLAPS(JSON_EXTRACT(product.details, "$.packagingSpecs"), :packagingSpecs)', {
+        packagingSpecs: JSON.stringify(packagingSpecs)
+      });
+    }
+
+    if (createdStartDate && createdEndDate) {
+      queryBuilder.andWhere('product.createdAt BETWEEN :createdStartDate AND :createdEndDate', {
+        createdStartDate: new Date(createdStartDate),
+        createdEndDate: new Date(createdEndDate + ' 23:59:59'),
+      });
+    }
+
+    if (updatedStartDate && updatedEndDate) {
+      queryBuilder.andWhere('product.updatedAt BETWEEN :updatedStartDate AND :updatedEndDate', {
+        updatedStartDate: new Date(updatedStartDate),
+        updatedEndDate: new Date(updatedEndDate + ' 23:59:59'),
+      });
+    }
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          // 搜索产品名称（多语言）
+          qb.andWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."zh-CN"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."en"')) LIKE :nameSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."es"')) LIKE :nameSearch)`,
+            { nameSearch: `%${search}%` }
+          );
+          // 搜索产品描述
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."zh-CN"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."en"')) LIKE :descSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."es"')) LIKE :descSearch)`,
+            { descSearch: `%${search}%` }
+          );
+          // 搜索有效成分
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."zh-CN"')) LIKE :ingredientSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."en"')) LIKE :ingredientSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."es"')) LIKE :ingredientSearch)`,
+            { ingredientSearch: `%${search}%` }
+          );
+          // 搜索CAS号
+          qb.orWhere('product.casNo LIKE :casSearch', { casSearch: `%${search}%` });
+          // 搜索企业名称
+          qb.orWhere(
+            `(JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."zh-CN"')) LIKE :supplierSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."en"')) LIKE :supplierSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."es"')) LIKE :supplierSearch)`,
+            { supplierSearch: `%${search}%` }
+          );
+        })
+      );
+    }
+
+    // 排序
+    const sortField = sortBy === 'name' ? 'JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\'))' : `product.${sortBy}`;
+    queryBuilder.orderBy(sortField, sortOrder);
 
     const [products, total] = await queryBuilder
       .skip((page - 1) * limit)
       .take(limit)
-      .orderBy('product.createdAt', 'DESC')
       .getManyAndCount();
 
     return {
@@ -590,25 +1038,133 @@ export class AdminService {
 
   // 获取所有用户列表
   async getAllUsers(
-    paginationDto: PaginationDto & { search?: string },
+    queryDto: UserQueryDto,
   ): Promise<PaginatedResult<User>> {
-    const { page = 1, limit = 20, search } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      role,
+      companyId,
+      companyName,
+      companyType,
+      country,
+      isActive,
+      emailVerified,
+      registeredStartDate,
+      registeredEndDate,
+      lastLoginStartDate,
+      lastLoginEndDate,
+      hasSubscription,
+      hasPaidSubscription,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = queryDto;
 
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.company', 'company');
+      .leftJoinAndSelect('user.company', 'company')
+      .leftJoinAndSelect('user.subscriptions', 'subscriptions')
+      .leftJoinAndSelect('subscriptions.plan', 'plan');
 
-    if (search) {
+    // 基础筛选条件
+    if (role) {
+      queryBuilder.andWhere('user.role = :role', { role });
+    }
+
+    if (companyId) {
+      queryBuilder.andWhere('user.companyId = :companyId', { companyId });
+    }
+
+    if (companyName) {
       queryBuilder.andWhere(
-        '(user.username LIKE :search OR user.email LIKE :search OR user.name LIKE :search)',
-        { search: `%${search}%` },
+        `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"zh-CN\"')) LIKE :companyName OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"en\"')) LIKE :companyName OR ` +
+          `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"es\"')) LIKE :companyName)`,
+        { companyName: `%${companyName}%` }
       );
     }
+
+    if (companyType) {
+      queryBuilder.andWhere('company.type = :companyType', { companyType });
+    }
+
+    if (country) {
+      queryBuilder.andWhere('company.country = :country', { country });
+    }
+
+    if (isActive !== undefined) {
+      queryBuilder.andWhere('user.isActive = :isActive', { isActive });
+    }
+
+    if (emailVerified !== undefined) {
+      queryBuilder.andWhere('user.emailVerified = :emailVerified', { emailVerified });
+    }
+
+    if (registeredStartDate && registeredEndDate) {
+      queryBuilder.andWhere('user.createdAt BETWEEN :registeredStartDate AND :registeredEndDate', {
+        registeredStartDate: new Date(registeredStartDate),
+        registeredEndDate: new Date(registeredEndDate + ' 23:59:59'),
+      });
+    }
+
+    if (lastLoginStartDate && lastLoginEndDate) {
+      queryBuilder.andWhere('user.lastLoginAt BETWEEN :lastLoginStartDate AND :lastLoginEndDate', {
+        lastLoginStartDate: new Date(lastLoginStartDate),
+        lastLoginEndDate: new Date(lastLoginEndDate + ' 23:59:59'),
+      });
+    }
+
+    if (hasSubscription !== undefined) {
+      if (hasSubscription) {
+        queryBuilder.andWhere('subscriptions.id IS NOT NULL');
+      } else {
+        queryBuilder.andWhere('subscriptions.id IS NULL');
+      }
+    }
+
+    if (hasPaidSubscription !== undefined) {
+      if (hasPaidSubscription) {
+        queryBuilder.andWhere('subscriptions.type != :giftType AND subscriptions.status = :activeStatus', {
+          giftType: 'gift',
+          activeStatus: 'active',
+        });
+      } else {
+        queryBuilder.andWhere('(subscriptions.id IS NULL OR subscriptions.type = :giftType OR subscriptions.status != :activeStatus)', {
+          giftType: 'gift',
+          activeStatus: 'active',
+        });
+      }
+    }
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          // 搜索用户名称
+          qb.andWhere('user.name LIKE :nameSearch', { nameSearch: `%${search}%` })
+            // 搜索用户邮箱
+            .orWhere('user.email LIKE :emailSearch', { emailSearch: `%${search}%` })
+            // 搜索用户名
+            .orWhere('user.username LIKE :usernameSearch', { usernameSearch: `%${search}%` })
+            // 搜索企业名称
+            .orWhere(
+              `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"zh-CN\"')) LIKE :companySearch OR ` +
+                `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"en\"')) LIKE :companySearch OR ` +
+                `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"es\"')) LIKE :companySearch)`,
+              { companySearch: `%${search}%` }
+            );
+        })
+      );
+    }
+
+    // 排序
+    const sortField = `user.${sortBy}`;
+    queryBuilder.orderBy(sortField, sortOrder);
 
     const [users, total] = await queryBuilder
       .skip((page - 1) * limit)
       .take(limit)
-      .orderBy('user.createdAt', 'DESC')
       .getManyAndCount();
 
     return {
@@ -2062,13 +2618,13 @@ export class AdminService {
         role: 'admin',
         displayName: '管理员',
         description: '拥有大部分管理权限，可以管理企业、产品、用户等核心功能',
-        defaultPermissions: DEFAULT_ROLE_PERMISSIONS.admin,
+        defaultPermissions: [...DEFAULT_ROLE_PERMISSIONS.admin],
       },
       {
         role: 'moderator',
         displayName: '审核员',
         description: '主要负责内容审核，可以审核企业和产品',
-        defaultPermissions: DEFAULT_ROLE_PERMISSIONS.moderator,
+        defaultPermissions: [...DEFAULT_ROLE_PERMISSIONS.moderator],
       },
     ];
   }
