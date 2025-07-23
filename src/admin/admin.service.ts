@@ -396,8 +396,11 @@ export class AdminService {
       limit = 20, 
       search,
       country,
-      businessTypes,
-      size,
+      businessCategories, // 主字段，对应数据库
+      businessTypes, // 前端兼容字段 
+      businessCategory, // 前端兼容字段
+      companySize, // 主字段，对应数据库
+      size, // 前端兼容字段
       type,
       isTop100,
       createdStartDate,
@@ -424,14 +427,25 @@ export class AdminService {
       queryBuilder.andWhere('company.country = :country', { country });
     }
 
-    if (businessTypes && businessTypes.length > 0) {
-      queryBuilder.andWhere('JSON_OVERLAPS(company.businessTypes, :businessTypes)', { 
-        businessTypes: JSON.stringify(businessTypes) 
+    // 业务类别查询 - 优先使用主字段
+    const finalBusinessCategories = businessCategories || businessTypes;
+    if (finalBusinessCategories && finalBusinessCategories.length > 0) {
+      queryBuilder.andWhere('JSON_OVERLAPS(company.businessCategories, :businessCategories)', { 
+        businessCategories: JSON.stringify(finalBusinessCategories) 
       });
     }
 
-    if (size) {
-      queryBuilder.andWhere('company.size = :size', { size });
+    // 前端兼容字段：单个businessCategory转换为数组查询
+    if (businessCategory && !finalBusinessCategories) {
+      queryBuilder.andWhere('JSON_CONTAINS(company.businessCategories, :businessCategory)', { 
+        businessCategory: JSON.stringify(businessCategory) 
+      });
+    }
+
+    // 企业规模查询 - 优先使用主字段
+    const finalCompanySize = companySize || size;
+    if (finalCompanySize) {
+      queryBuilder.andWhere('company.companySize = :companySize', { companySize: finalCompanySize });
     }
 
     if (isTop100 !== undefined) {
@@ -552,8 +566,11 @@ export class AdminService {
       type, 
       search,
       country,
-      businessTypes,
-      size,
+      businessCategories, // 主字段，对应数据库
+      businessTypes, // 前端兼容字段
+      businessCategory, // 前端兼容字段
+      companySize, // 主字段，对应数据库
+      size, // 前端兼容字段
       verified,
       isTop100,
       createdStartDate,
@@ -583,14 +600,25 @@ export class AdminService {
       queryBuilder.andWhere('company.country = :country', { country });
     }
 
-    if (businessTypes && businessTypes.length > 0) {
-      queryBuilder.andWhere('JSON_OVERLAPS(company.businessTypes, :businessTypes)', { 
-        businessTypes: JSON.stringify(businessTypes) 
+    // 业务类别查询 - 优先使用主字段
+    const finalBusinessCategories = businessCategories || businessTypes;
+    if (finalBusinessCategories && finalBusinessCategories.length > 0) {
+      queryBuilder.andWhere('JSON_OVERLAPS(company.businessCategories, :businessCategories)', { 
+        businessCategories: JSON.stringify(finalBusinessCategories) 
       });
     }
 
-    if (size) {
-      queryBuilder.andWhere('company.size = :size', { size });
+    // 前端兼容字段：单个businessCategory转换为数组查询
+    if (businessCategory && !finalBusinessCategories) {
+      queryBuilder.andWhere('JSON_CONTAINS(company.businessCategories, :businessCategory)', { 
+        businessCategory: JSON.stringify(businessCategory) 
+      });
+    }
+
+    // 企业规模查询 - 优先使用主字段
+    const finalCompanySize = companySize || size;
+    if (finalCompanySize) {
+      queryBuilder.andWhere('company.companySize = :companySize', { companySize: finalCompanySize });
     }
 
     if (verified !== undefined) {

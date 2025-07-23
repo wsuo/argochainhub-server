@@ -41,9 +41,25 @@ export class CompanyQueryDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  businessCategories?: string[];
+
+  @ApiPropertyOptional({ description: '业务类别（前端兼容字段）' })
+  @IsOptional()
+  @IsString()
+  businessCategory?: string;
+
+  @ApiPropertyOptional({ description: '业务类别（前端兼容字段）', isArray: true, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   businessTypes?: string[];
 
   @ApiPropertyOptional({ description: '企业规模' })
+  @IsOptional()
+  @IsString()
+  companySize?: string;
+
+  @ApiPropertyOptional({ description: '企业规模（前端兼容字段）' })
   @IsOptional()
   @IsString()
   size?: string;
