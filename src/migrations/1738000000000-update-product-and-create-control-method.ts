@@ -212,10 +212,7 @@ export class UpdateProductAndCreateControlMethod1738000000000 implements Migrati
       );
 
       // 创建索引
-      await queryRunner.createIndex('control_methods', {
-        name: 'IDX_CONTROL_METHODS_PRODUCT_ID',
-        columnNames: ['productId'],
-      });
+      await queryRunner.createIndex('control_methods', 'IDX_CONTROL_METHODS_PRODUCT_ID', ['productId']);
     }
   }
 
