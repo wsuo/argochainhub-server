@@ -49,11 +49,13 @@
       "id": 1,
       "name": {
         "zh-CN": "草甘膦原药",
-        "en": "Glyphosate Technical"
+        "en": "Glyphosate Technical",
+        "es": "Glifosato Técnico"
       },
       "pesticideName": {
         "zh-CN": "草甘膦",
-        "en": "Glyphosate"
+        "en": "Glyphosate",
+        "es": "Glifosato"
       },
       "supplierId": 1,
       "formulation": "TC",
@@ -66,9 +68,26 @@
       "activeIngredient1": {
         "name": {
           "zh-CN": "草甘膦",
-          "en": "Glyphosate"
+          "en": "Glyphosate",
+          "es": "Glifosato"
         },
         "content": "95%"
+      },
+      "activeIngredient2": {
+        "name": {
+          "zh-CN": "异丙胺盐",
+          "en": "Isopropylamine salt",
+          "es": "Sal de isopropilamina"
+        },
+        "content": "3%"
+      },
+      "activeIngredient3": {
+        "name": {
+          "zh-CN": "助剂",
+          "en": "Adjuvant",
+          "es": "Adyuvante"
+        },
+        "content": "2%"
       },
       "minOrderQuantity": 1000,
       "minOrderUnit": "kg",
@@ -113,11 +132,13 @@
   "id": 1,
   "name": {
     "zh-CN": "草甘膦原药",
-    "en": "Glyphosate Technical"
+    "en": "Glyphosate Technical",
+    "es": "Glifosato Técnico"
   },
   "pesticideName": {
     "zh-CN": "草甘膦",
-    "en": "Glyphosate"
+    "en": "Glyphosate",
+    "es": "Glifosato"
   },
   "supplier": {
     "id": 1,
@@ -129,19 +150,23 @@
       "id": 1,
       "targetCrop": {
         "zh-CN": "小麦",
-        "en": "Wheat"
+        "en": "Wheat",
+        "es": "Trigo"
       },
       "pestDisease": {
         "zh-CN": "杂草",
-        "en": "Weeds"
+        "en": "Weeds",
+        "es": "Malezas"
       },
       "applicationMethod": {
         "zh-CN": "喷雾",
-        "en": "Spray"
+        "en": "Spray",
+        "es": "Pulverización"
       },
       "dosage": {
         "zh-CN": "每亩20-30毫升",
-        "en": "20-30ml per acre"
+        "en": "20-30ml per acre",
+        "es": "20-30ml por acre"
       },
       "sortOrder": 0,
       "isActive": true
@@ -160,11 +185,13 @@
 {
   "name": {
     "zh-CN": "草甘膦原药",
-    "en": "Glyphosate Technical"
+    "en": "Glyphosate Technical",
+    "es": "Glifosato Técnico"
   },
   "pesticideName": {
     "zh-CN": "草甘膦",
-    "en": "Glyphosate"
+    "en": "Glyphosate",
+    "es": "Glifosato"
   },
   "supplierId": 1,
   "formulation": "TC",
@@ -177,17 +204,34 @@
   "activeIngredient1": {
     "name": {
       "zh-CN": "草甘膦",
-      "en": "Glyphosate"
+      "en": "Glyphosate",
+      "es": "Glifosato"
     },
     "content": "95%"
+  },
+  "activeIngredient2": {
+    "name": {
+      "zh-CN": "异丙胺盐",
+      "en": "Isopropylamine salt",
+      "es": "Sal de isopropilamina"
+    },
+    "content": "3%"
+  },
+  "activeIngredient3": {
+    "name": {
+      "zh-CN": "助剂",
+      "en": "Adjuvant",
+      "es": "Adyuvante"
+    },
+    "content": "2%"
   },
   "minOrderQuantity": 1000,
   "minOrderUnit": "kg",
   "details": {
     "productCategory": "herbicide",
     "exportRestrictedCountries": ["US", "CA"],
-    "description": "高纯度草甘膦原药",
-    "remarks": "需要特殊储存条件"
+    "description": "高纯度草甘膦原药，含有效成分95%及必要助剂",
+    "remarks": "需要特殊储存条件，远离热源和明火"
   },
   "status": "DRAFT",
   "isListed": false
@@ -254,23 +298,27 @@
     "productId": 1,
     "targetCrop": {
       "zh-CN": "小麦",
-      "en": "Wheat"
+      "en": "Wheat",
+      "es": "Trigo"
     },
     "pestDisease": {
       "zh-CN": "蚜虫",
-      "en": "Aphids"
+      "en": "Aphids",
+      "es": "Pulgones"
     },
     "applicationMethod": {
       "zh-CN": "叶面喷雾",
-      "en": "Foliar spray"
+      "en": "Foliar spray",
+      "es": "Pulverización foliar"
     },
     "dosage": {
       "zh-CN": "每亩20-30毫升",
-      "en": "20-30ml per acre"
+      "en": "20-30ml per acre",
+      "es": "20-30ml por acre"
     },
     "sortOrder": 0,
     "isActive": true,
-    "remarks": "施药时注意风向",
+    "remarks": "施药时注意风向，避免在大风天气施药",
     "createdAt": "2024-01-15T10:00:00Z",
     "updatedAt": "2024-01-15T10:00:00Z"
   }
@@ -288,23 +336,27 @@
 {
   "targetCrop": {
     "zh-CN": "小麦",
-    "en": "Wheat"
+    "en": "Wheat",
+    "es": "Trigo"
   },
   "pestDisease": {
     "zh-CN": "蚜虫",
-    "en": "Aphids"
+    "en": "Aphids",
+    "es": "Pulgones"
   },
   "applicationMethod": {
     "zh-CN": "叶面喷雾",
-    "en": "Foliar spray"
+    "en": "Foliar spray",
+    "es": "Pulverización foliar"
   },
   "dosage": {
     "zh-CN": "每亩20-30毫升",
-    "en": "20-30ml per acre"
+    "en": "20-30ml per acre",
+    "es": "20-30ml por acre"
   },
   "sortOrder": 0,
   "isActive": true,
-  "remarks": "施药时注意风向"
+  "remarks": "施药时注意风向，避免在大风天气施药"
 }
 ```
 
@@ -321,37 +373,45 @@
     {
       "targetCrop": {
         "zh-CN": "小麦",
-        "en": "Wheat"
+        "en": "Wheat",
+        "es": "Trigo"
       },
       "pestDisease": {
         "zh-CN": "蚜虫",
-        "en": "Aphids"
+        "en": "Aphids",
+        "es": "Pulgones"
       },
       "applicationMethod": {
         "zh-CN": "叶面喷雾",
-        "en": "Foliar spray"
+        "en": "Foliar spray",
+        "es": "Pulverización foliar"
       },
       "dosage": {
         "zh-CN": "每亩20-30毫升",
-        "en": "20-30ml per acre"
+        "en": "20-30ml per acre",
+        "es": "20-30ml por acre"
       }
     },
     {
       "targetCrop": {
         "zh-CN": "水稻",
-        "en": "Rice"
+        "en": "Rice",
+        "es": "Arroz"
       },
       "pestDisease": {
         "zh-CN": "稻飞虱",
-        "en": "Rice planthopper"
+        "en": "Rice planthopper",
+        "es": "Saltahojas del arroz"
       },
       "applicationMethod": {
         "zh-CN": "喷雾",
-        "en": "Spray"
+        "en": "Spray",
+        "es": "Pulverización"
       },
       "dosage": {
         "zh-CN": "每亩15-20毫升",
-        "en": "15-20ml per acre"
+        "en": "15-20ml per acre",
+        "es": "15-20ml por acre"
       }
     }
   ]
@@ -409,10 +469,44 @@
 
 ## 注意事项
 
-1. **多语言字段**: 产品名称、农药名称、有效成分名称、防治方法相关字段都支持多语言，至少需要提供中文（zh-CN）
-2. **字典值**: 剂型（formulation）和毒性（toxicity）字段使用字典值，需要从字典接口获取有效值
-3. **产品状态流转**: 
+1. **多语言字段**: 产品名称、农药名称、有效成分名称、防治方法相关字段都支持多语言，支持中文（zh-CN）、英文（en）、西班牙文（es）三种语言
+2. **有效成分字段**: 产品最多支持3个有效成分字段（activeIngredient1、activeIngredient2、activeIngredient3），每个有效成分都包含多语言名称和含量信息
+3. **字典值**: 剂型（formulation）和毒性（toxicity）字段使用字典值，需要从字典接口获取有效值
+4. **产品状态流转**: 
    - DRAFT（草稿）→ PENDING_REVIEW（待审核）→ ACTIVE（已通过）/REJECTED（已拒绝）
    - 只有ACTIVE状态的产品才能上架
-4. **防治方法**: 一个产品可以有多个防治方法，支持排序和启用/禁用控制
-5. **权限控制**: 所有接口都需要管理员权限（admin或super_admin角色）
+5. **防治方法**: 一个产品可以有多个防治方法，支持排序和启用/禁用控制
+6. **权限控制**: 所有接口都需要管理员权限（admin或super_admin角色）
+
+## 数据结构说明
+
+### 有效成分结构
+```json
+{
+  "activeIngredient1": {
+    "name": {
+      "zh-CN": "中文名称",
+      "en": "English Name", 
+      "es": "Nombre en Español"
+    },
+    "content": "含量百分比，如：95%"
+  },
+  "activeIngredient2": {
+    // 可选字段，结构同上
+  },
+  "activeIngredient3": {
+    // 可选字段，结构同上  
+  }
+}
+```
+
+### 多语言字段结构
+```json
+{
+  "fieldName": {
+    "zh-CN": "中文内容",
+    "en": "English Content",
+    "es": "Contenido en Español"
+  }
+}
+```
