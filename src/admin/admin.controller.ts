@@ -57,7 +57,11 @@ import {
   CreateAdminUserDto, 
   UpdateAdminUserDto, 
   ChangePasswordDto, 
-  ResetPasswordDto 
+  ResetPasswordDto,
+  PermissionGroupDto,
+  RoleTemplateDto,
+  AdminUserPermissionDto,
+  AssignPermissionsDto
 } from './dto/admin-user-management.dto';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { ProductStatus } from '../entities/product.entity';
@@ -65,6 +69,7 @@ import { OrderStatus } from '../entities/order.entity';
 import { InquiryStatus } from '../entities/inquiry.entity';
 import { SampleRequestStatus } from '../entities/sample-request.entity';
 import { RegistrationRequestStatus } from '../entities/registration-request.entity';
+import { AdminPermission } from '../types/permissions';
 
 @ApiTags('后台管理')
 @Controller('admin')
@@ -692,5 +697,78 @@ export class AdminController {
   async deleteAdminUser(@Param('id', ParseIntPipe) adminUserId: number) {
     await this.adminService.deleteAdminUser(adminUserId);
     return { message: '管理员用户删除成功' };
+  }
+
+  // ===================== 权限管理相关接口 =====================
+
+  @Get('permissions/groups')
+  @ApiOperation({ summary: '获取权限分组信息' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '获取成功',
+    type: [PermissionGroupDto]
+  })
+  async getPermissionGroups() {
+    return this.adminService.getPermissionGroups();
+  }
+
+  @Get('permissions/role-templates')
+  @ApiOperation({ summary: '获取角色模板信息' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '获取成功',
+    type: [RoleTemplateDto]
+  })
+  async getRoleTemplates() {
+    return this.adminService.getRoleTemplates();
+  }
+
+  @Get('admin-users/:id/permissions')
+  @ApiOperation({ summary: '获取管理员用户权限信息' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '获取成功',
+    type: AdminUserPermissionDto
+  })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async getAdminUserPermissions(@Param('id', ParseIntPipe) userId: number) {
+    return this.adminService.getAdminUserPermissions(userId);
+  }
+
+  @Post('admin-users/:id/permissions')
+  @ApiOperation({ summary: '为管理员用户分配权限' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '权限分配成功' })
+  @ApiResponse({ status: 400, description: '超级管理员无需分配权限' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async assignPermissions(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() assignPermissionsDto: AssignPermissionsDto,
+  ) {
+    await this.adminService.assignPermissions(userId, assignPermissionsDto);
+    return { message: '权限分配成功' };
+  }
+
+  @Patch('admin-users/:id/permissions/reset')
+  @ApiOperation({ summary: '根据角色重置用户权限' })
+  @ApiParam({ name: 'id', description: '管理员用户ID' })
+  @ApiResponse({ status: 200, description: '权限重置成功' })
+  @ApiResponse({ status: 400, description: '超级管理员无需重置权限' })
+  @ApiResponse({ status: 404, description: '管理员用户不存在' })
+  async resetPermissionsByRole(@Param('id', ParseIntPipe) userId: number) {
+    await this.adminService.resetPermissionsByRole(userId);
+    return { message: '权限重置成功' };
+  }
+
+  @Patch('admin-users/permissions/batch')
+  @ApiOperation({ summary: '批量更新管理员用户权限' })
+  @ApiResponse({ status: 200, description: '批量更新成功' })
+  @ApiResponse({ status: 400, description: '部分用户不存在或包含超级管理员' })
+  async batchUpdatePermissions(
+    @Body() updates: Array<{ userId: number; permissions: AdminPermission[] }>,
+  ) {
+    await this.adminService.batchUpdatePermissions(updates);
+    return { message: '批量权限更新成功' };
   }
 }

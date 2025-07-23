@@ -65,11 +65,17 @@ import {
   UpdateAdminUserDto, 
   ChangePasswordDto, 
   ResetPasswordDto, 
-  AdminUserStatsDto 
+  AdminUserStatsDto,
+  PermissionGroupDto,
+  PermissionItemDto,
+  AssignPermissionsDto,
+  RoleTemplateDto,
+  AdminUserPermissionDto
 } from './dto/admin-user-management.dto';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../types/multilang';
 import { MultiLangQueryUtil } from '../utils/multilang-query.util';
+import { AdminPermission, DEFAULT_ROLE_PERMISSIONS, PermissionHelper } from '../types/permissions';
 
 @Injectable()
 export class AdminService {
@@ -1951,5 +1957,219 @@ export class AdminService {
     });
 
     return result;
+  }
+
+  // ===================== 权限管理相关方法 =====================
+
+  /**
+   * 获取所有权限分组信息
+   */
+  async getPermissionGroups(): Promise<PermissionGroupDto[]> {
+    const permissionGroups = [
+      {
+        groupName: 'COMPANY',
+        groupDisplayName: '企业管理',
+        permissions: [
+          { permission: AdminPermission.COMPANY_VIEW, description: '查看企业信息' },
+          { permission: AdminPermission.COMPANY_CREATE, description: '创建企业' },
+          { permission: AdminPermission.COMPANY_UPDATE, description: '更新企业信息' },
+          { permission: AdminPermission.COMPANY_DELETE, description: '删除企业' },
+          { permission: AdminPermission.COMPANY_REVIEW, description: '审核企业' },
+        ]
+      },
+      {
+        groupName: 'PRODUCT',
+        groupDisplayName: '产品管理',
+        permissions: [
+          { permission: AdminPermission.PRODUCT_VIEW, description: '查看产品信息' },
+          { permission: AdminPermission.PRODUCT_CREATE, description: '创建产品' },
+          { permission: AdminPermission.PRODUCT_UPDATE, description: '更新产品信息' },
+          { permission: AdminPermission.PRODUCT_DELETE, description: '删除产品' },
+          { permission: AdminPermission.PRODUCT_REVIEW, description: '审核产品' },
+        ]
+      },
+      {
+        groupName: 'USER',
+        groupDisplayName: '用户管理',
+        permissions: [
+          { permission: AdminPermission.USER_VIEW, description: '查看用户信息' },
+          { permission: AdminPermission.USER_CREATE, description: '创建用户' },
+          { permission: AdminPermission.USER_UPDATE, description: '更新用户信息' },
+          { permission: AdminPermission.USER_DELETE, description: '删除用户' },
+          { permission: AdminPermission.USER_MANAGE_SUBSCRIPTION, description: '管理用户订阅' },
+        ]
+      },
+      {
+        groupName: 'BUSINESS',
+        groupDisplayName: '业务流程管理',
+        permissions: [
+          { permission: AdminPermission.INQUIRY_VIEW, description: '查看询价单' },
+          { permission: AdminPermission.INQUIRY_MANAGE, description: '管理询价单' },
+          { permission: AdminPermission.SAMPLE_REQUEST_VIEW, description: '查看样品申请' },
+          { permission: AdminPermission.SAMPLE_REQUEST_MANAGE, description: '管理样品申请' },
+          { permission: AdminPermission.REGISTRATION_REQUEST_VIEW, description: '查看登记申请' },
+          { permission: AdminPermission.REGISTRATION_REQUEST_MANAGE, description: '管理登记申请' },
+          { permission: AdminPermission.ORDER_VIEW, description: '查看订单' },
+          { permission: AdminPermission.ORDER_MANAGE, description: '管理订单' },
+        ]
+      },
+      {
+        groupName: 'PLAN',
+        groupDisplayName: '会员计划管理',
+        permissions: [
+          { permission: AdminPermission.PLAN_VIEW, description: '查看会员计划' },
+          { permission: AdminPermission.PLAN_CREATE, description: '创建会员计划' },
+          { permission: AdminPermission.PLAN_UPDATE, description: '更新会员计划' },
+          { permission: AdminPermission.PLAN_DELETE, description: '删除会员计划' },
+        ]
+      },
+      {
+        groupName: 'SYSTEM',
+        groupDisplayName: '系统管理',
+        permissions: [
+          { permission: AdminPermission.ADMIN_MANAGE, description: '管理员账户管理' },
+          { permission: AdminPermission.DICTIONARY_MANAGE, description: '字典管理' },
+          { permission: AdminPermission.SYSTEM_CONFIG, description: '系统配置' },
+          { permission: AdminPermission.AUDIT_LOG_VIEW, description: '查看审计日志' },
+          { permission: AdminPermission.FILE_MANAGE, description: '文件管理' },
+        ]
+      },
+      {
+        groupName: 'ANALYTICS',
+        groupDisplayName: '统计分析',
+        permissions: [
+          { permission: AdminPermission.ANALYTICS_VIEW, description: '查看统计数据' },
+          { permission: AdminPermission.DASHBOARD_VIEW, description: '查看仪表盘' },
+        ]
+      },
+    ];
+
+    return permissionGroups;
+  }
+
+  /**
+   * 获取角色模板信息
+   */
+  async getRoleTemplates(): Promise<RoleTemplateDto[]> {
+    return [
+      {
+        role: 'super_admin',
+        displayName: '超级管理员',
+        description: '拥有系统所有权限，可以管理所有功能模块',
+        defaultPermissions: Object.values(AdminPermission),
+      },
+      {
+        role: 'admin',
+        displayName: '管理员',
+        description: '拥有大部分管理权限，可以管理企业、产品、用户等核心功能',
+        defaultPermissions: DEFAULT_ROLE_PERMISSIONS.admin,
+      },
+      {
+        role: 'moderator',
+        displayName: '审核员',
+        description: '主要负责内容审核，可以审核企业和产品',
+        defaultPermissions: DEFAULT_ROLE_PERMISSIONS.moderator,
+      },
+    ];
+  }
+
+  /**
+   * 获取管理员用户权限信息
+   */
+  async getAdminUserPermissions(userId: number): Promise<AdminUserPermissionDto> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('管理员用户不存在');
+    }
+
+    return {
+      id: adminUser.id,
+      username: adminUser.username,
+      role: adminUser.role,
+      permissions: adminUser.permissions || [],
+      allPermissions: adminUser.getAllPermissions(),
+      isActive: adminUser.isActive,
+    };
+  }
+
+  /**
+   * 为管理员用户分配权限
+   */
+  async assignPermissions(userId: number, dto: AssignPermissionsDto): Promise<void> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('管理员用户不存在');
+    }
+
+    // 超级管理员不需要分配具体权限
+    if (adminUser.role === 'super_admin') {
+      throw new BadRequestException('超级管理员拥有所有权限，无需分配具体权限');
+    }
+
+    // 更新权限
+    adminUser.permissions = dto.permissions;
+    adminUser.updatedAt = new Date();
+    
+    await this.adminUserRepository.save(adminUser);
+  }
+
+  /**
+   * 根据角色重置用户权限
+   */
+  async resetPermissionsByRole(userId: number): Promise<void> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('管理员用户不存在');
+    }
+
+    // 超级管理员不需要重置权限
+    if (adminUser.role === 'super_admin') {
+      throw new BadRequestException('超级管理员拥有所有权限，无需重置');
+    }
+
+    // 根据角色设置默认权限
+    adminUser.permissions = PermissionHelper.getDefaultPermissionsByRole(adminUser.role);
+    adminUser.updatedAt = new Date();
+    
+    await this.adminUserRepository.save(adminUser);
+  }
+
+  /**
+   * 批量更新管理员用户权限
+   */
+  async batchUpdatePermissions(updates: Array<{ userId: number; permissions: AdminPermission[] }>): Promise<void> {
+    const userIds = updates.map(update => update.userId);
+    const adminUsers = await this.adminUserRepository.findByIds(userIds);
+
+    if (adminUsers.length !== userIds.length) {
+      throw new BadRequestException('部分管理员用户不存在');
+    }
+
+    // 检查是否包含超级管理员
+    const superAdminUsers = adminUsers.filter(user => user.role === 'super_admin');
+    if (superAdminUsers.length > 0) {
+      throw new BadRequestException('不能修改超级管理员的权限');
+    }
+
+    // 批量更新
+    const updatePromises = updates.map(async (update) => {
+      const adminUser = adminUsers.find(user => user.id === update.userId);
+      if (adminUser) {
+        adminUser.permissions = update.permissions;
+        adminUser.updatedAt = new Date();
+        return this.adminUserRepository.save(adminUser);
+      }
+    });
+
+    await Promise.all(updatePromises);
   }
 }

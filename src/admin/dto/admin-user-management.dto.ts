@@ -8,9 +8,12 @@ import {
   MinLength,
   MaxLength,
   IsIn,
+  IsArray,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { AdminPermission, AdminRole } from '../../types/permissions';
 
 export class AdminUserQueryDto {
   @ApiProperty({ description: '页码', example: 1, required: false })
@@ -34,9 +37,8 @@ export class AdminUserQueryDto {
 
   @ApiProperty({ description: '角色筛选', required: false, enum: ['admin', 'super_admin', 'moderator'] })
   @IsOptional()
-  @IsString()
-  @IsIn(['admin', 'super_admin', 'moderator'])
-  role?: string;
+  @IsEnum(['admin', 'super_admin', 'moderator'])
+  role?: AdminRole;
 
   @ApiProperty({ description: '账户状态', required: false })
   @IsOptional()
@@ -68,9 +70,20 @@ export class CreateAdminUserDto {
   password: string;
 
   @ApiProperty({ description: '角色', example: 'admin', enum: ['admin', 'super_admin', 'moderator'] })
-  @IsString()
-  @IsIn(['admin', 'super_admin', 'moderator'])
-  role: string;
+  @IsEnum(['admin', 'super_admin', 'moderator'])
+  role: AdminRole;
+
+  @ApiProperty({ 
+    description: '用户权限列表', 
+    example: ['company:view', 'company:create'], 
+    required: false,
+    isArray: true,
+    enum: AdminPermission
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(AdminPermission, { each: true })
+  permissions?: AdminPermission[];
 
   @ApiProperty({ description: '是否激活', example: true, required: false })
   @IsOptional()
@@ -88,9 +101,20 @@ export class UpdateAdminUserDto {
 
   @ApiProperty({ description: '角色', example: 'admin', enum: ['admin', 'super_admin', 'moderator'], required: false })
   @IsOptional()
-  @IsString()
-  @IsIn(['admin', 'super_admin', 'moderator'])
-  role?: string;
+  @IsEnum(['admin', 'super_admin', 'moderator'])
+  role?: AdminRole;
+
+  @ApiProperty({ 
+    description: '用户权限列表', 
+    example: ['company:view', 'company:create'], 
+    required: false,
+    isArray: true,
+    enum: AdminPermission
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(AdminPermission, { each: true })
+  permissions?: AdminPermission[];
 
   @ApiProperty({ description: '是否激活', example: true, required: false })
   @IsOptional()
@@ -137,4 +161,70 @@ export class AdminUserStatsDto {
 
   @ApiProperty({ description: '审核员数量' })
   moderators: number;
+}
+
+// 权限管理相关DTO
+export class PermissionGroupDto {
+  @ApiProperty({ description: '权限组名称', example: 'COMPANY' })
+  groupName: string;
+
+  @ApiProperty({ description: '权限组显示名称', example: '企业管理' })
+  groupDisplayName: string;
+
+  @ApiProperty({ description: '权限列表', isArray: true })
+  permissions: PermissionItemDto[];
+}
+
+export class PermissionItemDto {
+  @ApiProperty({ description: '权限标识', example: 'company:view' })
+  permission: AdminPermission;
+
+  @ApiProperty({ description: '权限描述', example: '查看企业信息' })
+  description: string;
+}
+
+export class AssignPermissionsDto {
+  @ApiProperty({ 
+    description: '权限列表', 
+    example: ['company:view', 'company:create'], 
+    isArray: true,
+    enum: AdminPermission
+  })
+  @IsArray()
+  @IsEnum(AdminPermission, { each: true })
+  permissions: AdminPermission[];
+}
+
+export class RoleTemplateDto {
+  @ApiProperty({ description: '角色名称', example: 'admin' })
+  role: AdminRole;
+
+  @ApiProperty({ description: '角色显示名称', example: '管理员' })
+  displayName: string;
+
+  @ApiProperty({ description: '默认权限列表', isArray: true })
+  defaultPermissions: AdminPermission[];
+
+  @ApiProperty({ description: '权限描述' })
+  description: string;
+}
+
+export class AdminUserPermissionDto {
+  @ApiProperty({ description: '用户ID' })
+  id: number;
+
+  @ApiProperty({ description: '用户名' })
+  username: string;
+
+  @ApiProperty({ description: '角色' })
+  role: AdminRole;
+
+  @ApiProperty({ description: '具体权限列表', isArray: true })
+  permissions: AdminPermission[];
+
+  @ApiProperty({ description: '所有有效权限列表', isArray: true })
+  allPermissions: AdminPermission[];
+
+  @ApiProperty({ description: '是否激活' })
+  isActive: boolean;
 }

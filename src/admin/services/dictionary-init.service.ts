@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DictionaryService } from './dictionary.service';
 import { CountryDictionaryService } from './country-dictionary.service';
 import { MultiLangText } from '../../types/multilang';
+import { AdminPermission, PERMISSION_DESCRIPTIONS } from '../../types/permissions';
 
 @Injectable()
 export class DictionaryInitService {
@@ -25,6 +26,10 @@ export class DictionaryInitService {
       await this.initializeProductStatuses();
       await this.initializeFormulationTypes();
       await this.initializeProductCategories();
+      
+      // 权限系统字典
+      await this.initializeAdminRoles();
+      await this.initializeAdminPermissions();
       
       // 3. 初始化国家数据
       await this.countryDictionaryService.initializeCountries();
@@ -157,6 +162,36 @@ export class DictionaryInitService {
         } as MultiLangText,
         isSystem: true,
         sortOrder: 8,
+      },
+      {
+        code: 'admin_roles',
+        name: {
+          'zh-CN': '管理员角色',
+          en: 'Admin Roles',
+          es: 'Roles de Administrador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统管理员角色分类',
+          en: 'System administrator role classification',
+          es: 'Clasificación de roles de administrador del sistema',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 9,
+      },
+      {
+        code: 'admin_permissions',
+        name: {
+          'zh-CN': '管理员权限',
+          en: 'Admin Permissions',
+          es: 'Permisos de Administrador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统管理员权限定义',
+          en: 'System administrator permission definitions',
+          es: 'Definiciones de permisos de administrador del sistema',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 10,
       },
     ];
 
@@ -581,6 +616,74 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('company_size', companySizes);
+  }
+
+  private async initializeAdminRoles(): Promise<void> {
+    const adminRoles = [
+      {
+        code: 'super_admin',
+        name: {
+          'zh-CN': '超级管理员',
+          en: 'Super Administrator',
+          es: 'Súper Administrador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '拥有系统所有权限的超级管理员',
+          en: 'Super administrator with all system permissions',
+          es: 'Súper administrador con todos los permisos del sistema',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'admin',
+        name: {
+          'zh-CN': '管理员',
+          en: 'Administrator',
+          es: 'Administrador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '具有大部分管理权限的普通管理员',
+          en: 'Regular administrator with most management permissions',
+          es: 'Administrador regular con la mayoría de permisos de gestión',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'moderator',
+        name: {
+          'zh-CN': '审核员',
+          en: 'Moderator',
+          es: 'Moderador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '主要负责内容审核的管理员',
+          en: 'Administrator primarily responsible for content moderation',
+          es: 'Administrador principalmente responsable de la moderación de contenido',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+    ];
+
+    await this.batchCreateItems('admin_roles', adminRoles);
+  }
+
+  private async initializeAdminPermissions(): Promise<void> {
+    const permissions = Object.values(AdminPermission).map((permission, index) => ({
+      code: permission,
+      name: {
+        'zh-CN': PERMISSION_DESCRIPTIONS[permission],
+        en: permission.replace(/[_:]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        es: PERMISSION_DESCRIPTIONS[permission], // 可以后续添加西班牙语翻译
+      } as MultiLangText,
+      description: {
+        'zh-CN': `权限：${PERMISSION_DESCRIPTIONS[permission]}`,
+        en: `Permission: ${permission.replace(/[_:]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+        es: `Permiso: ${PERMISSION_DESCRIPTIONS[permission]}`,
+      } as MultiLangText,
+      sortOrder: index + 1,
+    }));
+
+    await this.batchCreateItems('admin_permissions', permissions);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {
