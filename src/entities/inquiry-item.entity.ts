@@ -18,10 +18,21 @@ export class InquiryItem extends BaseEntity {
   @Column('json')
   productSnapshot: {
     name: MultiLangText;
-    category: MultiLangText;
+    pesticideName: MultiLangText;
     formulation: string;
-    activeIngredient: MultiLangText;
-    content: string;
+    activeIngredient1?: {
+      name: MultiLangText;
+      content: string;
+    };
+    activeIngredient2?: {
+      name: MultiLangText;
+      content: string;
+    };
+    activeIngredient3?: {
+      name: MultiLangText;
+      content: string;
+    };
+    totalContent?: string;
   };
 
   // 关联关系

@@ -1,131 +1,332 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString, IsNumber, IsOptional, IsNotEmpty, IsPositive, IsObject } from 'class-validator';
-import { ProductStatus } from '../../entities/product.entity';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { 
+  IsNotEmpty, 
+  IsOptional, 
+  IsString, 
+  IsNumber, 
+  IsEnum, 
+  IsBoolean, 
+  IsDateString, 
+  IsArray, 
+  ValidateNested,
+  Min
+} from 'class-validator';
+import { ToxicityLevel, ProductStatus } from '../../types/product';
 import { MultiLangText } from '../../types/multilang';
 
-export class CreateProductDto {
-  @ApiProperty({ description: '产品名称（多语言）' })
-  @IsNotEmpty()
-  @IsObject()
+/**
+ * 有效成分DTO
+ */
+export class ActiveIngredientDto {
+  @ApiProperty({ 
+    description: '有效成分名称（多语言）',
+    example: {
+      "zh-CN": "草甘膦",
+      "en": "Glyphosate", 
+      "es": "Glifosato"
+    }
+  })
+  @ValidateNested()
+  @Type(() => Object)
   name: MultiLangText;
 
-  @ApiProperty({ description: '产品分类（多语言）' })
-  @IsNotEmpty()
-  @IsObject()
-  category: MultiLangText;
-
-  @ApiProperty({ description: 'CAS号', required: false })
-  @IsOptional()
-  @IsString()
-  casNo?: string;
-
-  @ApiProperty({ description: '剂型' })
-  @IsNotEmpty()
-  @IsString()
-  formulation: string;
-
-  @ApiProperty({ description: '有效成分（多语言）' })
-  @IsNotEmpty()
-  @IsObject()
-  activeIngredient: MultiLangText;
-
-  @ApiProperty({ description: '含量规格' })
+  @ApiProperty({ description: '有效成分含量', example: '95%' })
   @IsNotEmpty()
   @IsString()
   content: string;
-
-  @ApiProperty({ description: '产品描述（多语言）', required: false })
-  @IsOptional()
-  @IsObject()
-  description?: MultiLangText;
-
-  @ApiProperty({ description: '产品详情', required: false })
-  @IsOptional()
-  @IsObject()
-  details?: {
-    toxicity?: string;
-    physicalProperties?: object;
-    packagingSpecs?: string[];
-    storageConditions?: string;
-    shelfLife?: string;
-  };
-
-  @ApiProperty({ description: '供应商企业ID' })
-  @IsNotEmpty()
-  @IsNumber()
-  @IsPositive()
-  supplierId: number;
-
-  @ApiProperty({ description: '产品状态', enum: ProductStatus, default: ProductStatus.ACTIVE })
-  @IsOptional()
-  @IsEnum(ProductStatus)
-  status?: ProductStatus = ProductStatus.ACTIVE;
-
-  @ApiProperty({ description: '拒绝原因', required: false })
-  @IsOptional()
-  @IsString()
-  rejectionReason?: string;
 }
 
-export class UpdateProductDto {
-  @ApiProperty({ description: '产品名称（多语言）', required: false })
-  @IsOptional()
-  @IsObject()
-  name?: MultiLangText;
-
-  @ApiProperty({ description: '产品分类（多语言）', required: false })
-  @IsOptional()
-  @IsObject()
-  category?: MultiLangText;
-
-  @ApiProperty({ description: 'CAS号', required: false })
+/**
+ * 产品详细信息DTO
+ */
+export class ProductDetailsDto {
+  @ApiPropertyOptional({ description: '产品说明' })
   @IsOptional()
   @IsString()
-  casNo?: string;
+  description?: string;
 
-  @ApiProperty({ description: '剂型', required: false })
+  @ApiPropertyOptional({ description: '产品品类' })
+  @IsOptional()
+  @IsString()
+  productCategory?: string;
+
+  @ApiPropertyOptional({ description: '备注' })
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+
+  @ApiPropertyOptional({ 
+    description: '出口限制国家列表',
+    example: ['US', 'CA', 'AU']
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  exportRestrictedCountries?: string[];
+}
+
+/**
+ * 创建产品DTO
+ */
+export class CreateProductDto {
+  @ApiProperty({ 
+    description: '产品名称（多语言）',
+    example: {
+      "zh-CN": "草甘膦原药",
+      "en": "Glyphosate Technical",
+      "es": "Glifosato Técnico"
+    }
+  })
+  @ValidateNested()
+  @Type(() => Object)
+  name: MultiLangText;
+
+  @ApiProperty({ 
+    description: '农药名称（多语言）',
+    example: {
+      "zh-CN": "草甘膦",
+      "en": "Glyphosate",
+      "es": "Glifosato"
+    }
+  })
+  @ValidateNested()
+  @Type(() => Object)
+  pesticideName: MultiLangText;
+
+  @ApiProperty({ description: '供应商ID' })
+  @IsNotEmpty()
+  @Type(() => Number)
+  @IsNumber()
+  supplierId: number;
+
+  @ApiPropertyOptional({ description: '最低起订量' })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  minOrderQuantity?: number;
+
+  @ApiPropertyOptional({ description: '最低起订量单位' })
+  @IsOptional()
+  @IsString()
+  minOrderUnit?: string;
+
+  @ApiPropertyOptional({ description: '登记证号' })
+  @IsOptional()
+  @IsString()
+  registrationNumber?: string;
+
+  @ApiPropertyOptional({ description: '登记证持有人' })
+  @IsOptional()
+  @IsString()
+  registrationHolder?: string;
+
+  @ApiPropertyOptional({ description: '有效截止日期 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  effectiveDate?: string;
+
+  @ApiPropertyOptional({ description: '首次批准日期 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  firstApprovalDate?: string;
+
+  @ApiPropertyOptional({ description: '剂型（字典值）' })
   @IsOptional()
   @IsString()
   formulation?: string;
 
-  @ApiProperty({ description: '有效成分（多语言）', required: false })
-  @IsOptional()
-  @IsObject()
-  activeIngredient?: MultiLangText;
-
-  @ApiProperty({ description: '含量规格', required: false })
+  @ApiPropertyOptional({ description: '总含量' })
   @IsOptional()
   @IsString()
-  content?: string;
+  totalContent?: string;
 
-  @ApiProperty({ description: '产品描述（多语言）', required: false })
+  @ApiPropertyOptional({ 
+    description: '毒性等级（字典值）',
+    enum: ToxicityLevel
+  })
   @IsOptional()
-  @IsObject()
-  description?: MultiLangText;
+  @IsEnum(ToxicityLevel)
+  toxicity?: ToxicityLevel;
 
-  @ApiProperty({ description: '产品详情', required: false })
+  @ApiPropertyOptional({ 
+    description: '有效成分1',
+    type: ActiveIngredientDto
+  })
   @IsOptional()
-  @IsObject()
-  details?: {
-    toxicity?: string;
-    physicalProperties?: object;
-    packagingSpecs?: string[];
-    storageConditions?: string;
-    shelfLife?: string;
-  };
+  @ValidateNested()
+  @Type(() => ActiveIngredientDto)
+  activeIngredient1?: ActiveIngredientDto;
 
-  @ApiProperty({ description: '供应商企业ID', required: false })
+  @ApiPropertyOptional({ 
+    description: '有效成分2',
+    type: ActiveIngredientDto
+  })
   @IsOptional()
+  @ValidateNested()
+  @Type(() => ActiveIngredientDto)
+  activeIngredient2?: ActiveIngredientDto;
+
+  @ApiPropertyOptional({ 
+    description: '有效成分3',
+    type: ActiveIngredientDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ActiveIngredientDto)
+  activeIngredient3?: ActiveIngredientDto;
+
+  @ApiPropertyOptional({ 
+    description: '产品详细信息',
+    type: ProductDetailsDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductDetailsDto)
+  details?: ProductDetailsDto;
+
+  @ApiPropertyOptional({ description: '是否上架', default: false })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isListed?: boolean;
+
+  @ApiPropertyOptional({ 
+    description: '产品状态',
+    enum: ProductStatus,
+    default: ProductStatus.DRAFT
+  })
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
+}
+
+/**
+ * 更新产品DTO
+ */
+export class UpdateProductDto {
+  @ApiPropertyOptional({ 
+    description: '产品名称（多语言）'
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Object)
+  name?: MultiLangText;
+
+  @ApiPropertyOptional({ 
+    description: '农药名称（多语言）'
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Object)
+  pesticideName?: MultiLangText;
+
+  @ApiPropertyOptional({ description: '供应商ID' })
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
-  @IsPositive()
   supplierId?: number;
 
-  @ApiProperty({ description: '产品状态', enum: ProductStatus, required: false })
+  @ApiPropertyOptional({ description: '最低起订量' })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  minOrderQuantity?: number;
+
+  @ApiPropertyOptional({ description: '最低起订量单位' })
+  @IsOptional()
+  @IsString()
+  minOrderUnit?: string;
+
+  @ApiPropertyOptional({ description: '登记证号' })
+  @IsOptional()
+  @IsString()
+  registrationNumber?: string;
+
+  @ApiPropertyOptional({ description: '登记证持有人' })
+  @IsOptional()
+  @IsString()
+  registrationHolder?: string;
+
+  @ApiPropertyOptional({ description: '有效截止日期 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  effectiveDate?: string;
+
+  @ApiPropertyOptional({ description: '首次批准日期 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  firstApprovalDate?: string;
+
+  @ApiPropertyOptional({ description: '剂型（字典值）' })
+  @IsOptional()
+  @IsString()
+  formulation?: string;
+
+  @ApiPropertyOptional({ description: '总含量' })
+  @IsOptional()
+  @IsString()
+  totalContent?: string;
+
+  @ApiPropertyOptional({ 
+    description: '毒性等级（字典值）',
+    enum: ToxicityLevel
+  })
+  @IsOptional()
+  @IsEnum(ToxicityLevel)
+  toxicity?: ToxicityLevel;
+
+  @ApiPropertyOptional({ 
+    description: '有效成分1',
+    type: ActiveIngredientDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ActiveIngredientDto)
+  activeIngredient1?: ActiveIngredientDto;
+
+  @ApiPropertyOptional({ 
+    description: '有效成分2',
+    type: ActiveIngredientDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ActiveIngredientDto)
+  activeIngredient2?: ActiveIngredientDto;
+
+  @ApiPropertyOptional({ 
+    description: '有效成分3',
+    type: ActiveIngredientDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ActiveIngredientDto)
+  activeIngredient3?: ActiveIngredientDto;
+
+  @ApiPropertyOptional({ 
+    description: '产品详细信息',
+    type: ProductDetailsDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductDetailsDto)
+  details?: ProductDetailsDto;
+
+  @ApiPropertyOptional({ description: '是否上架' })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isListed?: boolean;
+
+  @ApiPropertyOptional({ 
+    description: '产品状态',
+    enum: ProductStatus
+  })
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
 
-  @ApiProperty({ description: '拒绝原因', required: false })
+  @ApiPropertyOptional({ description: '拒绝原因' })
   @IsOptional()
   @IsString()
   rejectionReason?: string;

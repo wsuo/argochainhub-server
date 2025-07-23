@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsOptional, IsPositive, Max, Min, IsEnum, IsString, IsBoolean, IsDateString, IsArray, IsNumber } from 'class-validator';
-import { ProductStatus } from '../../entities/product.entity';
+import { ProductStatus, ToxicityLevel } from '../../types/product';
 
 export class ProductQueryDto {
   @ApiPropertyOptional({ minimum: 1, default: 1, description: '页码' })
@@ -22,64 +22,103 @@ export class ProductQueryDto {
   @IsEnum(ProductStatus)
   status?: ProductStatus;
 
-  @ApiPropertyOptional({ description: '搜索关键词（产品名称、描述、CAS号）' })
+  @ApiPropertyOptional({ description: '搜索关键词（产品名称、农药名称、登记证号）' })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '产品分类' })
+  @ApiPropertyOptional({ description: '供应商ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  supplierId?: number;
+
+  @ApiPropertyOptional({ description: '供应商名称' })
   @IsOptional()
   @IsString()
-  category?: string;
+  supplierName?: string;
 
-  @ApiPropertyOptional({ description: '剂型类型' })
+  @ApiPropertyOptional({ description: '剂型（字典值）' })
   @IsOptional()
   @IsString()
   formulation?: string;
 
-  @ApiPropertyOptional({ description: '有效成分' })
+  @ApiPropertyOptional({ 
+    description: '毒性等级（字典值）',
+    enum: ToxicityLevel
+  })
+  @IsOptional()
+  @IsEnum(ToxicityLevel)
+  toxicity?: ToxicityLevel;
+
+  @ApiPropertyOptional({ description: '有效成分名称' })
   @IsOptional()
   @IsString()
   activeIngredient?: string;
 
-  @ApiPropertyOptional({ description: 'CAS号' })
+  @ApiPropertyOptional({ description: '登记证号' })
   @IsOptional()
   @IsString()
-  casNo?: string;
+  registrationNumber?: string;
 
-  @ApiPropertyOptional({ description: '所属企业ID' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  companyId?: number;
-
-  @ApiPropertyOptional({ description: '企业类型（买家/供应商）' })
+  @ApiPropertyOptional({ description: '登记证持有人' })
   @IsOptional()
   @IsString()
-  companyType?: string;
+  registrationHolder?: string;
+
+  @ApiPropertyOptional({ description: '产品品类' })
+  @IsOptional()
+  @IsString()
+  productCategory?: string;
 
   @ApiPropertyOptional({ description: '国家代码' })
   @IsOptional()
   @IsString()
   country?: string;
 
-  @ApiPropertyOptional({ description: '最低价格' })
+  @ApiPropertyOptional({ description: '出口限制国家', isArray: true, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  exportRestrictedCountries?: string[];
+
+  @ApiPropertyOptional({ description: '最低起订量（最小）' })
   @IsOptional()
   @Type(() => Number)
   @Min(0)
-  minPrice?: number;
+  minOrderQuantityMin?: number;
 
-  @ApiPropertyOptional({ description: '最高价格' })
+  @ApiPropertyOptional({ description: '最低起订量（最大）' })
   @IsOptional()
   @Type(() => Number)
   @Min(0)
-  maxPrice?: number;
+  minOrderQuantityMax?: number;
 
-  @ApiPropertyOptional({ description: '是否有库存' })
+  @ApiPropertyOptional({ description: '是否上架' })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
-  hasStock?: boolean;
+  isListed?: boolean;
+
+  @ApiPropertyOptional({ description: '有效截止日期（开始）' })
+  @IsOptional()
+  @IsDateString()
+  effectiveDateStart?: string;
+
+  @ApiPropertyOptional({ description: '有效截止日期（结束）' })
+  @IsOptional()
+  @IsDateString()
+  effectiveDateEnd?: string;
+
+  @ApiPropertyOptional({ description: '首次批准日期（开始）' })
+  @IsOptional()
+  @IsDateString()
+  firstApprovalDateStart?: string;
+
+  @ApiPropertyOptional({ description: '首次批准日期（结束）' })
+  @IsOptional()
+  @IsDateString()
+  firstApprovalDateEnd?: string;
 
   @ApiPropertyOptional({ description: '创建开始日期 (YYYY-MM-DD)' })
   @IsOptional()
@@ -101,22 +140,19 @@ export class ProductQueryDto {
   @IsDateString()
   updatedEndDate?: string;
 
-  @ApiPropertyOptional({ description: '是否已认证产品' })
+  @ApiPropertyOptional({ description: '是否有防治方法' })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
-  certified?: boolean;
+  hasControlMethods?: boolean;
 
-  @ApiPropertyOptional({ description: '包装规格', isArray: true, type: [String] })
+  @ApiPropertyOptional({ 
+    description: '排序字段', 
+    enum: ['createdAt', 'updatedAt', 'name', 'pesticideName', 'effectiveDate', 'firstApprovalDate', 'minOrderQuantity'] 
+  })
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  packagingSpecs?: string[];
-
-  @ApiPropertyOptional({ description: '排序字段', enum: ['createdAt', 'updatedAt', 'name', 'price'] })
-  @IsOptional()
-  @IsEnum(['createdAt', 'updatedAt', 'name', 'price'])
-  sortBy?: 'createdAt' | 'updatedAt' | 'name' | 'price';
+  @IsEnum(['createdAt', 'updatedAt', 'name', 'pesticideName', 'effectiveDate', 'firstApprovalDate', 'minOrderQuantity'])
+  sortBy?: 'createdAt' | 'updatedAt' | 'name' | 'pesticideName' | 'effectiveDate' | 'firstApprovalDate' | 'minOrderQuantity';
 
   @ApiPropertyOptional({ description: '排序方向', enum: ['ASC', 'DESC'], default: 'DESC' })
   @IsOptional()

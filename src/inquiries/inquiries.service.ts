@@ -100,10 +100,12 @@ export class InquiriesService {
           packagingReq: itemDto.packagingReq,
           productSnapshot: {
             name: product.name,
-            category: product.category,
+            pesticideName: product.pesticideName,
             formulation: product.formulation,
-            activeIngredient: product.activeIngredient,
-            content: product.content,
+            activeIngredient1: product.activeIngredient1,
+            activeIngredient2: product.activeIngredient2,
+            activeIngredient3: product.activeIngredient3,
+            totalContent: product.totalContent,
           },
         });
         await this.inquiryItemRepository.save(inquiryItem);

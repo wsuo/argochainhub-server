@@ -715,20 +715,28 @@ export class AdminService {
       page = 1,
       limit = 20,
       search,
-      category,
+      supplierId,
+      supplierName,
       formulation,
+      toxicity,
       activeIngredient,
-      casNo,
-      companyId,
-      companyType,
+      registrationNumber,
+      registrationHolder,
+      productCategory,
       country,
-      minPrice,
-      maxPrice,
-      hasStock,
+      exportRestrictedCountries,
+      minOrderQuantityMin,
+      minOrderQuantityMax,
+      isListed,
+      effectiveDateStart,
+      effectiveDateEnd,
+      firstApprovalDateStart,
+      firstApprovalDateEnd,
       createdStartDate,
       createdEndDate,
-      certified,
-      packagingSpecs,
+      updatedStartDate,
+      updatedEndDate,
+      hasControlMethods,
       sortBy = 'createdAt',
       sortOrder = 'DESC'
     } = queryDto;
@@ -739,6 +747,8 @@ export class AdminService {
       .where('product.status = :status', { status: ProductStatus.PENDING_REVIEW });
 
     // 附加筛选条件
+    // TODO: 重新实现基于新Product实体结构的查询条件
+    /*
     if (category) {
       queryBuilder.andWhere(
         `(JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."zh-CN"')) LIKE :category OR ` +
@@ -747,11 +757,14 @@ export class AdminService {
         { category: `%${category}%` }
       );
     }
+    */
 
     if (formulation) {
       queryBuilder.andWhere('product.formulation = :formulation', { formulation });
     }
 
+    // TODO: 更新为新的有效成分查询结构
+    /*
     if (activeIngredient) {
       queryBuilder.andWhere(
         `(JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."zh-CN"')) LIKE :activeIngredient OR ` +
@@ -760,7 +773,10 @@ export class AdminService {
         { activeIngredient: `%${activeIngredient}%` }
       );
     }
+    */
 
+    // TODO: 移除不存在的字段查询条件
+    /*
     if (casNo) {
       queryBuilder.andWhere('product.casNo = :casNo', { casNo });
     }
@@ -772,11 +788,14 @@ export class AdminService {
     if (companyType) {
       queryBuilder.andWhere('supplier.type = :companyType', { companyType });
     }
+    */
 
     if (country) {
       queryBuilder.andWhere('supplier.country = :country', { country });
     }
 
+    // TODO: 移除价格和库存相关字段
+    /*
     if (minPrice !== undefined) {
       queryBuilder.andWhere('product.price >= :minPrice', { minPrice });
     }
@@ -793,6 +812,8 @@ export class AdminService {
       }
     }
 
+    // TODO: 移除不存在的字段查询条件
+    /*
     if (certified !== undefined) {
       queryBuilder.andWhere('product.certified = :certified', { certified });
     }
@@ -802,6 +823,7 @@ export class AdminService {
         packagingSpecs: JSON.stringify(packagingSpecs)
       });
     }
+    */
 
     if (createdStartDate && createdEndDate) {
       queryBuilder.andWhere('product.createdAt BETWEEN :startDate AND :endDate', {
@@ -815,28 +837,21 @@ export class AdminService {
       queryBuilder.andWhere(
         new Brackets((qb) => {
           // 搜索产品名称（多语言）
-          qb.andWhere(
+          qb.where(
             `(JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."zh-CN"')) LIKE :nameSearch OR ` +
-              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."en"')) LIKE :nameSearch OR ` +
-              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."es"')) LIKE :nameSearch)`,
+              `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."en"')) LIKE :nameSearch)`,
             { nameSearch: `%${search}%` }
           );
-          // 搜索产品描述
+          // 搜索农药名称（多语言）
           qb.orWhere(
-            `(JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."zh-CN"')) LIKE :descSearch OR ` +
-              `JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."en"')) LIKE :descSearch OR ` +
-              `JSON_UNQUOTE(JSON_EXTRACT(product.description, '$."es"')) LIKE :descSearch)`,
-            { descSearch: `%${search}%` }
+            `(JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."zh-CN"')) LIKE :pesticideSearch OR ` +
+              `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."en"')) LIKE :pesticideSearch)`,
+            { pesticideSearch: `%${search}%` }
           );
-          // 搜索CAS号
-          qb.orWhere('product.casNo LIKE :casSearch', { casSearch: `%${search}%` });
-          // 搜索企业名称
-          qb.orWhere(
-            `(JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."zh-CN"')) LIKE :supplierSearch OR ` +
-              `JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."en"')) LIKE :supplierSearch OR ` +
-              `JSON_UNQUOTE(JSON_EXTRACT(supplier.name, '$."es"')) LIKE :supplierSearch)`,
-            { supplierSearch: `%${search}%` }
-          );
+          // 搜索登记证号
+          qb.orWhere('product.registrationNumber LIKE :regSearch', { regSearch: `%${search}%` });
+          // 搜索供应商名称 
+          qb.orWhere('supplier.name LIKE :supplierSearch', { supplierSearch: `%${search}%` });
         })
       );
     }
@@ -898,22 +913,28 @@ export class AdminService {
       limit = 20,
       status,
       search,
-      category,
+      supplierId,
+      supplierName,
       formulation,
+      toxicity,
       activeIngredient,
-      casNo,
-      companyId,
-      companyType,
+      registrationNumber,
+      registrationHolder,
+      productCategory,
       country,
-      minPrice,
-      maxPrice,
-      hasStock,
+      exportRestrictedCountries,
+      minOrderQuantityMin,
+      minOrderQuantityMax,
+      isListed,
+      effectiveDateStart,
+      effectiveDateEnd,
+      firstApprovalDateStart,
+      firstApprovalDateEnd,
       createdStartDate,
       createdEndDate,
       updatedStartDate,
       updatedEndDate,
-      certified,
-      packagingSpecs,
+      hasControlMethods,
       sortBy = 'createdAt',
       sortOrder = 'DESC'
     } = queryDto;
@@ -927,6 +948,8 @@ export class AdminService {
       queryBuilder.andWhere('product.status = :status', { status });
     }
 
+    // TODO: 重新实现基于新Product实体结构的查询条件
+    /*
     if (category) {
       queryBuilder.andWhere(
         `(JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."zh-CN"')) LIKE :category OR ` +
@@ -935,11 +958,14 @@ export class AdminService {
         { category: `%${category}%` }
       );
     }
+    */
 
     if (formulation) {
       queryBuilder.andWhere('product.formulation = :formulation', { formulation });
     }
 
+    // TODO: 更新为新的有效成分查询结构
+    /*
     if (activeIngredient) {
       queryBuilder.andWhere(
         `(JSON_UNQUOTE(JSON_EXTRACT(product.activeIngredient, '$."zh-CN"')) LIKE :activeIngredient OR ` +
@@ -948,7 +974,10 @@ export class AdminService {
         { activeIngredient: `%${activeIngredient}%` }
       );
     }
+    */
 
+    // TODO: 移除不存在的字段查询条件
+    /*
     if (casNo) {
       queryBuilder.andWhere('product.casNo = :casNo', { casNo });
     }
@@ -960,11 +989,14 @@ export class AdminService {
     if (companyType) {
       queryBuilder.andWhere('supplier.type = :companyType', { companyType });
     }
+    */
 
     if (country) {
       queryBuilder.andWhere('supplier.country = :country', { country });
     }
 
+    // TODO: 移除价格和库存相关字段
+    /*
     if (minPrice !== undefined) {
       queryBuilder.andWhere('product.price >= :minPrice', { minPrice });
     }
@@ -980,7 +1012,10 @@ export class AdminService {
         queryBuilder.andWhere('(product.stock IS NULL OR product.stock <= 0)');
       }
     }
+    */
 
+    // TODO: 移除不存在的字段查询条件
+    /*
     if (certified !== undefined) {
       queryBuilder.andWhere('product.certified = :certified', { certified });
     }
@@ -990,6 +1025,7 @@ export class AdminService {
         packagingSpecs: JSON.stringify(packagingSpecs)
       });
     }
+    */
 
     if (createdStartDate && createdEndDate) {
       queryBuilder.andWhere('product.createdAt BETWEEN :createdStartDate AND :createdEndDate', {

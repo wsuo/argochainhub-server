@@ -313,7 +313,7 @@ export class SeedService {
     this.logger.log('Seeding products...');
 
     const existingProduct = await this.productRepository.findOne({
-      where: { casNo: '1071-83-6' },
+      where: { registrationNumber: 'DEMO-REG-001' },
     });
 
     if (existingProduct) {

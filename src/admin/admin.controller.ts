@@ -20,6 +20,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
+import { AdminProductsService } from './services/admin-products.service';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { AdminRolesGuard } from '../common/guards/admin-roles.guard';
 import { AdminRoles } from '../common/decorators/admin-roles.decorator';
@@ -39,6 +40,11 @@ import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import {
+  CreateControlMethodDto,
+  UpdateControlMethodDto,
+  BatchCreateControlMethodDto
+} from './dto/control-method.dto';
 import { CompanyQueryDto } from './dto/company-query.dto';
 import { 
   InquiryQueryDto, 
@@ -79,7 +85,10 @@ import { UserQueryDto } from './dto/user-query.dto';
 @ApiBearerAuth()
 @AdminRoles('admin', 'super_admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly adminProductsService: AdminProductsService,
+  ) {}
 
   @Get('dashboard/charts')
   @ApiOperation({ summary: '获取仪表盘图表数据' })
@@ -147,7 +156,8 @@ export class AdminController {
   @ApiOperation({ summary: '获取待审核产品列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getPendingProducts(@Query() queryDto: ProductQueryDto) {
-    return this.adminService.getPendingProducts(queryDto);
+    const query = { ...queryDto, status: ProductStatus.PENDING_REVIEW };
+    return this.adminProductsService.getProducts(query);
   }
 
   @Post('products/:id/review')
@@ -159,14 +169,14 @@ export class AdminController {
     @Param('id', ParseIntPipe) id: number,
     @Body() reviewDto: ReviewProductDto,
   ) {
-    return this.adminService.reviewProduct(id, reviewDto);
+    return this.adminProductsService.reviewProduct(id, reviewDto);
   }
 
   @Get('products')
   @ApiOperation({ summary: '获取所有产品列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllProducts(@Query() queryDto: ProductQueryDto) {
-    return this.adminService.getAllProducts(queryDto);
+    return this.adminProductsService.getProducts(queryDto);
   }
 
   @Get('products/:id')
@@ -175,16 +185,26 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
   async getProductById(@Param('id', ParseIntPipe) productId: number) {
-    return this.adminService.getProductById(productId);
+    return this.adminProductsService.getProductById(productId);
   }
 
-  @Patch('products/:id/toggle-status')
-  @ApiOperation({ summary: '切换产品状态(上线/下线)' })
+  @Patch('products/:id/list')
+  @ApiOperation({ summary: '产品上架' })
   @ApiParam({ name: 'id', description: '产品ID' })
-  @ApiResponse({ status: 200, description: '操作成功' })
+  @ApiResponse({ status: 200, description: '上架成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
-  async toggleProductStatus(@Param('id', ParseIntPipe) id: number) {
-    return this.adminService.toggleProductStatus(id);
+  @ApiResponse({ status: 400, description: '产品不满足上架条件' })
+  async listProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.adminProductsService.listProduct(id);
+  }
+
+  @Patch('products/:id/unlist')
+  @ApiOperation({ summary: '产品下架' })
+  @ApiParam({ name: 'id', description: '产品ID' })
+  @ApiResponse({ status: 200, description: '下架成功' })
+  @ApiResponse({ status: 404, description: '产品不存在' })
+  async unlistProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.adminProductsService.unlistProduct(id);
   }
 
   @Get('users')
@@ -394,7 +414,7 @@ export class AdminController {
   @ApiResponse({ status: 400, description: '参数错误' })
   @ApiResponse({ status: 404, description: '供应商企业不存在' })
   async createProduct(@Body() createProductDto: CreateProductDto) {
-    return this.adminService.createProduct(createProductDto);
+    return this.adminProductsService.createProduct(createProductDto);
   }
 
   @Put('products/:id')
@@ -407,7 +427,88 @@ export class AdminController {
     @Param('id', ParseIntPipe) productId: number,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    return this.adminService.updateProduct(productId, updateProductDto);
+    return this.adminProductsService.updateProduct(productId, updateProductDto);
+  }
+
+  @Delete('products/:id')
+  @ApiOperation({ summary: '删除产品' })
+  @ApiParam({ name: 'id', description: '产品ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiResponse({ status: 404, description: '产品不存在' })
+  async deleteProduct(@Param('id', ParseIntPipe) productId: number) {
+    return this.adminProductsService.deleteProduct(productId);
+  }
+
+  // 防治方法管理
+  @Get('products/:productId/control-methods')
+  @ApiOperation({ summary: '获取产品的防治方法列表' })
+  @ApiParam({ name: 'productId', description: '产品ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getProductControlMethods(@Param('productId', ParseIntPipe) productId: number) {
+    return this.adminProductsService.getProductControlMethods(productId);
+  }
+
+  @Post('products/:productId/control-methods')
+  @ApiOperation({ summary: '创建防治方法' })
+  @ApiParam({ name: 'productId', description: '产品ID' })
+  @ApiResponse({ status: 201, description: '创建成功' })
+  @ApiResponse({ status: 404, description: '产品不存在' })
+  async createControlMethod(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Body() createDto: CreateControlMethodDto,
+  ) {
+    return this.adminProductsService.createControlMethod({
+      ...createDto,
+      productId,
+    });
+  }
+
+  @Post('products/:productId/control-methods/batch')
+  @ApiOperation({ summary: '批量创建防治方法' })
+  @ApiParam({ name: 'productId', description: '产品ID' })
+  @ApiResponse({ status: 201, description: '创建成功' })
+  @ApiResponse({ status: 404, description: '产品不存在' })
+  async batchCreateControlMethods(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Body() batchDto: BatchCreateControlMethodDto,
+  ) {
+    return this.adminProductsService.batchCreateControlMethods({
+      ...batchDto,
+      productId,
+    });
+  }
+
+  @Put('control-methods/:id')
+  @ApiOperation({ summary: '更新防治方法' })
+  @ApiParam({ name: 'id', description: '防治方法ID' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 404, description: '防治方法不存在' })
+  async updateControlMethod(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateControlMethodDto,
+  ) {
+    return this.adminProductsService.updateControlMethod(id, updateDto);
+  }
+
+  @Delete('control-methods/:id')
+  @ApiOperation({ summary: '删除防治方法' })
+  @ApiParam({ name: 'id', description: '防治方法ID' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  @ApiResponse({ status: 404, description: '防治方法不存在' })
+  async deleteControlMethod(@Param('id', ParseIntPipe) id: number) {
+    return this.adminProductsService.deleteControlMethod(id);
+  }
+
+  @Put('products/:productId/control-methods/order')
+  @ApiOperation({ summary: '更新防治方法排序' })
+  @ApiParam({ name: 'productId', description: '产品ID' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 400, description: '参数错误' })
+  async updateControlMethodsOrder(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Body() orderMap: Record<number, number>,
+  ) {
+    return this.adminProductsService.updateControlMethodsOrder(productId, orderMap);
   }
 
   // 询价单业务流程管理
