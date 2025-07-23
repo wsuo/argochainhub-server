@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableColumn, TableForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableColumn, TableForeignKey, TableIndex } from 'typeorm';
 
 export class UpdateProductAndCreateControlMethod1738000000000 implements MigrationInterface {
   name = 'UpdateProductAndCreateControlMethod1738000000000';
@@ -212,7 +212,10 @@ export class UpdateProductAndCreateControlMethod1738000000000 implements Migrati
       );
 
       // 创建索引
-      await queryRunner.createIndex('control_methods', 'IDX_CONTROL_METHODS_PRODUCT_ID', ['productId']);
+      await queryRunner.createIndex('control_methods', new TableIndex({
+        name: 'IDX_CONTROL_METHODS_PRODUCT_ID',
+        columnNames: ['productId'],
+      }));
     }
   }
 
