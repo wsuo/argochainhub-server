@@ -306,10 +306,11 @@ export class AdminService {
   private async getProductCategoryStats(): Promise<ProductCategoryStatsDto[]> {
     const data = await this.productRepository
       .createQueryBuilder('product')
-      .select('product.category', 'category')
+      .select('JSON_UNQUOTE(JSON_EXTRACT(product.details, \'$.productCategory\'))', 'category')
       .addSelect('COUNT(*)', 'count')
       .where('product.status = :status', { status: ProductStatus.ACTIVE })
-      .groupBy('product.category')
+      .andWhere('JSON_EXTRACT(product.details, \'$.productCategory\') IS NOT NULL')
+      .groupBy('JSON_UNQUOTE(JSON_EXTRACT(product.details, \'$.productCategory\'))')
       .orderBy('count', 'DESC')
       .getRawMany();
 
@@ -319,7 +320,7 @@ export class AdminService {
     );
 
     return data.map((item) => ({
-      category: item.category,
+      category: item.category || 'unknown',
       count: parseInt(item.count),
       percentage:
         totalProducts > 0
@@ -751,9 +752,7 @@ export class AdminService {
     /*
     if (category) {
       queryBuilder.andWhere(
-        `(JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."zh-CN"')) LIKE :category OR ` +
-          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."en"')) LIKE :category OR ` +
-          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."es"')) LIKE :category)`,
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.details, '$.productCategory')) LIKE :category)`,
         { category: `%${category}%` }
       );
     }
@@ -952,9 +951,7 @@ export class AdminService {
     /*
     if (category) {
       queryBuilder.andWhere(
-        `(JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."zh-CN"')) LIKE :category OR ` +
-          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."en"')) LIKE :category OR ` +
-          `JSON_UNQUOTE(JSON_EXTRACT(product.category, '$."es"')) LIKE :category)`,
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.details, '$.productCategory')) LIKE :category)`,
         { category: `%${category}%` }
       );
     }
