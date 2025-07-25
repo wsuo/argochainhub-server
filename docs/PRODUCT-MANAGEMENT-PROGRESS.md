@@ -110,6 +110,13 @@
 - 更新字典分类代码：`formulation_list` → `formulation`，`toxicity_list` → `toxicity`
 - 接口现在正常返回完整的字典数据，支持多语言
 
+**DTO验证修复** (2025-01-24)：
+- 修复了产品更新接口的多语言字段验证错误
+- 创建了MultiLangTextDto类替代接口，解决class-validator验证问题
+- 修复了毒性等级字段验证，支持语义化值转换（LOW/MEDIUM/HIGH/ACUTE）
+- 更新了防治方法DTO，使用正确的多语言字段验证
+- 所有DTO现在可以正确验证多语言字段结构
+
 **待完成字典**
 
 3. **产品品类字典** (productCategory) - 需要根据业务需求添加

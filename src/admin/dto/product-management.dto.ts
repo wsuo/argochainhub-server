@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { 
   IsNotEmpty, 
   IsOptional, 
@@ -12,8 +12,28 @@ import {
   ValidateNested,
   Min
 } from 'class-validator';
-import { ToxicityLevel, ProductStatus } from '../../types/product';
+import { ToxicityLevel, ProductStatus, convertToxicityLevel } from '../../types/product';
 import { MultiLangText } from '../../types/multilang';
+
+/**
+ * 多语言文本DTO
+ */
+export class MultiLangTextDto {
+  @ApiProperty({ description: '中文', example: '草甘膦原药' })
+  @IsNotEmpty()
+  @IsString()
+  'zh-CN': string;
+
+  @ApiProperty({ description: '英文', example: 'Glyphosate Technical' })
+  @IsNotEmpty()
+  @IsString()
+  en: string;
+
+  @ApiPropertyOptional({ description: '西班牙文', example: 'Glifosato Técnico' })
+  @IsOptional()
+  @IsString()
+  es?: string;
+}
 
 /**
  * 有效成分DTO
@@ -21,15 +41,11 @@ import { MultiLangText } from '../../types/multilang';
 export class ActiveIngredientDto {
   @ApiProperty({ 
     description: '有效成分名称（多语言）',
-    example: {
-      "zh-CN": "草甘膦",
-      "en": "Glyphosate", 
-      "es": "Glifosato"
-    }
+    type: MultiLangTextDto
   })
   @ValidateNested()
-  @Type(() => Object)
-  name: MultiLangText;
+  @Type(() => MultiLangTextDto)
+  name: MultiLangTextDto;
 
   @ApiProperty({ description: '有效成分含量', example: '95%' })
   @IsNotEmpty()
@@ -72,27 +88,19 @@ export class ProductDetailsDto {
 export class CreateProductDto {
   @ApiProperty({ 
     description: '产品名称（多语言）',
-    example: {
-      "zh-CN": "草甘膦原药",
-      "en": "Glyphosate Technical",
-      "es": "Glifosato Técnico"
-    }
+    type: MultiLangTextDto
   })
   @ValidateNested()
-  @Type(() => Object)
-  name: MultiLangText;
+  @Type(() => MultiLangTextDto)
+  name: MultiLangTextDto;
 
   @ApiProperty({ 
     description: '农药名称（多语言）',
-    example: {
-      "zh-CN": "草甘膦",
-      "en": "Glyphosate",
-      "es": "Glifosato"
-    }
+    type: MultiLangTextDto
   })
   @ValidateNested()
-  @Type(() => Object)
-  pesticideName: MultiLangText;
+  @Type(() => MultiLangTextDto)
+  pesticideName: MultiLangTextDto;
 
   @ApiProperty({ description: '供应商ID' })
   @IsNotEmpty()
@@ -142,10 +150,19 @@ export class CreateProductDto {
   totalContent?: string;
 
   @ApiPropertyOptional({ 
-    description: '毒性等级（字典值）',
-    enum: ToxicityLevel
+    description: '毒性等级（字典值或语义值：LOW/MEDIUM/HIGH/ACUTE）',
+    enum: ToxicityLevel,
+    examples: {
+      number: { value: 2, description: '数字值：2 表示低毒' },
+      semantic: { value: 'LOW', description: '语义值：LOW 表示低毒' }
+    }
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    const converted = convertToxicityLevel(value);
+    return converted !== undefined ? converted : value;
+  })
   @IsEnum(ToxicityLevel)
   toxicity?: ToxicityLevel;
 
@@ -206,20 +223,22 @@ export class CreateProductDto {
  */
 export class UpdateProductDto {
   @ApiPropertyOptional({ 
-    description: '产品名称（多语言）'
+    description: '产品名称（多语言）',
+    type: MultiLangTextDto
   })
   @IsOptional()
   @ValidateNested()
-  @Type(() => Object)
-  name?: MultiLangText;
+  @Type(() => MultiLangTextDto)
+  name?: MultiLangTextDto;
 
   @ApiPropertyOptional({ 
-    description: '农药名称（多语言）'
+    description: '农药名称（多语言）',
+    type: MultiLangTextDto
   })
   @IsOptional()
   @ValidateNested()
-  @Type(() => Object)
-  pesticideName?: MultiLangText;
+  @Type(() => MultiLangTextDto)
+  pesticideName?: MultiLangTextDto;
 
   @ApiPropertyOptional({ description: '供应商ID' })
   @IsOptional()
@@ -269,10 +288,19 @@ export class UpdateProductDto {
   totalContent?: string;
 
   @ApiPropertyOptional({ 
-    description: '毒性等级（字典值）',
-    enum: ToxicityLevel
+    description: '毒性等级（字典值或语义值：LOW/MEDIUM/HIGH/ACUTE）',
+    enum: ToxicityLevel,
+    examples: {
+      number: { value: 2, description: '数字值：2 表示低毒' },
+      semantic: { value: 'LOW', description: '语义值：LOW 表示低毒' }
+    }
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    const converted = convertToxicityLevel(value);
+    return converted !== undefined ? converted : value;
+  })
   @IsEnum(ToxicityLevel)
   toxicity?: ToxicityLevel;
 
