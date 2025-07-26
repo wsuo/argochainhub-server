@@ -29,6 +29,7 @@ import { AdminUser } from '../entities/admin-user.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ReviewCompanyDto } from './dto/review-company.dto';
 import { ReviewProductDto } from './dto/review-product.dto';
+import { BatchReviewProductsDto } from './dto/batch-review-products.dto';
 import {
   TranslateRequestDto,
   TranslateResponseDto,
@@ -172,6 +173,43 @@ export class AdminController {
     return this.adminProductsService.reviewProduct(id, reviewDto);
   }
 
+  @Post('products/batch-review')
+  @ApiOperation({ summary: '批量审核产品' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '批量审核完成',
+    schema: {
+      type: 'object',
+      properties: {
+        total: { type: 'number', description: '总处理数量' },
+        success: { type: 'number', description: '成功处理数量' },
+        failed: { type: 'number', description: '失败处理数量' },
+        successIds: { 
+          type: 'array', 
+          items: { type: 'number' },
+          description: '成功处理的产品ID列表' 
+        },
+        failures: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              productId: { type: 'number' },
+              error: { type: 'string' }
+            }
+          },
+          description: '失败处理的详情'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
+  async batchReviewProducts(
+    @Body() batchDto: BatchReviewProductsDto,
+  ) {
+    return this.adminProductsService.batchReviewProducts(batchDto);
+  }
+
   @Get('products')
   @ApiOperation({ summary: '获取所有产品列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
@@ -205,6 +243,13 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '产品不存在' })
   async unlistProduct(@Param('id', ParseIntPipe) id: number) {
     return this.adminProductsService.unlistProduct(id);
+  }
+
+  @Get('test-users')
+  @ApiOperation({ summary: '测试用户查询' })
+  @ApiResponse({ status: 200, description: '测试成功' })
+  async testGetAllUsers() {
+    return this.adminService.testGetAllUsers();
   }
 
   @Get('users')

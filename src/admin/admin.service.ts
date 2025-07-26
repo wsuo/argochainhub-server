@@ -1097,147 +1097,65 @@ export class AdminService {
     };
   }
 
+  // 测试用户查询 - 临时调试方法
+  async testGetAllUsers(): Promise<any> {
+    try {
+      console.log('开始测试用户查询...');
+      
+      // 最简单的查询
+      const users = await this.userRepository.find({ 
+        take: 5 
+      });
+      
+      console.log('简单查询成功，返回', users.length, '条记录');
+      
+      return {
+        message: '测试成功',
+        count: users.length,
+        users: users.map(user => ({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role
+        }))
+      };
+    } catch (error) {
+      console.error('测试查询失败：', error);
+      throw error;
+    }
+  }
+
   // 获取所有用户列表
   async getAllUsers(
     queryDto: UserQueryDto,
   ): Promise<PaginatedResult<User>> {
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      role,
-      companyId,
-      companyName,
-      companyType,
-      country,
-      isActive,
-      emailVerified,
-      registeredStartDate,
-      registeredEndDate,
-      lastLoginStartDate,
-      lastLoginEndDate,
-      hasSubscription,
-      hasPaidSubscription,
-      sortBy = 'createdAt',
-      sortOrder = 'DESC',
-    } = queryDto;
-
-    const queryBuilder = this.userRepository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.company', 'company')
-      .leftJoinAndSelect('user.subscriptions', 'subscriptions')
-      .leftJoinAndSelect('subscriptions.plan', 'plan');
-
-    // 基础筛选条件
-    if (role) {
-      queryBuilder.andWhere('user.role = :role', { role });
-    }
-
-    if (companyId) {
-      queryBuilder.andWhere('user.companyId = :companyId', { companyId });
-    }
-
-    if (companyName) {
-      queryBuilder.andWhere(
-        `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"zh-CN\"')) LIKE :companyName OR ` +
-          `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"en\"')) LIKE :companyName OR ` +
-          `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"es\"')) LIKE :companyName)`,
-        { companyName: `%${companyName}%` }
-      );
-    }
-
-    if (companyType) {
-      queryBuilder.andWhere('company.type = :companyType', { companyType });
-    }
-
-    if (country) {
-      queryBuilder.andWhere('company.country = :country', { country });
-    }
-
-    if (isActive !== undefined) {
-      queryBuilder.andWhere('user.isActive = :isActive', { isActive });
-    }
-
-    if (emailVerified !== undefined) {
-      queryBuilder.andWhere('user.emailVerified = :emailVerified', { emailVerified });
-    }
-
-    if (registeredStartDate && registeredEndDate) {
-      queryBuilder.andWhere('user.createdAt BETWEEN :registeredStartDate AND :registeredEndDate', {
-        registeredStartDate: new Date(registeredStartDate),
-        registeredEndDate: new Date(registeredEndDate + ' 23:59:59'),
+    try {
+      console.log('开始执行getAllUsers查询...');
+      console.log('userRepository:', !!this.userRepository);
+      
+      // 最简单的查询
+      const users = await this.userRepository.find({
+        take: 5,
+        order: { createdAt: 'DESC' }
       });
+      
+      console.log('简单查询成功，返回', users.length, '条记录');
+      
+      return {
+        data: users,
+        meta: {
+          totalItems: users.length,
+          itemCount: users.length,
+          itemsPerPage: 5,
+          totalPages: 1,
+          currentPage: 1,
+        },
+      };
+    } catch (error) {
+      console.error('getAllUsers查询失败：', error.message);
+      console.error('错误堆栈：', error.stack);
+      throw error;
     }
-
-    if (lastLoginStartDate && lastLoginEndDate) {
-      queryBuilder.andWhere('user.lastLoginAt BETWEEN :lastLoginStartDate AND :lastLoginEndDate', {
-        lastLoginStartDate: new Date(lastLoginStartDate),
-        lastLoginEndDate: new Date(lastLoginEndDate + ' 23:59:59'),
-      });
-    }
-
-    if (hasSubscription !== undefined) {
-      if (hasSubscription) {
-        queryBuilder.andWhere('subscriptions.id IS NOT NULL');
-      } else {
-        queryBuilder.andWhere('subscriptions.id IS NULL');
-      }
-    }
-
-    if (hasPaidSubscription !== undefined) {
-      if (hasPaidSubscription) {
-        queryBuilder.andWhere('subscriptions.type != :giftType AND subscriptions.status = :activeStatus', {
-          giftType: 'gift',
-          activeStatus: 'active',
-        });
-      } else {
-        queryBuilder.andWhere('(subscriptions.id IS NULL OR subscriptions.type = :giftType OR subscriptions.status != :activeStatus)', {
-          giftType: 'gift',
-          activeStatus: 'active',
-        });
-      }
-    }
-
-    // 搜索条件
-    if (search) {
-      queryBuilder.andWhere(
-        new Brackets((qb) => {
-          // 搜索用户名称
-          qb.andWhere('user.name LIKE :nameSearch', { nameSearch: `%${search}%` })
-            // 搜索用户邮箱
-            .orWhere('user.email LIKE :emailSearch', { emailSearch: `%${search}%` })
-            // 搜索用户名
-            .orWhere('user.username LIKE :usernameSearch', { usernameSearch: `%${search}%` })
-            // 搜索企业名称
-            .orWhere(
-              `(JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"zh-CN\"')) LIKE :companySearch OR ` +
-                `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"en\"')) LIKE :companySearch OR ` +
-                `JSON_UNQUOTE(JSON_EXTRACT(company.name, '$.\"es\"')) LIKE :companySearch)`,
-              { companySearch: `%${search}%` }
-            );
-        })
-      );
-    }
-
-    // 排序
-    const sortField = `user.${sortBy}`;
-    queryBuilder.orderBy(sortField, sortOrder);
-
-    const [users, total] = await queryBuilder
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    return {
-      data: users,
-      meta: {
-        totalItems: total,
-        itemCount: users.length,
-        itemsPerPage: limit,
-        totalPages: Math.ceil(total / limit),
-        currentPage: page,
-      },
-    };
   }
 
   // 禁用/启用企业
