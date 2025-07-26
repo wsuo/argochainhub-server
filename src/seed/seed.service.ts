@@ -12,6 +12,8 @@ import { User, UserRole } from '../entities/user.entity';
 import { Plan } from '../entities/plan.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
 import { createMultiLangText } from '../types/multilang';
+import { Inquiry, InquiryStatus } from '../entities/inquiry.entity';
+import { InquiryItem } from '../entities/inquiry-item.entity';
 
 @Injectable()
 export class SeedService {
@@ -28,6 +30,10 @@ export class SeedService {
     private planRepository: Repository<Plan>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    @InjectRepository(Inquiry)
+    private inquiryRepository: Repository<Inquiry>,
+    @InjectRepository(InquiryItem)
+    private inquiryItemRepository: Repository<InquiryItem>,
   ) {}
 
   async seedAll() {
@@ -37,6 +43,7 @@ export class SeedService {
     await this.seedPlans();
     await this.seedCompaniesAndUsers();
     await this.seedProducts();
+    await this.seedInquiries();
 
     this.logger.log('Database seeding completed');
   }
@@ -338,20 +345,25 @@ export class SeedService {
           'Glyphosate Technical',
           'Glifosato Técnico',
         ),
-        category: createMultiLangText('除草剂', 'Herbicide', 'Herbicida'),
-        casNo: '1071-83-6',
-        formulation: '95%原药',
-        activeIngredient: createMultiLangText(
+        pesticideName: createMultiLangText(
           '草甘膦',
           'Glyphosate',
           'Glifosato',
         ),
-        content: '95%',
-        description: createMultiLangText(
-          '高效除草剂，广谱杀草效果好',
-          'High-efficiency herbicide with broad-spectrum weed control',
-          'Herbicida de alta eficiencia con control de malezas de amplio espectro',
-        ),
+        formulation: '95%原药',
+        activeIngredient1: {
+          name: createMultiLangText(
+            '草甘膦',
+            'Glyphosate',
+            'Glifosato',
+          ),
+          content: '95%',
+        },
+        totalContent: '95%',
+        details: {
+          description: '高效除草剂，广谱杀草效果好',
+          productCategory: '除草剂',
+        },
         status: ProductStatus.ACTIVE,
         supplierId: supplierCompany.id,
       },
@@ -361,20 +373,25 @@ export class SeedService {
           'Imidacloprid Technical',
           'Imidacloprid Técnico',
         ),
-        category: createMultiLangText('杀虫剂', 'Insecticide', 'Insecticida'),
-        casNo: '138261-41-3',
-        formulation: '97%原药',
-        activeIngredient: createMultiLangText(
+        pesticideName: createMultiLangText(
           '吡虫啉',
           'Imidacloprid',
           'Imidacloprid',
         ),
-        content: '97%',
-        description: createMultiLangText(
-          '新型烟碱类杀虫剂，对刺吸式口器害虫具有优异的防治效果',
-          'Novel neonicotinoid insecticide with excellent control of sucking insects',
-          'Insecticida neonicotinoide novedoso con excelente control de insectos chupadores',
-        ),
+        formulation: '97%原药',
+        activeIngredient1: {
+          name: createMultiLangText(
+            '吡虫啉',
+            'Imidacloprid',
+            'Imidacloprid',
+          ),
+          content: '97%',
+        },
+        totalContent: '97%',
+        details: {
+          description: '新型烟碱类杀虫剂，对刺吸式口器害虫具有优异的防治效果',
+          productCategory: '杀虫剂',
+        },
         status: ProductStatus.ACTIVE,
         supplierId: supplierCompany.id,
       },
@@ -384,20 +401,25 @@ export class SeedService {
           'Carbendazim Technical',
           'Carbendazim Técnico',
         ),
-        category: createMultiLangText('杀菌剂', 'Fungicide', 'Fungicida'),
-        casNo: '10605-21-7',
-        formulation: '98%原药',
-        activeIngredient: createMultiLangText(
+        pesticideName: createMultiLangText(
           '多菌灵',
           'Carbendazim',
           'Carbendazim',
         ),
-        content: '98%',
-        description: createMultiLangText(
-          '广谱内吸性杀菌剂，对多种真菌病害有良好的防治效果',
-          'Broad-spectrum systemic fungicide with good control of various fungal diseases',
-          'Fungicida sistémico de amplio espectro con buen control de varias enfermedades fúngicas',
-        ),
+        formulation: '98%原药',
+        activeIngredient1: {
+          name: createMultiLangText(
+            '多菌灵',
+            'Carbendazim',
+            'Carbendazim',
+          ),
+          content: '98%',
+        },
+        totalContent: '98%',
+        details: {
+          description: '广谱内吸性杀菌剂，对多种真菌病害有良好的防治效果',
+          productCategory: '杀菌剂',
+        },
         status: ProductStatus.ACTIVE,
         supplierId: supplierCompany.id,
       },
@@ -407,10 +429,223 @@ export class SeedService {
     this.logger.log('Products seeded successfully');
   }
 
+  private async seedInquiries() {
+    this.logger.log('Seeding inquiries...');
+
+    const existingInquiry = await this.inquiryRepository.findOne({
+      where: { inquiryNo: 'INQ202401010001' },
+    });
+
+    if (existingInquiry) {
+      this.logger.log('Inquiries already exist, skipping...');
+      return;
+    }
+
+    // 获取买方和供应商企业
+    const buyerCompany = await this.companyRepository.findOne({
+      where: { type: CompanyType.BUYER },
+    });
+
+    const supplierCompanies = await this.companyRepository.find({
+      where: { type: CompanyType.SUPPLIER },
+    });
+
+    if (!buyerCompany || supplierCompanies.length === 0) {
+      this.logger.error('No buyer or supplier companies found, cannot seed inquiries');
+      return;
+    }
+
+    // 获取产品
+    const products = await this.productRepository.find({
+      where: { status: ProductStatus.ACTIVE },
+    });
+
+    if (products.length === 0) {
+      this.logger.error('No products found, cannot seed inquiries');
+      return;
+    }
+
+    // 创建询价单1 - 待报价状态
+    const inquiry1 = await this.inquiryRepository.save({
+      inquiryNo: 'INQ202401010001',
+      status: InquiryStatus.PENDING_QUOTE,
+      details: {
+        deliveryLocation: '上海港',
+        tradeTerms: 'FOB',
+        paymentMethod: 'T/T',
+        buyerRemarks: '需要提供质量检测报告和产品规格书',
+      },
+      deadline: new Date('2024-02-15'),
+      buyerId: buyerCompany.id,
+      supplierId: supplierCompanies[0].id,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
+    });
+
+    // 创建询价项目
+    await this.inquiryItemRepository.save([
+      {
+        inquiryId: inquiry1.id,
+        productId: products[0].id,
+        quantity: 1000,
+        unit: 'kg',
+        packagingReq: '25kg/袋',
+        productSnapshot: {
+          name: products[0].name,
+          pesticideName: products[0].pesticideName,
+          formulation: products[0].formulation,
+          activeIngredient1: products[0].activeIngredient1,
+        },
+      },
+      {
+        inquiryId: inquiry1.id,
+        productId: products[1].id,
+        quantity: 500,
+        unit: 'kg',
+        packagingReq: '10kg/桶',
+        productSnapshot: {
+          name: products[1].name,
+          pesticideName: products[1].pesticideName,
+          formulation: products[1].formulation,
+          activeIngredient1: products[1].activeIngredient1,
+        },
+      },
+    ]);
+
+    // 创建询价单2 - 已报价状态
+    const inquiry2 = await this.inquiryRepository.save({
+      inquiryNo: 'INQ202401020001',
+      status: InquiryStatus.QUOTED,
+      details: {
+        deliveryLocation: '青岛港',
+        tradeTerms: 'CIF',
+        paymentMethod: 'L/C',
+        buyerRemarks: '请提供最优惠价格',
+      },
+      quoteDetails: {
+        totalPrice: 85000,
+        validUntil: '2024-02-10',
+        supplierRemarks: '价格含税，CIF青岛港，量大可优惠',
+      },
+      deadline: new Date('2024-02-10'),
+      buyerId: buyerCompany.id,
+      supplierId: supplierCompanies[1] ? supplierCompanies[1].id : supplierCompanies[0].id,
+      createdAt: new Date('2024-01-02'),
+      updatedAt: new Date('2024-01-03'),
+    });
+
+    await this.inquiryItemRepository.save({
+      inquiryId: inquiry2.id,
+      productId: products[2]?.id || products[0].id,
+      quantity: 2000,
+      unit: 'kg',
+      packagingReq: '50kg/袋',
+      productSnapshot: {
+        name: (products[2] || products[0]).name,
+        pesticideName: (products[2] || products[0]).pesticideName,
+        formulation: (products[2] || products[0]).formulation,
+        activeIngredient1: (products[2] || products[0]).activeIngredient1,
+      },
+    });
+
+    // 创建询价单3 - 已确认状态
+    const inquiry3 = await this.inquiryRepository.save({
+      inquiryNo: 'INQ202401030001',
+      status: InquiryStatus.CONFIRMED,
+      details: {
+        deliveryLocation: '天津港',
+        tradeTerms: 'FOB',
+        paymentMethod: 'T/T',
+        buyerRemarks: '急需，请尽快安排发货',
+      },
+      quoteDetails: {
+        totalPrice: 120000,
+        validUntil: '2024-01-20',
+        supplierRemarks: '现货供应，3天内可发货',
+      },
+      deadline: new Date('2024-01-15'),
+      buyerId: buyerCompany.id,
+      supplierId: supplierCompanies[0].id,
+      createdAt: new Date('2024-01-03'),
+      updatedAt: new Date('2024-01-05'),
+    });
+
+    await this.inquiryItemRepository.save([
+      {
+        inquiryId: inquiry3.id,
+        productId: products[0].id,
+        quantity: 1500,
+        unit: 'kg',
+        packagingReq: '25kg/袋',
+        productSnapshot: {
+          name: products[0].name,
+          pesticideName: products[0].pesticideName,
+          formulation: products[0].formulation,
+          activeIngredient1: products[0].activeIngredient1,
+        },
+      },
+      {
+        inquiryId: inquiry3.id,
+        productId: products[1].id,
+        quantity: 800,
+        unit: 'kg',
+        packagingReq: '20kg/桶',
+        productSnapshot: {
+          name: products[1].name,
+          pesticideName: products[1].pesticideName,
+          formulation: products[1].formulation,
+          activeIngredient1: products[1].activeIngredient1,
+        },
+      },
+    ]);
+
+    // 创建询价单4 - 已拒绝状态
+    const inquiry4 = await this.inquiryRepository.save({
+      inquiryNo: 'INQ202401040001',
+      status: InquiryStatus.DECLINED,
+      details: {
+        deliveryLocation: '广州港',
+        tradeTerms: 'FOB',
+        paymentMethod: 'T/T',
+        buyerRemarks: '希望能提供样品',
+        declineReason: '价格超出预算',
+        declinedBy: 'buyer',
+      },
+      quoteDetails: {
+        totalPrice: 150000,
+        validUntil: '2024-01-25',
+        supplierRemarks: '优质产品，价格公道',
+      },
+      deadline: new Date('2024-01-20'),
+      buyerId: buyerCompany.id,
+      supplierId: supplierCompanies[1] ? supplierCompanies[1].id : supplierCompanies[0].id,
+      createdAt: new Date('2024-01-04'),
+      updatedAt: new Date('2024-01-06'),
+    });
+
+    await this.inquiryItemRepository.save({
+      inquiryId: inquiry4.id,
+      productId: products[0].id,
+      quantity: 3000,
+      unit: 'kg',
+      packagingReq: '50kg/袋',
+      productSnapshot: {
+        name: products[0].name,
+        pesticideName: products[0].pesticideName,
+        formulation: products[0].formulation,
+        activeIngredient1: products[0].activeIngredient1,
+      },
+    });
+
+    this.logger.log('Inquiries seeded successfully');
+  }
+
   async clearAll() {
     this.logger.log('Clearing all seed data...');
 
     // 先清理有外键约束的表
+    await this.inquiryItemRepository.query('DELETE FROM inquiry_items');
+    await this.inquiryRepository.query('DELETE FROM inquiries');
     await this.productRepository.query('DELETE FROM products');
     await this.userRepository.query('DELETE FROM users');
     await this.companyRepository.query('DELETE FROM companies');
@@ -418,6 +653,12 @@ export class SeedService {
     await this.planRepository.query('DELETE FROM plans');
 
     // 重置自增ID
+    await this.inquiryItemRepository.query(
+      'ALTER TABLE inquiry_items AUTO_INCREMENT = 1',
+    );
+    await this.inquiryRepository.query(
+      'ALTER TABLE inquiries AUTO_INCREMENT = 1',
+    );
     await this.productRepository.query(
       'ALTER TABLE products AUTO_INCREMENT = 1',
     );
