@@ -211,7 +211,7 @@ export class CreateProductDto {
   @ApiPropertyOptional({ 
     description: '产品状态',
     enum: ProductStatus,
-    default: ProductStatus.DRAFT
+    default: ProductStatus.PENDING_REVIEW
   })
   @IsOptional()
   @IsEnum(ProductStatus)

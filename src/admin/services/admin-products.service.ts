@@ -48,7 +48,7 @@ export class AdminProductsService {
     const product = this.productRepository.create({
       ...createDto,
       details: createDto.details || {},
-      status: createDto.status || ProductStatus.DRAFT,
+      status: createDto.status || ProductStatus.PENDING_REVIEW,
       isListed: createDto.isListed || false,
     });
 

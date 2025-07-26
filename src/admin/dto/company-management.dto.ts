@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString, IsEmail, IsOptional, IsNotEmpty, IsPhoneNumber, IsObject, IsArray, IsNumber, IsUrl } from 'class-validator';
+import { IsEnum, IsString, IsEmail, IsOptional, IsNotEmpty, IsPhoneNumber, IsObject, IsArray, IsNumber, IsUrl, ValidateIf } from 'class-validator';
 import { CompanyType, CompanyStatus, CompanySize } from '../../entities/company.entity';
 import { MultiLangText } from '../../types/multilang';
 
@@ -90,13 +90,15 @@ export class CreateCompanyDto {
 
   @ApiProperty({ description: '营业执照图片地址', required: false })
   @IsOptional()
-  @IsUrl()
+  @ValidateIf((o) => o.businessLicenseUrl !== '' && o.businessLicenseUrl !== null)
+  @IsUrl({}, { message: '营业执照图片地址必须是有效的URL' })
   businessLicenseUrl?: string;
 
   @ApiProperty({ description: '公司照片地址列表', required: false, type: [String] })
   @IsOptional()
   @IsArray()
-  @IsUrl({}, { each: true })
+  @ValidateIf((o) => o.companyPhotosUrls && o.companyPhotosUrls.length > 0)
+  @IsUrl({}, { each: true, message: '公司照片地址必须是有效的URL' })
   companyPhotosUrls?: string[];
 }
 
@@ -188,12 +190,14 @@ export class UpdateCompanyDto {
 
   @ApiProperty({ description: '营业执照图片地址', required: false })
   @IsOptional()
-  @IsUrl()
+  @ValidateIf((o) => o.businessLicenseUrl !== '' && o.businessLicenseUrl !== null)
+  @IsUrl({}, { message: '营业执照图片地址必须是有效的URL' })
   businessLicenseUrl?: string;
 
   @ApiProperty({ description: '公司照片地址列表', required: false, type: [String] })
   @IsOptional()
   @IsArray()
-  @IsUrl({}, { each: true })
+  @ValidateIf((o) => o.companyPhotosUrls && o.companyPhotosUrls.length > 0)
+  @IsUrl({}, { each: true, message: '公司照片地址必须是有效的URL' })
   companyPhotosUrls?: string[];
 }

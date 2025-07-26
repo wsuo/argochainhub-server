@@ -194,10 +194,30 @@ export class Product extends BaseEntity {
 
   /** 检查是否可以上架 */
   canBeListed(): boolean {
-    return this.status === ProductStatus.ACTIVE && 
-           !!this.registrationNumber && 
-           !!this.effectiveDate && 
-           new Date() <= this.effectiveDate;
+    // 检查状态是否为ACTIVE
+    if (this.status !== ProductStatus.ACTIVE) {
+      return false;
+    }
+    
+    // 检查是否有登记证号
+    if (!this.registrationNumber) {
+      return false;
+    }
+    
+    // 检查是否有有效期
+    if (!this.effectiveDate) {
+      return false;
+    }
+    
+    // 比较日期：将有效期转换为Date对象进行比较
+    const now = new Date();
+    const effectiveDate = new Date(this.effectiveDate);
+    
+    // 只比较日期部分，忽略时间
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const effectiveDateOnly = new Date(effectiveDate.getFullYear(), effectiveDate.getMonth(), effectiveDate.getDate());
+    
+    return nowDateOnly <= effectiveDateOnly;
   }
 }
 
