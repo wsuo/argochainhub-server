@@ -23,6 +23,52 @@ export class User extends BaseEntity {
   @Column({ length: 255 })
   name: string;
 
+  @Column({ 
+    type: 'varchar', 
+    length: 20, 
+    nullable: true, 
+    comment: '电话号码' 
+  })
+  phone?: string;
+
+  @Column({ 
+    type: 'varchar', 
+    length: 500, 
+    nullable: true, 
+    comment: '头像URL' 
+  })
+  avatar?: string;
+
+  @Column({ 
+    type: 'varchar', 
+    length: 100, 
+    nullable: true, 
+    comment: '职位/岗位' 
+  })
+  position?: string;
+
+  @Column({ 
+    type: 'varchar', 
+    length: 100, 
+    nullable: true, 
+    comment: '部门' 
+  })
+  department?: string;
+
+  @Column({ 
+    type: 'date', 
+    nullable: true, 
+    comment: '入职时间' 
+  })
+  joinedAt?: Date;
+
+  @Column({ 
+    type: 'boolean', 
+    default: false, 
+    comment: '邮箱是否已验证' 
+  })
+  emailVerified: boolean;
+
   @Column({
     type: 'enum',
     enum: UserRole,

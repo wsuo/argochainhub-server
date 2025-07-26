@@ -17,6 +17,11 @@ import {
   BatchCreateControlMethodDto
 } from '../dto/control-method.dto';
 import { ReviewProductDto } from '../dto/review-product.dto';
+import { 
+  BatchReviewProductsDto, 
+  BatchReviewResultDto,
+  ProductReviewItemDto 
+} from '../dto/batch-review-products.dto';
 
 @Injectable()
 export class AdminProductsService {
@@ -401,6 +406,42 @@ export class AdminProductsService {
     }
 
     return this.productRepository.save(product);
+  }
+
+  /**
+   * 批量审核产品
+   */
+  async batchReviewProducts(batchDto: BatchReviewProductsDto): Promise<BatchReviewResultDto> {
+    const { products } = batchDto;
+    const result: BatchReviewResultDto = {
+      total: products.length,
+      success: 0,
+      failed: 0,
+      successIds: [],
+      failures: []
+    };
+
+    // 逐一处理每个产品的审核，使用和单个审核相同的逻辑
+    for (const reviewItem of products) {
+      try {
+        // 直接调用单个审核方法
+        await this.reviewProduct(reviewItem.productId, {
+          approved: reviewItem.approved,
+          reason: reviewItem.reason
+        });
+        
+        result.successIds.push(reviewItem.productId);
+        result.success++;
+      } catch (error) {
+        result.failures.push({
+          productId: reviewItem.productId,
+          error: error.message || '处理失败'
+        });
+        result.failed++;
+      }
+    }
+
+    return result;
   }
 
   /**
