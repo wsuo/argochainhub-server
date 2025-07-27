@@ -31,6 +31,12 @@ export class DictionaryInitService {
       await this.initializeAdminRoles();
       await this.initializeAdminPermissions();
       
+      // VIP相关字典
+      await this.initializeVipLevels();
+      
+      // 新闻资讯相关字典
+      await this.initializeNewsCategories();
+      
       // 3. 初始化国家数据
       await this.countryDictionaryService.initializeCountries();
       
@@ -192,6 +198,36 @@ export class DictionaryInitService {
         } as MultiLangText,
         isSystem: true,
         sortOrder: 10,
+      },
+      {
+        code: 'vip_level',
+        name: {
+          'zh-CN': 'VIP等级',
+          en: 'VIP Level',
+          es: 'Nivel VIP',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'VIP会员等级分类',
+          en: 'VIP membership level classification',
+          es: 'Clasificación de nivel de membresía VIP',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 11,
+      },
+      {
+        code: 'news_category',
+        name: {
+          'zh-CN': '新闻类别',
+          en: 'News Category',
+          es: 'Categoría de Noticias',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '新闻资讯内容分类',
+          en: 'News content classification',
+          es: 'Clasificación de contenido de noticias',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 12,
       },
     ];
 
@@ -684,6 +720,146 @@ export class DictionaryInitService {
     }));
 
     await this.batchCreateItems('admin_permissions', permissions);
+  }
+
+  private async initializeVipLevels(): Promise<void> {
+    const vipLevels = [
+      {
+        code: 'promotion',
+        name: {
+          'zh-CN': '促销版',
+          en: 'Promotion Edition',
+          es: 'Edición Promocional',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'VIP促销版会员等级',
+          en: 'VIP Promotion Edition membership level',
+          es: 'Nivel de membresía VIP Edición Promocional',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'basic',
+        name: {
+          'zh-CN': '基础版',
+          en: 'Basic Edition',
+          es: 'Edición Básica',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'VIP基础版会员等级',
+          en: 'VIP Basic Edition membership level',
+          es: 'Nivel de membresía VIP Edición Básica',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'advanced',
+        name: {
+          'zh-CN': '高级版',
+          en: 'Advanced Edition',
+          es: 'Edición Avanzada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'VIP高级版会员等级',
+          en: 'VIP Advanced Edition membership level',
+          es: 'Nivel de membresía VIP Edición Avanzada',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+    ];
+
+    await this.batchCreateItems('vip_level', vipLevels);
+  }
+
+  private async initializeNewsCategories(): Promise<void> {
+    const newsCategories = [
+      {
+        code: 'NEWS_POLICY',
+        name: {
+          'zh-CN': '政策法规',
+          en: 'Policy & Regulations',
+          es: 'Política y Regulaciones',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '农药行业相关政策法规资讯',
+          en: 'Pesticide industry policy and regulatory news',
+          es: 'Noticias sobre políticas y regulaciones de la industria de pesticidas',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'NEWS_MARKET',
+        name: {
+          'zh-CN': '市场动态',
+          en: 'Market Dynamics',
+          es: 'Dinámica del Mercado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '农药市场趋势和动态',
+          en: 'Pesticide market trends and dynamics',
+          es: 'Tendencias y dinámica del mercado de pesticidas',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'NEWS_TECHNOLOGY',
+        name: {
+          'zh-CN': '技术创新',
+          en: 'Technology Innovation',
+          es: 'Innovación Tecnológica',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '农药技术研发和创新资讯',
+          en: 'Pesticide technology R&D and innovation news',
+          es: 'Noticias sobre I+D e innovación en tecnología de pesticidas',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'NEWS_INDUSTRY',
+        name: {
+          'zh-CN': '行业资讯',
+          en: 'Industry News',
+          es: 'Noticias de la Industria',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '农药行业综合资讯',
+          en: 'Comprehensive pesticide industry news',
+          es: 'Noticias integrales de la industria de pesticidas',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'NEWS_COMPANY',
+        name: {
+          'zh-CN': '企业动态',
+          en: 'Company News',
+          es: 'Noticias de Empresas',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '农药企业相关新闻',
+          en: 'Pesticide company related news',
+          es: 'Noticias relacionadas con empresas de pesticidas',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+      {
+        code: 'NEWS_EXHIBITION',
+        name: {
+          'zh-CN': '展会活动',
+          en: 'Exhibitions & Events',
+          es: 'Exposiciones y Eventos',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '农药行业展会和活动信息',
+          en: 'Pesticide industry exhibitions and events information',
+          es: 'Información sobre exposiciones y eventos de la industria de pesticidas',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+    ];
+
+    await this.batchCreateItems('news_category', newsCategories);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {

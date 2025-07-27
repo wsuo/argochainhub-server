@@ -42,6 +42,12 @@ export enum AdminPermission {
   PLAN_UPDATE = 'plan:update',             // 更新会员计划
   PLAN_DELETE = 'plan:delete',             // 删除会员计划
 
+  // VIP配置管理权限
+  VIP_CONFIG_VIEW = 'vip_config:view',           // 查看VIP配置
+  VIP_CONFIG_CREATE = 'vip_config:create',       // 创建VIP配置
+  VIP_CONFIG_UPDATE = 'vip_config:update',       // 更新VIP配置
+  VIP_CONFIG_DELETE = 'vip_config:delete',       // 删除VIP配置
+
   // 系统管理权限
   ADMIN_MANAGE = 'admin:manage',           // 管理员账户管理
   DICTIONARY_MANAGE = 'dictionary:manage', // 字典管理
@@ -52,6 +58,12 @@ export enum AdminPermission {
   // 统计分析权限
   ANALYTICS_VIEW = 'analytics:view',       // 查看统计数据
   DASHBOARD_VIEW = 'dashboard:view',       // 查看仪表盘
+
+  // 新闻资讯管理权限
+  NEWS_VIEW = 'news:view',                 // 查看新闻资讯
+  NEWS_CREATE = 'news:create',             // 创建新闻资讯
+  NEWS_UPDATE = 'news:update',             // 更新新闻资讯
+  NEWS_DELETE = 'news:delete',             // 删除新闻资讯
 }
 
 /**
@@ -95,6 +107,12 @@ export const PERMISSION_GROUPS = {
     AdminPermission.PLAN_UPDATE,
     AdminPermission.PLAN_DELETE,
   ],
+  VIP_CONFIG: [
+    AdminPermission.VIP_CONFIG_VIEW,
+    AdminPermission.VIP_CONFIG_CREATE,
+    AdminPermission.VIP_CONFIG_UPDATE,
+    AdminPermission.VIP_CONFIG_DELETE,
+  ],
   SYSTEM: [
     AdminPermission.ADMIN_MANAGE,
     AdminPermission.DICTIONARY_MANAGE,
@@ -105,6 +123,12 @@ export const PERMISSION_GROUPS = {
   ANALYTICS: [
     AdminPermission.ANALYTICS_VIEW,
     AdminPermission.DASHBOARD_VIEW,
+  ],
+  NEWS: [
+    AdminPermission.NEWS_VIEW,
+    AdminPermission.NEWS_CREATE,
+    AdminPermission.NEWS_UPDATE,
+    AdminPermission.NEWS_DELETE,
   ],
 } as const;
 
@@ -140,6 +164,11 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     AdminPermission.PLAN_CREATE,
     AdminPermission.PLAN_UPDATE,
     
+    // VIP配置管理权限（除删除外）
+    AdminPermission.VIP_CONFIG_VIEW,
+    AdminPermission.VIP_CONFIG_CREATE,
+    AdminPermission.VIP_CONFIG_UPDATE,
+    
     // 系统权限（部分）
     AdminPermission.DICTIONARY_MANAGE,
     AdminPermission.AUDIT_LOG_VIEW,
@@ -147,6 +176,11 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     
     // 统计分析权限
     ...PERMISSION_GROUPS.ANALYTICS,
+    
+    // 新闻资讯管理权限（除删除外）
+    AdminPermission.NEWS_VIEW,
+    AdminPermission.NEWS_CREATE,
+    AdminPermission.NEWS_UPDATE,
   ],
   moderator: [
     // 审核相关权限
@@ -205,6 +239,11 @@ export const PERMISSION_DESCRIPTIONS = {
   [AdminPermission.PLAN_UPDATE]: '更新会员计划',
   [AdminPermission.PLAN_DELETE]: '删除会员计划',
   
+  [AdminPermission.VIP_CONFIG_VIEW]: '查看VIP配置',
+  [AdminPermission.VIP_CONFIG_CREATE]: '创建VIP配置',
+  [AdminPermission.VIP_CONFIG_UPDATE]: '更新VIP配置',
+  [AdminPermission.VIP_CONFIG_DELETE]: '删除VIP配置',
+  
   [AdminPermission.ADMIN_MANAGE]: '管理员账户管理',
   [AdminPermission.DICTIONARY_MANAGE]: '字典管理',
   [AdminPermission.SYSTEM_CONFIG]: '系统配置',
@@ -213,6 +252,11 @@ export const PERMISSION_DESCRIPTIONS = {
   
   [AdminPermission.ANALYTICS_VIEW]: '查看统计数据',
   [AdminPermission.DASHBOARD_VIEW]: '查看仪表盘',
+  
+  [AdminPermission.NEWS_VIEW]: '查看新闻资讯',
+  [AdminPermission.NEWS_CREATE]: '创建新闻资讯',
+  [AdminPermission.NEWS_UPDATE]: '更新新闻资讯',
+  [AdminPermission.NEWS_DELETE]: '删除新闻资讯',
 } as const;
 
 /**
