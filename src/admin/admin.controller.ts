@@ -687,6 +687,7 @@ export class AdminController {
   @ApiQuery({ name: 'targetCountry', required: false, description: '目标国家' })
   @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
   @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'keyword', required: false, description: '关键字模糊查询（可匹配登记申请单号、买方企业名称、供应商企业名称、产品名称、目标国家）' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getRegistrationRequests(@Query() queryDto: RegistrationRequestQueryDto) {
     return this.adminService.getRegistrationRequests(queryDto);

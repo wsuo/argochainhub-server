@@ -2120,6 +2120,7 @@ export class AdminService {
       targetCountry,
       createdStartDate,
       createdEndDate,
+      keyword,
     } = queryDto;
 
     const queryBuilder = this.registrationRequestRepository
@@ -2166,6 +2167,37 @@ export class AdminService {
       queryBuilder.andWhere('DATE(registrationRequest.createdAt) <= :createdEndDate', {
         createdEndDate,
       });
+    }
+
+    if (keyword) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('registrationRequest.regReqNo LIKE :keyword', {
+            keyword: `%${keyword}%`,
+          })
+            .orWhere('JSON_EXTRACT(buyer.name, "$.zh-CN") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            })
+            .orWhere('JSON_EXTRACT(buyer.name, "$.en") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            })
+            .orWhere('JSON_EXTRACT(supplier.name, "$.zh-CN") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            })
+            .orWhere('JSON_EXTRACT(supplier.name, "$.en") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            })
+            .orWhere('JSON_EXTRACT(product.name, "$.zh-CN") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            })
+            .orWhere('JSON_EXTRACT(product.name, "$.en") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            })
+            .orWhere('JSON_EXTRACT(registrationRequest.details, "$.targetCountry") LIKE :keyword', {
+              keyword: `%${keyword}%`,
+            });
+        }),
+      );
     }
 
     const [registrationRequests, total] = await queryBuilder

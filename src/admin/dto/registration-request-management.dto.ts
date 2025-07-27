@@ -71,6 +71,11 @@ export class RegistrationRequestQueryDto {
   @IsOptional()
   @IsDateString()
   createdEndDate?: string;
+
+  @ApiProperty({ description: '关键字模糊查询（可匹配登记申请单号、买方企业名称、供应商企业名称、产品名称、目标国家）', required: false })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
 }
 
 export class UpdateRegistrationRequestStatusDto {

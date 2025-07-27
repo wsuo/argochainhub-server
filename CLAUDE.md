@@ -11,6 +11,9 @@ DB_USERNAME=root
 DB_PASSWORD=root
 DB_DATABASE=argochainhub
 
+# 服务信息
+服务运行在本地，3010端口号。
+
 # 获取Token
 /api/v1/auth/admin/login
 {
@@ -21,4 +24,5 @@ DB_DATABASE=argochainhub
 临时token: 
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoic3VwZXJhZG1pbiIsInJvbGUiOiJzdXBlcl9hZG1pbiIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1MzUwODQ2MiwiZXhwIjoxNzU0MTEzMjYyfQ.H1hL94u3QFSTeV5ko2ixbcUF9OxC8TngQTIAze_60IA
 
+# 问题排查
 如果遇到一次解决不了的问题，出现第二次，就需要增加调试信息，然后让我提供给你日志，你再来分析处理，不要急于修改问题，要活得足够多的信息后再决定如何解决。
