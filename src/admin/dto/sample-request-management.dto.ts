@@ -69,6 +69,14 @@ export class SampleRequestQueryDto {
   @IsOptional()
   @IsDateString()
   createdEndDate?: string;
+
+  @ApiProperty({ 
+    description: '关键字模糊查询（可匹配样品申请单号、采购商名称、供应商名称、产品名称、申请用途等）', 
+    required: false 
+  })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
 }
 
 export class TrackingInfoDto {

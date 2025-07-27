@@ -1875,6 +1875,7 @@ export class AdminService {
       productId,
       createdStartDate,
       createdEndDate,
+      keyword,
     } = queryDto;
 
     const queryBuilder = this.sampleRequestRepository
@@ -1915,6 +1916,30 @@ export class AdminService {
       queryBuilder.andWhere('DATE(sampleRequest.createdAt) <= :createdEndDate', {
         createdEndDate,
       });
+    }
+
+    // 关键字模糊查询
+    if (keyword) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('sampleRequest.sampleReqNo LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(buyer.name, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(buyer.name, \'$."en"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(supplier.name, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(supplier.name, \'$."en"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."en"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, \'$."en"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.productSnapshot, \'$."name"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.productSnapshot, \'$."category"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.productSnapshot, \'$."activeIngredient"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.details, \'$."purpose"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.details, \'$."shippingAddress"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.trackingInfo, \'$."carrier"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(sampleRequest.trackingInfo, \'$."trackingNumber"\')) LIKE :keyword', { keyword: `%${keyword}%` });
+        }),
+      );
     }
 
     const [sampleRequests, total] = await queryBuilder

@@ -628,6 +628,7 @@ export class AdminController {
   @ApiQuery({ name: 'productId', required: false, description: '产品ID' })
   @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
   @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'keyword', required: false, description: '关键字模糊查询（可匹配样品申请单号、采购商名称、供应商名称、产品名称、申请用途等）' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getSampleRequests(@Query() queryDto: SampleRequestQueryDto) {
     return this.adminService.getSampleRequests(queryDto);
