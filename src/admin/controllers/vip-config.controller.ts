@@ -29,7 +29,6 @@ import {
   VipConfigQueryDto,
 } from '../dto/vip-config-management.dto';
 import { VipConfig } from '../../entities/vip-config.entity';
-import { PaginationResult } from '../../common/interfaces/pagination.interface';
 
 @ApiTags('Admin - VIP配置管理')
 @ApiBearerAuth()
@@ -63,7 +62,7 @@ export class VipConfigController {
   })
   async findAll(
     @Query() query: VipConfigQueryDto
-  ): Promise<PaginationResult<VipConfig>> {
+  ): Promise<any> {
     return await this.vipConfigService.findAll(query);
   }
 

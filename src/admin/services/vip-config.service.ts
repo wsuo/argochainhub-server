@@ -7,7 +7,6 @@ import {
   UpdateVipConfigDto, 
   VipConfigQueryDto 
 } from '../dto/vip-config-management.dto';
-import { PaginationResult } from '../../common/interfaces/pagination.interface';
 
 @Injectable()
 export class VipConfigService {
@@ -41,7 +40,7 @@ export class VipConfigService {
     return await this.vipConfigRepository.save(vipConfig);
   }
 
-  async findAll(query: VipConfigQueryDto): Promise<PaginationResult<VipConfig>> {
+  async findAll(query: VipConfigQueryDto): Promise<any> {
     const { 
       platform, 
       level, 
@@ -49,7 +48,7 @@ export class VipConfigService {
       isActive, 
       keyword,
       page = 1, 
-      pageSize = 20 
+      limit = 20 
     } = query;
 
     const where: FindOptionsWhere<VipConfig>[] = [];
@@ -101,16 +100,19 @@ export class VipConfigService {
         sortOrder: 'ASC',
         createdAt: 'DESC',
       },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     return {
       data: items,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
+      meta: {
+        totalItems: total,
+        itemCount: items.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
   }
 
