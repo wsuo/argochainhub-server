@@ -2175,25 +2175,25 @@ export class AdminService {
           qb.where('registrationRequest.regReqNo LIKE :keyword', {
             keyword: `%${keyword}%`,
           })
-            .orWhere('JSON_EXTRACT(buyer.name, "$.zh-CN") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(buyer.name, '$.\"zh-CN\"') LIKE :keyword", {
               keyword: `%${keyword}%`,
             })
-            .orWhere('JSON_EXTRACT(buyer.name, "$.en") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(buyer.name, '$.en') LIKE :keyword", {
               keyword: `%${keyword}%`,
             })
-            .orWhere('JSON_EXTRACT(supplier.name, "$.zh-CN") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(supplier.name, '$.\"zh-CN\"') LIKE :keyword", {
               keyword: `%${keyword}%`,
             })
-            .orWhere('JSON_EXTRACT(supplier.name, "$.en") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(supplier.name, '$.en') LIKE :keyword", {
               keyword: `%${keyword}%`,
             })
-            .orWhere('JSON_EXTRACT(product.name, "$.zh-CN") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(product.name, '$.\"zh-CN\"') LIKE :keyword", {
               keyword: `%${keyword}%`,
             })
-            .orWhere('JSON_EXTRACT(product.name, "$.en") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(product.name, '$.en') LIKE :keyword", {
               keyword: `%${keyword}%`,
             })
-            .orWhere('JSON_EXTRACT(registrationRequest.details, "$.targetCountry") LIKE :keyword', {
+            .orWhere("JSON_EXTRACT(registrationRequest.details, '$.targetCountry') LIKE :keyword", {
               keyword: `%${keyword}%`,
             });
         }),
