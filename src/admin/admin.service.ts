@@ -1694,8 +1694,15 @@ export class AdminService {
 
     // 验证状态转换的合理性
     if (!this.isValidStatusTransition(inquiry.status, updateDto.status)) {
+      const currentStatusText = this.getInquiryStatusText(inquiry.status);
+      const targetStatusText = this.getInquiryStatusText(updateDto.status);
+      const allowedTransitions = this.getAllowedTransitions(inquiry.status);
+      const allowedTransitionsText = allowedTransitions.map(status => this.getInquiryStatusText(status)).join('、');
+      
       throw new BadRequestException(
-        `Invalid status transition from ${inquiry.status} to ${updateDto.status}`,
+        `询盘状态转换失败：当前状态为"${currentStatusText}"，不能直接转换为"${targetStatusText}"。` +
+        `当前状态允许转换为：${allowedTransitionsText}。` +
+        `请根据业务流程选择正确的状态进行转换。`
       );
     }
 
@@ -1807,6 +1814,47 @@ export class AdminService {
     };
 
     return validTransitions[currentStatus]?.includes(newStatus) ?? false;
+  }
+
+  /**
+   * 获取询盘状态的中文描述
+   */
+  private getInquiryStatusText(status: InquiryStatus): string {
+    const statusTextMap: Record<InquiryStatus, string> = {
+      [InquiryStatus.PENDING_QUOTE]: '待报价',
+      [InquiryStatus.QUOTED]: '已报价',
+      [InquiryStatus.CONFIRMED]: '已确认',
+      [InquiryStatus.DECLINED]: '已拒绝',
+      [InquiryStatus.EXPIRED]: '已过期',
+      [InquiryStatus.CANCELLED]: '已取消',
+    };
+    
+    return statusTextMap[status] || status;
+  }
+
+  /**
+   * 获取当前状态允许转换的目标状态列表
+   */
+  private getAllowedTransitions(currentStatus: InquiryStatus): InquiryStatus[] {
+    const validTransitions: Record<InquiryStatus, InquiryStatus[]> = {
+      [InquiryStatus.PENDING_QUOTE]: [
+        InquiryStatus.QUOTED,
+        InquiryStatus.DECLINED,
+        InquiryStatus.CANCELLED,
+        InquiryStatus.EXPIRED,
+      ],
+      [InquiryStatus.QUOTED]: [
+        InquiryStatus.CONFIRMED,
+        InquiryStatus.DECLINED,
+        InquiryStatus.EXPIRED,
+      ],
+      [InquiryStatus.CONFIRMED]: [],
+      [InquiryStatus.DECLINED]: [],
+      [InquiryStatus.EXPIRED]: [],
+      [InquiryStatus.CANCELLED]: [],
+    };
+
+    return validTransitions[currentStatus] || [];
   }
 
   // 样品申请业务流程管理
