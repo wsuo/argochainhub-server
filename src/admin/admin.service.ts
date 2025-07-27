@@ -1556,6 +1556,10 @@ export class AdminService {
       supplierId,
       createdStartDate,
       createdEndDate,
+      keyword,
+      buyerName,
+      supplierName,
+      productName,
     } = queryDto;
 
     const queryBuilder = this.inquiryRepository
@@ -1593,6 +1597,55 @@ export class AdminService {
       queryBuilder.andWhere('DATE(inquiry.createdAt) <= :createdEndDate', {
         createdEndDate,
       });
+    }
+
+    // 关键字模糊查询 - 支持询价单号、买方企业名、供应商企业名、产品名称
+    if (keyword) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('inquiry.inquiryNo LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(buyer.name, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(buyer.name, \'$.en\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(supplier.name, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(supplier.name, \'$.en\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$.en\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, \'$."zh-CN"\')) LIKE :keyword', { keyword: `%${keyword}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, \'$.en\')) LIKE :keyword', { keyword: `%${keyword}%` });
+        }),
+      );
+    }
+
+    // 买方企业名称模糊查询
+    if (buyerName) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('JSON_UNQUOTE(JSON_EXTRACT(buyer.name, \'$."zh-CN"\')) LIKE :buyerName', { buyerName: `%${buyerName}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(buyer.name, \'$.en\')) LIKE :buyerName', { buyerName: `%${buyerName}%` });
+        }),
+      );
+    }
+
+    // 供应商企业名称模糊查询
+    if (supplierName) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('JSON_UNQUOTE(JSON_EXTRACT(supplier.name, \'$."zh-CN"\')) LIKE :supplierName', { supplierName: `%${supplierName}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(supplier.name, \'$.en\')) LIKE :supplierName', { supplierName: `%${supplierName}%` });
+        }),
+      );
+    }
+
+    // 产品名称模糊查询
+    if (productName) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$."zh-CN"\')) LIKE :productName', { productName: `%${productName}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.name, \'$.en\')) LIKE :productName', { productName: `%${productName}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, \'$."zh-CN"\')) LIKE :productName', { productName: `%${productName}%` })
+            .orWhere('JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, \'$.en\')) LIKE :productName', { productName: `%${productName}%` });
+        }),
+      );
     }
 
     const [inquiries, total] = await queryBuilder

@@ -62,6 +62,26 @@ export class InquiryQueryDto {
   @IsOptional()
   @IsDateString()
   createdEndDate?: string;
+
+  @ApiProperty({ description: '关键字搜索（支持询价单号、买方企业名、供应商企业名、产品名称模糊匹配）', required: false })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiProperty({ description: '买方企业名称（模糊匹配）', required: false })
+  @IsOptional()
+  @IsString()
+  buyerName?: string;
+
+  @ApiProperty({ description: '供应商企业名称（模糊匹配）', required: false })
+  @IsOptional()
+  @IsString()
+  supplierName?: string;
+
+  @ApiProperty({ description: '产品名称（模糊匹配）', required: false })
+  @IsOptional()
+  @IsString()
+  productName?: string;
 }
 
 export class QuoteDetailsDto {

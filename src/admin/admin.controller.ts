@@ -567,6 +567,10 @@ export class AdminController {
   @ApiQuery({ name: 'supplierId', required: false, description: '供应商企业ID' })
   @ApiQuery({ name: 'createdStartDate', required: false, description: '创建开始日期 (YYYY-MM-DD)' })
   @ApiQuery({ name: 'createdEndDate', required: false, description: '创建结束日期 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'keyword', required: false, description: '关键字搜索（支持询价单号、买方企业名、供应商企业名、产品名称模糊匹配）' })
+  @ApiQuery({ name: 'buyerName', required: false, description: '买方企业名称（模糊匹配）' })
+  @ApiQuery({ name: 'supplierName', required: false, description: '供应商企业名称（模糊匹配）' })
+  @ApiQuery({ name: 'productName', required: false, description: '产品名称（模糊匹配）' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getInquiries(@Query() queryDto: InquiryQueryDto) {
     return this.adminService.getInquiries(queryDto);
