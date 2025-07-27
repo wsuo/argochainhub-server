@@ -1697,13 +1697,17 @@ export class AdminService {
       const currentStatusText = this.getInquiryStatusText(inquiry.status);
       const targetStatusText = this.getInquiryStatusText(updateDto.status);
       const allowedTransitions = this.getAllowedTransitions(inquiry.status);
-      const allowedTransitionsText = allowedTransitions.map(status => this.getInquiryStatusText(status)).join('、');
       
-      throw new BadRequestException(
-        `询盘状态转换失败：当前状态为"${currentStatusText}"，不能直接转换为"${targetStatusText}"。` +
-        `当前状态允许转换为：${allowedTransitionsText}。` +
-        `请根据业务流程选择正确的状态进行转换。`
-      );
+      if (allowedTransitions.length === 0) {
+        throw new BadRequestException(
+          `当前状态"${currentStatusText}"为终态，不能修改为其他状态`
+        );
+      } else {
+        const allowedTransitionsText = allowedTransitions.map(status => this.getInquiryStatusText(status)).join('、');
+        throw new BadRequestException(
+          `状态"${currentStatusText}"不能转换为"${targetStatusText}"，只能转换为：${allowedTransitionsText}`
+        );
+      }
     }
 
     // 更新状态
