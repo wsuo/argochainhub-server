@@ -18,9 +18,8 @@ export class TimezoneInterceptor implements NestInterceptor {
     }
 
     if (obj instanceof Date) {
-      // 将UTC时间转换为东八区时间显示
-      const chinaTime = new Date(obj.getTime() + 8 * 60 * 60 * 1000);
-      return chinaTime.toISOString().replace('Z', '+08:00');
+      // 直接返回ISO格式的时间字符串，保持原有时区信息
+      return obj.toISOString();
     }
 
     if (Array.isArray(obj)) {
