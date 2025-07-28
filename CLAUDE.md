@@ -12,7 +12,7 @@ DB_PASSWORD=root
 DB_DATABASE=argochainhub
 
 # 服务信息
-服务运行在本地，3010端口号。
+服务运行在本地，3050端口。
 
 # 获取Token
 /api/v1/auth/admin/login
