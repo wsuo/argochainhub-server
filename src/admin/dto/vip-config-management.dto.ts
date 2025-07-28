@@ -26,8 +26,6 @@ export class CreateVipConfigDto {
   })
   @IsNotEmpty()
   @IsObject()
-  @ValidateNested()
-  @Type(() => Object)
   name: MultiLangText;
 
   @ApiProperty({ 
@@ -223,8 +221,6 @@ export class UpdateVipConfigDto {
   })
   @IsOptional()
   @IsObject()
-  @ValidateNested()
-  @Type(() => Object)
   name?: MultiLangText;
 
   @ApiPropertyOptional({ 

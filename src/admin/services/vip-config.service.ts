@@ -70,13 +70,9 @@ export class VipConfigService {
       baseCondition.isActive = isActive;
     }
 
-    // 关键字搜索（搜索名称和备注）
+    // 关键字搜索（搜索备注）
     if (keyword) {
       where.push(
-        {
-          ...baseCondition,
-          name: Like(`%${keyword}%`),
-        },
         {
           ...baseCondition,
           remarkZh: Like(`%${keyword}%`),

@@ -33,7 +33,7 @@ import { VipConfig } from '../../entities/vip-config.entity';
 @ApiTags('Admin - VIP配置管理')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, AdminPermissionsGuard)
-@Controller('api/v1/admin/vip-configs')
+@Controller('admin/vip-configs')
 export class VipConfigController {
   constructor(private readonly vipConfigService: VipConfigService) {}
 
