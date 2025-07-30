@@ -37,6 +37,9 @@ export class DictionaryInitService {
       // 新闻资讯相关字典
       await this.initializeNewsCategories();
       
+      // 邮件管理相关字典
+      await this.initializeEmailTriggerEvents();
+      
       // 3. 初始化国家数据
       await this.countryDictionaryService.initializeCountries();
       
@@ -228,6 +231,21 @@ export class DictionaryInitService {
         } as MultiLangText,
         isSystem: true,
         sortOrder: 12,
+      },
+      {
+        code: 'email_trigger_event',
+        name: {
+          'zh-CN': '邮件触发事件',
+          en: 'Email Trigger Event',
+          es: 'Evento de Activación de Correo',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '邮件模板触发事件类型',
+          en: 'Email template trigger event types',
+          es: 'Tipos de eventos de activación de plantillas de correo',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 13,
       },
     ];
 
@@ -860,6 +878,251 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('news_category', newsCategories);
+  }
+
+  private async initializeEmailTriggerEvents(): Promise<void> {
+    const emailTriggerEvents = [
+      {
+        code: 'inquiry.created',
+        name: {
+          'zh-CN': '询价创建时',
+          en: 'Inquiry Created',
+          es: 'Consulta Creada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当创建新询价时触发',
+          en: 'Triggered when a new inquiry is created',
+          es: 'Se activa cuando se crea una nueva consulta',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'inquiry.quoted',
+        name: {
+          'zh-CN': '询价报价时',
+          en: 'Inquiry Quoted',
+          es: 'Consulta Cotizada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当供应商对询价进行报价时触发',
+          en: 'Triggered when supplier quotes an inquiry',
+          es: 'Se activa cuando el proveedor cotiza una consulta',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'inquiry.accepted',
+        name: {
+          'zh-CN': '询价接受时',
+          en: 'Inquiry Accepted',
+          es: 'Consulta Aceptada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当买家接受询价报价时触发',
+          en: 'Triggered when buyer accepts inquiry quote',
+          es: 'Se activa cuando el comprador acepta la cotización de consulta',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'inquiry.declined',
+        name: {
+          'zh-CN': '询价拒绝时',
+          en: 'Inquiry Declined',
+          es: 'Consulta Rechazada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当买家拒绝询价报价时触发',
+          en: 'Triggered when buyer declines inquiry quote',
+          es: 'Se activa cuando el comprador rechaza la cotización de consulta',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'inquiry.expired',
+        name: {
+          'zh-CN': '询价过期时',
+          en: 'Inquiry Expired',
+          es: 'Consulta Expirada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当询价过期时触发',
+          en: 'Triggered when inquiry expires',
+          es: 'Se activa cuando la consulta expira',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+      {
+        code: 'sample_request.created',
+        name: {
+          'zh-CN': '样品申请创建时',
+          en: 'Sample Request Created',
+          es: 'Solicitud de Muestra Creada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当创建样品申请时触发',
+          en: 'Triggered when sample request is created',
+          es: 'Se activa cuando se crea una solicitud de muestra',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+      {
+        code: 'sample_request.approved',
+        name: {
+          'zh-CN': '样品申请批准时',
+          en: 'Sample Request Approved',
+          es: 'Solicitud de Muestra Aprobada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当样品申请被批准时触发',
+          en: 'Triggered when sample request is approved',
+          es: 'Se activa cuando se aprueba la solicitud de muestra',
+        } as MultiLangText,
+        sortOrder: 7,
+      },
+      {
+        code: 'sample_request.rejected',
+        name: {
+          'zh-CN': '样品申请拒绝时',
+          en: 'Sample Request Rejected',
+          es: 'Solicitud de Muestra Rechazada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当样品申请被拒绝时触发',
+          en: 'Triggered when sample request is rejected',
+          es: 'Se activa cuando se rechaza la solicitud de muestra',
+        } as MultiLangText,
+        sortOrder: 8,
+      },
+      {
+        code: 'sample_request.shipped',
+        name: {
+          'zh-CN': '样品发货时',
+          en: 'Sample Request Shipped',
+          es: 'Solicitud de Muestra Enviada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当样品发货时触发',
+          en: 'Triggered when sample is shipped',
+          es: 'Se activa cuando se envía la muestra',
+        } as MultiLangText,
+        sortOrder: 9,
+      },
+      {
+        code: 'sample_request.delivered',
+        name: {
+          'zh-CN': '样品送达时',
+          en: 'Sample Request Delivered',
+          es: 'Solicitud de Muestra Entregada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当样品送达时触发',
+          en: 'Triggered when sample is delivered',
+          es: 'Se activa cuando se entrega la muestra',
+        } as MultiLangText,
+        sortOrder: 10,
+      },
+      {
+        code: 'registration_request.created',
+        name: {
+          'zh-CN': '登记申请创建时',
+          en: 'Registration Request Created',
+          es: 'Solicitud de Registro Creada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当创建登记申请时触发',
+          en: 'Triggered when registration request is created',
+          es: 'Se activa cuando se crea una solicitud de registro',
+        } as MultiLangText,
+        sortOrder: 11,
+      },
+      {
+        code: 'registration_request.processing',
+        name: {
+          'zh-CN': '登记申请处理中时',
+          en: 'Registration Request Processing',
+          es: 'Solicitud de Registro en Proceso',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当登记申请开始处理时触发',
+          en: 'Triggered when registration request starts processing',
+          es: 'Se activa cuando comienza el procesamiento de la solicitud de registro',
+        } as MultiLangText,
+        sortOrder: 12,
+      },
+      {
+        code: 'registration_request.completed',
+        name: {
+          'zh-CN': '登记申请完成时',
+          en: 'Registration Request Completed',
+          es: 'Solicitud de Registro Completada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当登记申请完成时触发',
+          en: 'Triggered when registration request is completed',
+          es: 'Se activa cuando se completa la solicitud de registro',
+        } as MultiLangText,
+        sortOrder: 13,
+      },
+      {
+        code: 'company.approved',
+        name: {
+          'zh-CN': '企业审核通过时',
+          en: 'Company Approved',
+          es: 'Empresa Aprobada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当企业审核通过时触发',
+          en: 'Triggered when company is approved',
+          es: 'Se activa cuando se aprueba la empresa',
+        } as MultiLangText,
+        sortOrder: 14,
+      },
+      {
+        code: 'company.rejected',
+        name: {
+          'zh-CN': '企业审核拒绝时',
+          en: 'Company Rejected',
+          es: 'Empresa Rechazada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '当企业审核被拒绝时触发',
+          en: 'Triggered when company is rejected',
+          es: 'Se activa cuando se rechaza la empresa',
+        } as MultiLangText,
+        sortOrder: 15,
+      },
+      {
+        code: 'user.welcome',
+        name: {
+          'zh-CN': '用户欢迎邮件',
+          en: 'User Welcome',
+          es: 'Bienvenida de Usuario',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '新用户注册时发送欢迎邮件',
+          en: 'Send welcome email when new user registers',
+          es: 'Enviar correo de bienvenida cuando se registra un nuevo usuario',
+        } as MultiLangText,
+        sortOrder: 16,
+      },
+      {
+        code: 'user.password_reset',
+        name: {
+          'zh-CN': '密码重置邮件',
+          en: 'Password Reset',
+          es: 'Restablecimiento de Contraseña',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '用户请求重置密码时触发',
+          en: 'Triggered when user requests password reset',
+          es: 'Se activa cuando el usuario solicita restablecer la contraseña',
+        } as MultiLangText,
+        sortOrder: 17,
+      },
+    ];
+
+    await this.batchCreateItems('email_trigger_event', emailTriggerEvents);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {

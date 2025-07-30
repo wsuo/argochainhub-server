@@ -19,6 +19,7 @@ import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
 import { EmailTemplate } from '../../entities/email-template.entity';
 import { AdminUser } from '../../entities/admin-user.entity';
 import { EmailService } from '../services/email.service';
+import { DictionaryService } from '../services/dictionary.service';
 import {
   CreateEmailTemplateDto,
   UpdateEmailTemplateDto,
@@ -35,6 +36,7 @@ export class EmailTemplateController {
     @InjectRepository(EmailTemplate)
     private emailTemplateRepository: Repository<EmailTemplate>,
     private emailService: EmailService,
+    private dictionaryService: DictionaryService,
   ) {}
 
   @Get()
@@ -78,27 +80,19 @@ export class EmailTemplateController {
   @Get('trigger-events')
   @ApiOperation({ summary: '获取触发事件列表' })
   @ApiResponse({ status: 200, description: '返回触发事件列表' })
-  async getTriggerEvents(): Promise<string[]> {
-    // 返回系统支持的触发事件
-    return [
-      'inquiry.created',
-      'inquiry.quoted',
-      'inquiry.accepted',
-      'inquiry.declined',
-      'inquiry.expired',
-      'sample_request.created',
-      'sample_request.approved',
-      'sample_request.rejected',
-      'sample_request.shipped',
-      'sample_request.delivered',
-      'registration_request.created',
-      'registration_request.processing',
-      'registration_request.completed',
-      'company.approved',
-      'company.rejected',
-      'user.welcome',
-      'user.password_reset',
-    ];
+  async getTriggerEvents(): Promise<any[]> {
+    // 从字典中获取邮件触发事件
+    const result = await this.dictionaryService.getItems('email_trigger_event', {
+      page: 1,
+      limit: 100,
+      isActive: true,
+    });
+    
+    return result.data.map(event => ({
+      code: event.code,
+      name: event.name,
+      description: event.description,
+    }));
   }
 
   @Get(':id')

@@ -337,28 +337,72 @@ Content-Type: application/json
 GET /admin/email-templates/trigger-events
 ```
 
+**注意:** 此接口现在从系统字典中获取数据，事件数据统一在字典管理中维护。
+
 **响应示例:**
 ```json
 [
-  "inquiry.created",
-  "inquiry.quoted",
-  "inquiry.accepted",
-  "inquiry.declined",
-  "inquiry.expired",
-  "sample_request.created",
-  "sample_request.approved",
-  "sample_request.rejected",
-  "sample_request.shipped",
-  "sample_request.delivered",
-  "registration_request.created",
-  "registration_request.processing",
-  "registration_request.completed",
-  "company.approved",
-  "company.rejected",
-  "user.welcome",
-  "user.password_reset"
+  {
+    "code": "inquiry.created",
+    "name": {
+      "zh-CN": "询价创建时",
+      "en": "Inquiry Created",
+      "es": "Consulta Creada"
+    },
+    "description": {
+      "zh-CN": "当创建新询价时触发",
+      "en": "Triggered when a new inquiry is created",
+      "es": "Se activa cuando se crea una nueva consulta"
+    }
+  },
+  {
+    "code": "inquiry.quoted",
+    "name": {
+      "zh-CN": "询价报价时",
+      "en": "Inquiry Quoted",
+      "es": "Consulta Cotizada"
+    },
+    "description": {
+      "zh-CN": "当供应商对询价进行报价时触发",
+      "en": "Triggered when supplier quotes an inquiry",
+      "es": "Se activa cuando el proveedor cotiza una consulta"
+    }
+  },
+  {
+    "code": "sample_request.created",
+    "name": {
+      "zh-CN": "样品申请创建时",
+      "en": "Sample Request Created",
+      "es": "Solicitud de Muestra Creada"
+    },
+    "description": {
+      "zh-CN": "当创建样品申请时触发",
+      "en": "Triggered when sample request is created",
+      "es": "Se activa cuando se crea una solicitud de muestra"
+    }
+  },
+  {
+    "code": "user.welcome",
+    "name": {
+      "zh-CN": "用户欢迎邮件",
+      "en": "User Welcome",
+      "es": "Bienvenida de Usuario"
+    },
+    "description": {
+      "zh-CN": "新用户注册时发送欢迎邮件",
+      "en": "Send welcome email when new user registers",
+      "es": "Enviar correo de bienvenida cuando se registra un nuevo usuario"
+    }
+  }
 ]
 ```
+
+**字典管理:**
+触发事件现在作为系统字典进行管理，可以通过以下接口进行维护：
+- 字典分类代码：`email_trigger_event`
+- 字典管理接口：`/admin/dictionary/email_trigger_event/items`
+- 支持多语言名称和描述
+- 支持动态添加和修改事件类型
 
 ## 三、邮件发送历史
 
