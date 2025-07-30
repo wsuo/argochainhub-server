@@ -76,6 +76,25 @@ export class EmailConfigController {
     };
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: '获取邮件配置详情' })
+  @ApiResponse({ status: 200, description: '返回邮件配置详情' })
+  async getEmailConfig(@Param('id', ParseIntPipe) id: number): Promise<EmailConfig> {
+    const config = await this.emailConfigRepository.findOne({
+      where: { id },
+    });
+
+    if (!config) {
+      throw new BadRequestException('邮件配置不存在');
+    }
+
+    // 隐藏密码字段
+    return {
+      ...config,
+      authPass: '******',
+    };
+  }
+
   @Post()
   @ApiOperation({ summary: '创建邮件配置' })
   @ApiResponse({ status: 201, description: '创建成功' })

@@ -43,7 +43,35 @@ GET /admin/email-configs?page=1&limit=10
 }
 ```
 
-### 1.2 创建邮件配置
+### 1.2 获取邮件配置详情
+
+**请求:**
+```http
+GET /admin/email-configs/1
+```
+
+**响应示例:**
+```json
+{
+  "id": 1,
+  "name": "主邮件服务器",
+  "host": "smtp.gmail.com",
+  "port": 465,
+  "secure": true,
+  "authUser": "noreply@argochainhub.com",
+  "authPass": "******",
+  "fromEmail": "noreply@argochainhub.com",
+  "fromName": "ArgoChainHub",
+  "isDefault": true,
+  "isActive": true,
+  "maxRetries": 3,
+  "retryDelay": 60,
+  "createdAt": "2025-07-30T12:00:00.000Z",
+  "updatedAt": "2025-07-30T12:00:00.000Z"
+}
+```
+
+### 1.3 创建邮件配置
 
 **请求:**
 ```http
@@ -86,7 +114,7 @@ Content-Type: application/json
 }
 ```
 
-### 1.3 更新邮件配置
+### 1.4 更新邮件配置
 
 **请求:**
 ```http
@@ -102,14 +130,14 @@ Content-Type: application/json
 }
 ```
 
-### 1.4 删除邮件配置
+### 1.5 删除邮件配置
 
 **请求:**
 ```http
 DELETE /admin/email-configs/1
 ```
 
-### 1.5 测试邮件配置
+### 1.6 测试邮件配置
 
 **请求:**
 ```http
