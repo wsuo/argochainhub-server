@@ -28,3 +28,6 @@ export {
 } from './notification.entity';
 export { AdminUser } from './admin-user.entity';
 export { AuditLog } from './audit-log.entity';
+export { EmailConfig } from './email-config.entity';
+export { EmailTemplate, EmailVariable } from './email-template.entity';
+export { EmailHistory, EmailStatus } from './email-history.entity';

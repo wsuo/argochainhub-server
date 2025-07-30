@@ -122,7 +122,7 @@ export class UpdateAdminUserDto {
   isActive?: boolean;
 }
 
-export class ChangePasswordDto {
+export class AdminChangePasswordDto {
   @ApiProperty({ description: '当前密码', example: 'oldpassword123' })
   @IsString()
   @MinLength(6)

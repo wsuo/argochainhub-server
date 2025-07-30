@@ -11,6 +11,12 @@ DB_USERNAME=root
 DB_PASSWORD=root
 DB_DATABASE=argochainhub
 
+# 邮件配置
+MAIL_HOST=smtp.qq.com
+MAIL_PORT=587
+MAIL_USERNAME=wangsuoo@qq.com
+MAIL_PASSWORD=bvfzzmxobkdniiic
+
 # 服务信息
 服务运行在本地，3050端口。
 

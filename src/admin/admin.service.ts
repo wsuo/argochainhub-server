@@ -42,7 +42,7 @@ import { TranslateRequestDto, LanguageDetectionDto } from './dto/translate.dto';
 import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
-import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import { AdminCreateProductDto, AdminUpdateProductDto } from './dto/product-management.dto';
 import { CompanyQueryDto } from './dto/company-query.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { UserQueryDto } from './dto/user-query.dto';
@@ -65,7 +65,7 @@ import {
   AdminUserQueryDto, 
   CreateAdminUserDto, 
   UpdateAdminUserDto, 
-  ChangePasswordDto, 
+  AdminChangePasswordDto, 
   ResetPasswordDto, 
   AdminUserStatsDto,
   PermissionGroupDto,
@@ -1502,7 +1502,7 @@ export class AdminService {
   }
 
   // 产品CRUD管理
-  async createProduct(createProductDto: CreateProductDto): Promise<Product> {
+  async createProduct(createProductDto: AdminCreateProductDto): Promise<Product> {
     // 检查供应商是否存在
     const supplier = await this.companyRepository.findOne({
       where: { id: createProductDto.supplierId },
@@ -1518,7 +1518,7 @@ export class AdminService {
 
   async updateProduct(
     productId: number,
-    updateProductDto: UpdateProductDto,
+    updateProductDto: AdminUpdateProductDto,
   ): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
@@ -2518,7 +2518,7 @@ export class AdminService {
 
   async changePassword(
     adminUserId: number,
-    changePasswordDto: ChangePasswordDto,
+    changePasswordDto: AdminChangePasswordDto,
   ): Promise<void> {
     const adminUser = await this.adminUserRepository.findOne({
       where: { id: adminUserId },

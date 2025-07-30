@@ -85,7 +85,7 @@ export class ProductDetailsDto {
 /**
  * 创建产品DTO
  */
-export class CreateProductDto {
+export class AdminCreateProductDto {
   @ApiProperty({ 
     description: '产品名称（多语言）',
     type: MultiLangTextDto
@@ -221,7 +221,7 @@ export class CreateProductDto {
 /**
  * 更新产品DTO
  */
-export class UpdateProductDto {
+export class AdminUpdateProductDto {
   @ApiPropertyOptional({ 
     description: '产品名称（多语言）',
     type: MultiLangTextDto

@@ -6,8 +6,8 @@ import { ControlMethod } from '../../entities/control-method.entity';
 import { Company } from '../../entities/company.entity';
 import { PaginatedResult } from '../../common/dto/pagination.dto';
 import { 
-  CreateProductDto, 
-  UpdateProductDto, 
+  AdminCreateProductDto, 
+  AdminUpdateProductDto, 
   ProductDetailsDto 
 } from '../dto/product-management.dto';
 import { ProductQueryDto } from '../dto/product-query.dto';
@@ -39,7 +39,7 @@ export class AdminProductsService {
   /**
    * 创建产品（管理员）
    */
-  async createProduct(createDto: CreateProductDto): Promise<Product> {
+  async createProduct(createDto: AdminCreateProductDto): Promise<Product> {
     // 验证供应商是否存在
     const supplier = await this.companyRepository.findOne({
       where: { id: createDto.supplierId }
@@ -63,7 +63,7 @@ export class AdminProductsService {
   /**
    * 更新产品（管理员）
    */
-  async updateProduct(id: number, updateDto: UpdateProductDto): Promise<Product> {
+  async updateProduct(id: number, updateDto: AdminUpdateProductDto): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ['supplier']

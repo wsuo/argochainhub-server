@@ -40,7 +40,7 @@ import { DashboardChartsDto } from './dto/dashboard-charts.dto';
 import { CreateSubscriptionDto } from './dto/subscription-management.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/plan-management.dto';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company-management.dto';
-import { CreateProductDto, UpdateProductDto } from './dto/product-management.dto';
+import { AdminCreateProductDto, AdminUpdateProductDto } from './dto/product-management.dto';
 import {
   CreateControlMethodDto,
   UpdateControlMethodDto,
@@ -63,7 +63,7 @@ import {
   AdminUserQueryDto, 
   CreateAdminUserDto, 
   UpdateAdminUserDto, 
-  ChangePasswordDto, 
+  AdminChangePasswordDto, 
   ResetPasswordDto,
   PermissionGroupDto,
   RoleTemplateDto,
@@ -458,7 +458,7 @@ export class AdminController {
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   @ApiResponse({ status: 404, description: '供应商企业不存在' })
-  async createProduct(@Body() createProductDto: CreateProductDto) {
+  async createProduct(@Body() createProductDto: AdminCreateProductDto) {
     return this.adminProductsService.createProduct(createProductDto);
   }
 
@@ -470,7 +470,7 @@ export class AdminController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async updateProduct(
     @Param('id', ParseIntPipe) productId: number,
-    @Body() updateProductDto: UpdateProductDto,
+    @Body() updateProductDto: AdminUpdateProductDto,
   ) {
     return this.adminProductsService.updateProduct(productId, updateProductDto);
   }
@@ -794,7 +794,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
   async changePassword(
     @Param('id', ParseIntPipe) adminUserId: number,
-    @Body() changePasswordDto: ChangePasswordDto,
+    @Body() changePasswordDto: AdminChangePasswordDto,
   ) {
     await this.adminService.changePassword(adminUserId, changePasswordDto);
     return { message: '密码修改成功' };
