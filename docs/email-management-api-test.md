@@ -11,7 +11,7 @@
 
 **请求:**
 ```http
-GET /admin/email-configs?page=1&pageSize=10
+GET /admin/email-configs?page=1&limit=10
 ```
 
 **响应示例:**
@@ -135,7 +135,7 @@ Content-Type: application/json
 
 **请求:**
 ```http
-GET /admin/email-templates?page=1&pageSize=10&isActive=true
+GET /admin/email-templates?page=1&limit=10&isActive=true
 ```
 
 **响应示例:**
@@ -338,12 +338,12 @@ GET /admin/email-templates/trigger-events
 
 **请求:**
 ```http
-GET /admin/email-histories?page=1&pageSize=10&status=sent&startDate=2025-01-01&endDate=2025-12-31
+GET /admin/email-histories?page=1&limit=10&status=sent&startDate=2025-01-01&endDate=2025-12-31
 ```
 
 **查询参数:**
 - `page`: 页码
-- `pageSize`: 每页数量
+- `limit`: 每页数量
 - `status`: 发送状态 (pending/sending/sent/failed/retry)
 - `toEmail`: 收件人邮箱（模糊搜索）
 - `relatedType`: 关联类型 (inquiry/sample_request等)
