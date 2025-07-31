@@ -11,6 +11,8 @@ DB_USERNAME=root
 DB_PASSWORD=root
 DB_DATABASE=argochainhub
 
+请你使用 npx typeorm 命令来进行数据库迁移。
+
 # 邮件配置
 MAIL_HOST=smtp.qq.com
 MAIL_PORT=587
