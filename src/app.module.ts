@@ -19,6 +19,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { StorageModule } from './storage/storage.module';
 import { SeedModule } from './seed/seed.module';
 import { NewsModule } from './news/news.module';
+import { PesticidesModule } from './pesticides/pesticides.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -53,6 +54,7 @@ import tosConfig from './config/tos.config';
     StorageModule,
     SeedModule,
     NewsModule,
+    PesticidesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
