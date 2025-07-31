@@ -68,3 +68,4 @@ migration-output/
 
 # Swagger生成的文件
 swagger-spec.json
+docs/
