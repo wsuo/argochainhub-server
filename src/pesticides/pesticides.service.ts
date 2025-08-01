@@ -33,7 +33,7 @@ export class PesticidesService {
   /**
    * 分页查询标准农药
    */
-  async findAll(queryDto: QueryPesticidesDto): Promise<PaginatedResult<StandardPesticide & { latestPrice?: { unitPrice: number; weekEndDate: Date } }>> {
+  async findAll(queryDto: QueryPesticidesDto): Promise<PaginatedResult<StandardPesticide & { latestPrice?: { unitPrice: number; weekEndDate: Date } | null }>> {
     const { page = 1, limit = 20, category, formulation, isVisible, search } = queryDto;
     
     const where: FindOptionsWhere<StandardPesticide> = {};
@@ -103,6 +103,7 @@ export class PesticidesService {
         'price.weekEndDate as weekEndDate'
       ])
       .where('price.pesticideId IN (:...pesticideIds)', { pesticideIds })
+      .andWhere('price.deletedAt IS NULL')
       .andWhere(`price.weekEndDate = (
         SELECT MAX(p2.weekEndDate) 
         FROM pesticide_price_trends p2 
@@ -114,17 +115,22 @@ export class PesticidesService {
     // 创建价格映射表，便于快速查找
     const priceMap = new Map<number, { unitPrice: number; weekEndDate: Date }>();
     latestPrices.forEach(price => {
-      priceMap.set(parseInt(price.pesticideId), {
+      const pesticideId = parseInt(price.pesticideId);
+      priceMap.set(pesticideId, {
         unitPrice: parseFloat(price.unitPrice),
         weekEndDate: new Date(price.weekEndDate)
       });
     });
 
     // 为农药数据添加最新价格
-    const pesticidesWithLatestPrice = data.map(pesticide => ({
-      ...pesticide,
-      latestPrice: priceMap.get(pesticide.id) || undefined
-    }));
+    const pesticidesWithLatestPrice = data.map(pesticide => {
+      const pesticideId = parseInt(pesticide.id.toString());
+      const latestPrice = priceMap.get(pesticideId) || null;
+      return {
+        ...pesticide,
+        latestPrice
+      };
+    });
 
     return {
       data: pesticidesWithLatestPrice,
