@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { StandardPesticide } from '../entities/standard-pesticide.entity';
+import { PesticidePriceTrend } from '../entities/pesticide-price-trend.entity';
 import { CreatePesticideDto } from './dto/create-pesticide.dto';
 import { UpdatePesticideDto } from './dto/update-pesticide.dto';
 import { QueryPesticidesDto } from './dto/query-pesticides.dto';
@@ -11,6 +12,8 @@ export class PesticidesService {
   constructor(
     @InjectRepository(StandardPesticide)
     private readonly pesticidesRepository: Repository<StandardPesticide>,
+    @InjectRepository(PesticidePriceTrend)
+    private readonly priceTrendsRepository: Repository<PesticidePriceTrend>,
   ) {}
 
   /**
@@ -30,7 +33,7 @@ export class PesticidesService {
    * 分页查询标准农药
    */
   async findAll(queryDto: QueryPesticidesDto): Promise<{
-    data: StandardPesticide[];
+    data: (StandardPesticide & { latestPrice?: { unitPrice: number; weekEndDate: Date } })[];
     total: number;
     page: number;
     limit: number;
@@ -79,8 +82,52 @@ export class PesticidesService {
       .take(limit)
       .getManyAndCount();
 
+    // 优化：一次性查询所有农药的最新价格
+    const pesticideIds = data.map(pesticide => pesticide.id);
+    
+    if (pesticideIds.length === 0) {
+      return {
+        data: [],
+        total,
+        page,
+        limit,
+      };
+    }
+    
+    // 使用相关子查询获取每个农药的最新价格
+    const latestPrices = await this.priceTrendsRepository
+      .createQueryBuilder('price')
+      .select([
+        'price.pesticideId as pesticideId',
+        'price.unitPrice as unitPrice', 
+        'price.weekEndDate as weekEndDate'
+      ])
+      .where('price.pesticideId IN (:...pesticideIds)', { pesticideIds })
+      .andWhere(`price.weekEndDate = (
+        SELECT MAX(p2.weekEndDate) 
+        FROM pesticide_price_trends p2 
+        WHERE p2.pesticideId = price.pesticideId 
+        AND p2.deletedAt IS NULL
+      )`)
+      .getRawMany();
+    
+    // 创建价格映射表，便于快速查找
+    const priceMap = new Map<number, { unitPrice: number; weekEndDate: Date }>();
+    latestPrices.forEach(price => {
+      priceMap.set(parseInt(price.pesticideId), {
+        unitPrice: parseFloat(price.unitPrice),
+        weekEndDate: new Date(price.weekEndDate)
+      });
+    });
+
+    // 为农药数据添加最新价格
+    const pesticidesWithLatestPrice = data.map(pesticide => ({
+      ...pesticide,
+      latestPrice: priceMap.get(pesticide.id) || undefined
+    }));
+
     return {
-      data,
+      data: pesticidesWithLatestPrice,
       total,
       page,
       limit,

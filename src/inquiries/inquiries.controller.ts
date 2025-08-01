@@ -48,7 +48,12 @@ export class InquiriesController {
     @CurrentUser() user: User,
     @Body() createInquiryDto: CreateInquiryDto,
   ) {
-    return this.inquiriesService.createInquiry(user, createInquiryDto);
+    const inquiry = await this.inquiriesService.createInquiry(user, createInquiryDto);
+    return {
+      success: true,
+      message: '询价单创建成功',
+      data: inquiry
+    };
   }
 
   @Get()
@@ -58,7 +63,12 @@ export class InquiriesController {
     @CurrentUser() user: User,
     @Query() searchDto: SearchInquiriesDto,
   ) {
-    return this.inquiriesService.getMyInquiries(user, searchDto);
+    const result = await this.inquiriesService.getMyInquiries(user, searchDto);
+    return {
+      success: true,
+      message: '获取成功',
+      ...result
+    };
   }
 
   @Get(':id')

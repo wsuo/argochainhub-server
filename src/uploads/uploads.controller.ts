@@ -93,7 +93,12 @@ export class UploadsController {
     @Query() paginationDto: PaginationDto,
     @Query('type') type?: AttachmentType,
   ) {
-    return this.uploadsService.getMyFiles(user, { ...paginationDto, type });
+    const result = await this.uploadsService.getMyFiles(user, { ...paginationDto, type });
+    return {
+      success: true,
+      message: '获取成功',
+      ...result
+    };
   }
 
   @Get('by-type/:type')
@@ -107,12 +112,17 @@ export class UploadsController {
     @Query() paginationDto: PaginationDto,
     @Query('relatedId', ParseIntPipe) relatedId?: number,
   ) {
-    return this.uploadsService.getFilesByType(
+    const result = await this.uploadsService.getFilesByType(
       user,
       type,
       relatedId,
       paginationDto,
     );
+    return {
+      success: true,
+      message: '获取成功',
+      ...result
+    };
   }
 
   @Get(':id')
@@ -125,7 +135,12 @@ export class UploadsController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.uploadsService.getFileById(user, id);
+    const file = await this.uploadsService.getFileById(user, id);
+    return {
+      success: true,
+      message: '获取成功',
+      data: file
+    };
   }
 
   @Get(':id/url')

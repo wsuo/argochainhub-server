@@ -40,7 +40,12 @@ export class DictionaryController {
   @ApiOperation({ summary: '获取字典分类列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCategories(@Query() queryDto: DictionaryCategoryQueryDto) {
-    return this.dictionaryService.getCategories(queryDto);
+    const result = await this.dictionaryService.getCategories(queryDto);
+    return {
+      success: true,
+      message: '获取字典分类成功',
+      ...result
+    };
   }
 
   @Get('categories/:code')
@@ -48,14 +53,24 @@ export class DictionaryController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'code', description: '分类代码' })
   async getCategoryByCode(@Param('code') code: string) {
-    return this.dictionaryService.getCategoryByCode(code);
+    const result = await this.dictionaryService.getCategoryByCode(code);
+    return {
+      success: true,
+      message: '获取字典分类详情成功',
+      data: result
+    };
   }
 
   @Post('categories')
   @ApiOperation({ summary: '创建字典分类' })
   @ApiResponse({ status: 201, description: '创建成功' })
   async createCategory(@Body() createDto: CreateDictionaryCategoryDto) {
-    return this.dictionaryService.createCategory(createDto);
+    const result = await this.dictionaryService.createCategory(createDto);
+    return {
+      success: true,
+      message: '字典分类创建成功',
+      data: result
+    };
   }
 
   @Put('categories/:id')
@@ -65,7 +80,12 @@ export class DictionaryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateDictionaryCategoryDto,
   ) {
-    return this.dictionaryService.updateCategory(id, updateDto);
+    const result = await this.dictionaryService.updateCategory(id, updateDto);
+    return {
+      success: true,
+      message: '字典分类更新成功',
+      data: result
+    };
   }
 
   @Delete('categories/:id')
@@ -73,7 +93,10 @@ export class DictionaryController {
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteCategory(@Param('id', ParseIntPipe) id: number) {
     await this.dictionaryService.deleteCategory(id);
-    return { message: 'Dictionary category deleted successfully' };
+    return {
+      success: true,
+      message: '字典分类删除成功'
+    };
   }
 
   // 字典项管理
@@ -85,7 +108,12 @@ export class DictionaryController {
     @Param('categoryCode') categoryCode: string,
     @Query() queryDto: DictionaryItemQueryDto,
   ) {
-    return this.dictionaryService.getItems(categoryCode, queryDto);
+    const result = await this.dictionaryService.getItems(categoryCode, queryDto);
+    return {
+      success: true,
+      message: '获取字典项列表成功',
+      ...result
+    };
   }
 
   @Post(':categoryCode/items')
@@ -96,7 +124,12 @@ export class DictionaryController {
     @Param('categoryCode') categoryCode: string,
     @Body() createDto: CreateDictionaryItemDto,
   ) {
-    return this.dictionaryService.createItem(categoryCode, createDto);
+    const result = await this.dictionaryService.createItem(categoryCode, createDto);
+    return {
+      success: true,
+      message: '字典项创建成功',
+      data: result
+    };
   }
 
   @Put('items/:id')
@@ -106,7 +139,12 @@ export class DictionaryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateDictionaryItemDto,
   ) {
-    return this.dictionaryService.updateItem(id, updateDto);
+    const result = await this.dictionaryService.updateItem(id, updateDto);
+    return {
+      success: true,
+      message: '字典项更新成功',
+      data: result
+    };
   }
 
   @Delete('items/:id')
@@ -114,7 +152,10 @@ export class DictionaryController {
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteItem(@Param('id', ParseIntPipe) id: number) {
     await this.dictionaryService.deleteItem(id);
-    return { message: 'Dictionary item deleted successfully' };
+    return {
+      success: true,
+      message: '字典项删除成功'
+    };
   }
 
   @Post(':categoryCode/batch')
@@ -125,7 +166,12 @@ export class DictionaryController {
     @Param('categoryCode') categoryCode: string,
     @Body() batchDto: BatchImportDictionaryItemDto,
   ) {
-    return this.dictionaryService.batchImportItems(categoryCode, batchDto);
+    const result = await this.dictionaryService.batchImportItems(categoryCode, batchDto);
+    return {
+      success: true,
+      message: '批量导入字典项成功',
+      data: result
+    };
   }
 }
 
@@ -143,13 +189,23 @@ export class PublicDictionaryController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'categoryCode', description: '分类代码' })
   async getDictionaryByCode(@Param('categoryCode') categoryCode: string) {
-    return this.dictionaryService.getDictionaryByCode(categoryCode);
+    const result = await this.dictionaryService.getDictionaryByCode(categoryCode);
+    return {
+      success: true,
+      message: '获取字典数据成功',
+      data: result
+    };
   }
 
   @Get('countries/with-flags')
   @ApiOperation({ summary: '获取包含国旗的国家列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCountriesWithFlags() {
-    return this.countryDictionaryService.getCountriesWithFlags();
+    const result = await this.countryDictionaryService.getCountriesWithFlags();
+    return {
+      success: true,
+      message: '获取国家列表成功',
+      data: result
+    };
   }
 }

@@ -33,7 +33,12 @@ export class CompaniesController {
   @ApiOperation({ summary: '获取当前企业信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCompanyProfile(@CurrentUser() user: User) {
-    return this.companiesService.getCompanyProfile(user);
+    const company = await this.companiesService.getCompanyProfile(user);
+    return {
+      success: true,
+      message: '获取成功',
+      data: company
+    };
   }
 
   @Put('profile/company')
@@ -45,7 +50,12 @@ export class CompaniesController {
     @CurrentUser() user: User,
     @Body() updateDto: UpdateCompanyProfileDto,
   ) {
-    return this.companiesService.updateCompanyProfile(user, updateDto);
+    const company = await this.companiesService.updateCompanyProfile(user, updateDto);
+    return {
+      success: true,
+      message: '企业信息更新成功',
+      data: company
+    };
   }
 
   @Get('profile/subscription')
@@ -54,7 +64,12 @@ export class CompaniesController {
   @ApiOperation({ summary: '获取会员订阅状态' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getSubscriptionStatus(@CurrentUser() user: User) {
-    return this.companiesService.getSubscriptionStatus(user);
+    const subscription = await this.companiesService.getSubscriptionStatus(user);
+    return {
+      success: true,
+      message: '获取成功',
+      data: subscription
+    };
   }
 
   @Get('suppliers')
@@ -63,7 +78,12 @@ export class CompaniesController {
   @ApiOperation({ summary: '搜索供应商' })
   @ApiResponse({ status: 200, description: '搜索成功' })
   async searchSuppliers(@Query() searchDto: SearchCompaniesDto) {
-    return this.companiesService.searchSuppliers(searchDto);
+    const result = await this.companiesService.searchSuppliers(searchDto);
+    return {
+      success: true,
+      message: '搜索成功',
+      ...result
+    };
   }
 
   @Get('suppliers/top100')
@@ -72,7 +92,12 @@ export class CompaniesController {
   @ApiOperation({ summary: '获取Top100供应商' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getTop100Suppliers() {
-    return this.companiesService.getTop100Suppliers();
+    const suppliers = await this.companiesService.getTop100Suppliers();
+    return {
+      success: true,
+      message: '获取成功',
+      data: suppliers
+    };
   }
 
   @Get('suppliers/:id')
@@ -83,6 +108,11 @@ export class CompaniesController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '供应商不存在' })
   async getSupplierDetail(@Param('id', ParseIntPipe) id: number) {
-    return this.companiesService.getSupplierDetail(id);
+    const supplier = await this.companiesService.getSupplierDetail(id);
+    return {
+      success: true,
+      message: '获取成功',
+      data: supplier
+    };
   }
 }

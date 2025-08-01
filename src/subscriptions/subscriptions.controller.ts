@@ -30,14 +30,24 @@ export class SubscriptionsController {
   @ApiOperation({ summary: '获取当前订阅状态' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCurrentSubscription(@CurrentUser() user: User) {
-    return this.subscriptionsService.getCurrentSubscription(user);
+    const subscription = await this.subscriptionsService.getCurrentSubscription(user);
+    return {
+      success: true,
+      message: '获取成功',
+      data: subscription
+    };
   }
 
   @Get('quota')
   @ApiOperation({ summary: '获取配额使用情况' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getQuotaUsage(@CurrentUser() user: User) {
-    return this.subscriptionsService.getQuotaUsage(user);
+    const quotaUsage = await this.subscriptionsService.getQuotaUsage(user);
+    return {
+      success: true,
+      message: '获取成功',
+      data: quotaUsage
+    };
   }
 
   @Post('trial')

@@ -37,7 +37,12 @@ export class OrdersController {
     @CurrentUser() user: User,
     @Body() createOrderDto: CreateOrderDto,
   ) {
-    return this.ordersService.createOrder(user, createOrderDto.planId);
+    const result = await this.ordersService.createOrder(user, createOrderDto.planId);
+    return {
+      success: true,
+      message: '订单创建成功',
+      data: result
+    };
   }
 
   @Get()
@@ -47,7 +52,12 @@ export class OrdersController {
     @CurrentUser() user: User,
     @Query() paginationDto: PaginationDto,
   ) {
-    return this.ordersService.getMyOrders(user, paginationDto);
+    const result = await this.ordersService.getMyOrders(user, paginationDto);
+    return {
+      success: true,
+      message: '获取订单列表成功',
+      ...result
+    };
   }
 
   @Get(':id')
@@ -59,6 +69,11 @@ export class OrdersController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.ordersService.getOrderDetail(user, id);
+    const result = await this.ordersService.getOrderDetail(user, id);
+    return {
+      success: true,
+      message: '获取订单详情成功',
+      data: result
+    };
   }
 }

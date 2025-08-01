@@ -42,7 +42,12 @@ export class ProductsController {
   @ApiOperation({ summary: '搜索产品' })
   @ApiResponse({ status: 200, description: '搜索成功' })
   async searchProducts(@Query() searchDto: SearchProductsDto) {
-    return this.productsService.searchProducts(searchDto);
+    const result = await this.productsService.searchProducts(searchDto);
+    return {
+      success: true,
+      message: '搜索成功',
+      ...result
+    };
   }
 
   @Get(':id')
@@ -53,7 +58,12 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
   async getProductDetail(@Param('id', ParseIntPipe) id: number) {
-    return this.productsService.getProductDetail(id);
+    const product = await this.productsService.getProductDetail(id);
+    return {
+      success: true,
+      message: '获取成功',
+      data: product
+    };
   }
 }
 
@@ -72,7 +82,12 @@ export class MyProductsController {
     @CurrentUser() user: User,
     @Query() myProductsDto: MyProductsDto,
   ) {
-    return this.productsService.getMyProducts(user, myProductsDto);
+    const result = await this.productsService.getMyProducts(user, myProductsDto);
+    return {
+      success: true,
+      message: '获取成功',
+      ...result
+    };
   }
 
   @Post()
@@ -85,7 +100,12 @@ export class MyProductsController {
     @CurrentUser() user: User,
     @Body() createProductDto: CreateProductDto,
   ) {
-    return this.productsService.createProduct(user, createProductDto);
+    const product = await this.productsService.createProduct(user, createProductDto);
+    return {
+      success: true,
+      message: '产品创建成功',
+      data: product
+    };
   }
 
   @Get(':id')
@@ -97,7 +117,12 @@ export class MyProductsController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.productsService.getMyProductDetail(user, id);
+    const product = await this.productsService.getMyProductDetail(user, id);
+    return {
+      success: true,
+      message: '获取成功',
+      data: product
+    };
   }
 
   @Put(':id')
@@ -110,7 +135,12 @@ export class MyProductsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    return this.productsService.updateMyProduct(user, id, updateProductDto);
+    const product = await this.productsService.updateMyProduct(user, id, updateProductDto);
+    return {
+      success: true,
+      message: '产品更新成功',
+      data: product
+    };
   }
 
   @Delete(':id')
@@ -123,7 +153,10 @@ export class MyProductsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     await this.productsService.deleteMyProduct(user, id);
-    return { message: 'Product deleted successfully' };
+    return {
+      success: true,
+      message: '产品删除成功'
+    };
   }
 
   @Post(':id/submit-review')
@@ -135,6 +168,11 @@ export class MyProductsController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.productsService.submitForReview(user, id);
+    const product = await this.productsService.submitForReview(user, id);
+    return {
+      success: true,
+      message: '产品已提交审核',
+      data: product
+    };
   }
 }

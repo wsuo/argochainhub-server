@@ -49,8 +49,13 @@ export class VipConfigController {
     status: HttpStatus.BAD_REQUEST,
     description: '参数错误或配置已存在',
   })
-  async create(@Body() createDto: CreateVipConfigDto): Promise<VipConfig> {
-    return await this.vipConfigService.create(createDto);
+  async create(@Body() createDto: CreateVipConfigDto) {
+    const result = await this.vipConfigService.create(createDto);
+    return {
+      success: true,
+      message: 'VIP配置创建成功',
+      data: result
+    };
   }
 
   @Get()
@@ -62,8 +67,13 @@ export class VipConfigController {
   })
   async findAll(
     @Query() query: VipConfigQueryDto
-  ): Promise<any> {
-    return await this.vipConfigService.findAll(query);
+  ) {
+    const result = await this.vipConfigService.findAll(query);
+    return {
+      success: true,
+      message: '获取VIP配置列表成功',
+      ...result
+    };
   }
 
   @Get('statistics')
@@ -73,8 +83,13 @@ export class VipConfigController {
     status: HttpStatus.OK,
     description: '获取统计信息成功',
   })
-  async getStatistics(): Promise<any> {
-    return await this.vipConfigService.getStatistics();
+  async getStatistics() {
+    const result = await this.vipConfigService.getStatistics();
+    return {
+      success: true,
+      message: '获取统计信息成功',
+      data: result
+    };
   }
 
   @Get(':id')
@@ -90,8 +105,13 @@ export class VipConfigController {
     status: HttpStatus.NOT_FOUND,
     description: 'VIP配置不存在',
   })
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<VipConfig> {
-    return await this.vipConfigService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.vipConfigService.findOne(id);
+    return {
+      success: true,
+      message: '获取VIP配置详情成功',
+      data: result
+    };
   }
 
   @Patch(':id')
@@ -114,8 +134,13 @@ export class VipConfigController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateVipConfigDto
-  ): Promise<VipConfig> {
-    return await this.vipConfigService.update(id, updateDto);
+  ) {
+    const result = await this.vipConfigService.update(id, updateDto);
+    return {
+      success: true,
+      message: 'VIP配置更新成功',
+      data: result
+    };
   }
 
   @Delete(':id')
@@ -130,8 +155,12 @@ export class VipConfigController {
     status: HttpStatus.NOT_FOUND,
     description: 'VIP配置不存在',
   })
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     await this.vipConfigService.remove(id);
+    return {
+      success: true,
+      message: 'VIP配置删除成功'
+    };
   }
 
   @Post(':id/toggle-status')
@@ -149,8 +178,13 @@ export class VipConfigController {
   })
   async toggleStatus(
     @Param('id', ParseIntPipe) id: number
-  ): Promise<VipConfig> {
-    return await this.vipConfigService.toggleStatus(id);
+  ) {
+    const result = await this.vipConfigService.toggleStatus(id);
+    return {
+      success: true,
+      message: '状态切换成功',
+      data: result
+    };
   }
 
   @Post('batch-toggle-status')
@@ -162,8 +196,12 @@ export class VipConfigController {
   })
   async batchToggleStatus(
     @Body() body: { ids: number[]; isActive: boolean }
-  ): Promise<void> {
+  ) {
     await this.vipConfigService.batchToggleStatus(body.ids, body.isActive);
+    return {
+      success: true,
+      message: '批量状态切换成功'
+    };
   }
 
   @Patch(':id/sort-order')
@@ -182,8 +220,13 @@ export class VipConfigController {
   async updateSortOrder(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { sortOrder: number }
-  ): Promise<VipConfig> {
-    return await this.vipConfigService.updateSortOrder(id, body.sortOrder);
+  ) {
+    const result = await this.vipConfigService.updateSortOrder(id, body.sortOrder);
+    return {
+      success: true,
+      message: '排序更新成功',
+      data: result
+    };
   }
 
   @Get('platform/:platform')
@@ -197,7 +240,12 @@ export class VipConfigController {
   })
   async findByPlatform(
     @Param('platform') platform: string
-  ): Promise<VipConfig[]> {
-    return await this.vipConfigService.findByPlatform(platform as any);
+  ) {
+    const result = await this.vipConfigService.findByPlatform(platform as any);
+    return {
+      success: true,
+      message: '获取平台VIP配置成功',
+      data: result
+    };
   }
 }

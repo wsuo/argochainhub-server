@@ -47,7 +47,12 @@ export class CompanyUsersController {
     @Query() queryDto: CompanyUserQueryDto,
     @CurrentUser() currentUser: User | AdminUser,
   ) {
-    return this.companyUsersService.getCompanyUsers(companyId, queryDto, currentUser);
+    const result = await this.companyUsersService.getCompanyUsers(companyId, queryDto, currentUser);
+    return {
+      success: true,
+      message: '获取成功',
+      ...result
+    };
   }
 
   @Get(':userId')
@@ -62,7 +67,12 @@ export class CompanyUsersController {
     @Param('userId', ParseIntPipe) userId: number,
     @CurrentUser() currentUser: User | AdminUser,
   ) {
-    return this.companyUsersService.getCompanyUserById(companyId, userId, currentUser);
+    const user = await this.companyUsersService.getCompanyUserById(companyId, userId, currentUser);
+    return {
+      success: true,
+      message: '获取成功',
+      data: user
+    };
   }
 
   @Post()
@@ -76,7 +86,12 @@ export class CompanyUsersController {
     @Body() createDto: CreateCompanyUserDto,
     @CurrentUser() currentUser: User | AdminUser,
   ) {
-    return this.companyUsersService.createCompanyUser(companyId, createDto, currentUser);
+    const user = await this.companyUsersService.createCompanyUser(companyId, createDto, currentUser);
+    return {
+      success: true,
+      message: '用户创建成功',
+      data: user
+    };
   }
 
   @Put(':userId')
@@ -92,7 +107,12 @@ export class CompanyUsersController {
     @Body() updateDto: UpdateCompanyUserDto,
     @CurrentUser() currentUser: User | AdminUser,
   ) {
-    return this.companyUsersService.updateCompanyUser(companyId, userId, updateDto, currentUser);
+    const user = await this.companyUsersService.updateCompanyUser(companyId, userId, updateDto, currentUser);
+    return {
+      success: true,
+      message: '用户更新成功',
+      data: user
+    };
   }
 
   @Delete(':userId')
@@ -109,7 +129,10 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     await this.companyUsersService.deleteCompanyUser(companyId, userId, currentUser);
-    return { message: '用户删除成功' };
+    return {
+      success: true,
+      message: '用户删除成功'
+    };
   }
 
   @Patch(':userId/toggle-status')
@@ -125,6 +148,11 @@ export class CompanyUsersController {
     @Param('userId', ParseIntPipe) userId: number,
     @CurrentUser() currentUser: User | AdminUser,
   ) {
-    return this.companyUsersService.toggleUserStatus(companyId, userId, currentUser);
+    const user = await this.companyUsersService.toggleUserStatus(companyId, userId, currentUser);
+    return {
+      success: true,
+      message: '状态切换成功',
+      data: user
+    };
   }
 }

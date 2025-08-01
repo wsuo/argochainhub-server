@@ -11,6 +11,11 @@ export class PlansController {
   @ApiOperation({ summary: '获取所有可用会员计划' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getActivePlans() {
-    return this.plansService.getActivePlans();
+    const plans = await this.plansService.getActivePlans();
+    return {
+      success: true,
+      message: '获取成功',
+      data: plans
+    };
   }
 }

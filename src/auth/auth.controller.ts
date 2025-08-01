@@ -25,7 +25,12 @@ export class AuthController {
   @ApiResponse({ status: 201, description: '注册成功' })
   @ApiResponse({ status: 409, description: '邮箱已存在' })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    const result = await this.authService.register(registerDto);
+    return {
+      success: true,
+      message: '注册成功',
+      data: result
+    };
   }
 
   @Post('login')
@@ -33,7 +38,12 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登录成功' })
   @ApiResponse({ status: 401, description: '登录失败' })
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto);
+    return {
+      success: true,
+      message: '登录成功',
+      data: result
+    };
   }
 
   @Get('me')
@@ -43,7 +53,12 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
   async getProfile(@CurrentUser() user: User | AdminUser) {
-    return this.authService.getProfile(user);
+    const profile = await this.authService.getProfile(user);
+    return {
+      success: true,
+      message: '获取成功',
+      data: profile
+    };
   }
 
   @Put('change-password')
@@ -57,7 +72,11 @@ export class AuthController {
     @CurrentUser() user: User,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    return this.authService.changePassword(user, changePasswordDto);
+    await this.authService.changePassword(user, changePasswordDto);
+    return {
+      success: true,
+      message: '密码修改成功'
+    };
   }
 
   @Post('logout')
@@ -67,7 +86,10 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登出成功' })
   async logout() {
     // JWT无状态，客户端删除token即可
-    return { message: 'Logout successful' };
+    return {
+      success: true,
+      message: '登出成功'
+    };
   }
 
   @Post('admin/login')
@@ -75,6 +97,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登录成功' })
   @ApiResponse({ status: 401, description: '登录失败' })
   async adminLogin(@Body() adminLoginDto: AdminLoginDto) {
-    return this.authService.adminLogin(adminLoginDto);
+    const result = await this.authService.adminLogin(adminLoginDto);
+    return {
+      success: true,
+      message: '管理员登录成功',
+      data: result
+    };
   }
 }

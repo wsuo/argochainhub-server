@@ -47,11 +47,16 @@ export class NotificationsController {
     @Query('status') status?: NotificationStatus,
     @Query('type') type?: NotificationType,
   ) {
-    return this.notificationsService.getMyNotifications(user, {
+    const result = await this.notificationsService.getMyNotifications(user, {
       ...paginationDto,
       status,
       type,
     });
+    return {
+      success: true,
+      message: '获取通知列表成功',
+      ...result
+    };
   }
 
   @Get('unread-count')
@@ -59,7 +64,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getUnreadCount(@CurrentUser() user: User) {
     const count = await this.notificationsService.getUnreadCount(user.id);
-    return { count };
+    return {
+      success: true,
+      message: '获取未读数量成功',
+      data: { count }
+    };
   }
 
   @Patch(':id/read')
@@ -71,7 +80,12 @@ export class NotificationsController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.notificationsService.markAsRead(user, id);
+    const result = await this.notificationsService.markAsRead(user, id);
+    return {
+      success: true,
+      message: '标记为已读成功',
+      data: result
+    };
   }
 
   @Patch('read-all')
@@ -79,7 +93,10 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '标记成功' })
   async markAllAsRead(@CurrentUser() user: User) {
     await this.notificationsService.markAllAsRead(user);
-    return { message: 'All notifications marked as read' };
+    return {
+      success: true,
+      message: '所有通知已标记为已读'
+    };
   }
 
   @Patch(':id')
@@ -92,7 +109,12 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateNotificationDto,
   ) {
-    return this.notificationsService.updateNotification(user, id, updateDto);
+    const result = await this.notificationsService.updateNotification(user, id, updateDto);
+    return {
+      success: true,
+      message: '通知更新成功',
+      data: result
+    };
   }
 
   @Delete(':id')
@@ -105,6 +127,9 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     await this.notificationsService.deleteNotification(user, id);
-    return { message: 'Notification deleted successfully' };
+    return {
+      success: true,
+      message: '通知删除成功'
+    };
   }
 }
