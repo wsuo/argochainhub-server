@@ -57,7 +57,22 @@ export class PesticidesController {
     description: '查询成功'
   })
   async findAll(@Query() queryDto: QueryPesticidesDto) {
-    const result = await this.pesticidesService.findAll(queryDto);
+    // 手动处理布尔参数转换问题
+    const processedQuery = { ...queryDto };
+    
+    // 处理 isVisible 参数
+    if (typeof queryDto.isVisible === 'string') {
+      processedQuery.isVisible = queryDto.isVisible === 'true' ? true : 
+                                 queryDto.isVisible === 'false' ? false : undefined;
+    }
+    
+    // 处理 hasPrice 参数
+    if (typeof queryDto.hasPrice === 'string') {
+      processedQuery.hasPrice = queryDto.hasPrice === 'true' ? true : 
+                                queryDto.hasPrice === 'false' ? false : undefined;
+    }
+    
+    const result = await this.pesticidesService.findAll(processedQuery);
     return ResponseWrapperUtil.successWithPagination(result, '查询成功');
   }
 

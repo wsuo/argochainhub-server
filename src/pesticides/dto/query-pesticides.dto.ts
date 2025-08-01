@@ -58,10 +58,8 @@ export class QueryPesticidesDto {
     example: true,
     required: false
   })
-  @IsBoolean()
   @IsOptional()
-  @Type(() => Boolean)
-  isVisible?: boolean;
+  isVisible?: boolean | string;
 
   @ApiProperty({ 
     description: '产品名称搜索（支持中文、英文、西班牙文）',
@@ -71,4 +69,12 @@ export class QueryPesticidesDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @ApiProperty({ 
+    description: '是否有价格数据筛选（true: 仅显示有价格的, false: 仅显示无价格的）',
+    example: true,
+    required: false
+  })
+  @IsOptional()
+  hasPrice?: boolean | string;
 }

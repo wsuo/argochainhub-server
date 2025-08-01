@@ -34,7 +34,7 @@ export class PesticidesService {
    * 分页查询标准农药
    */
   async findAll(queryDto: QueryPesticidesDto): Promise<PaginatedResult<StandardPesticide & { latestPrice?: { unitPrice: number; weekEndDate: Date } | null }>> {
-    const { page = 1, limit = 20, category, formulation, isVisible, search } = queryDto;
+    const { page = 1, limit = 20, category, formulation, isVisible, search, hasPrice } = queryDto;
     
     const where: FindOptionsWhere<StandardPesticide> = {};
     
@@ -69,6 +69,29 @@ export class PesticidesService {
         )`,
         { search: `%${search}%` }
       );
+    }
+    
+    // 添加价格筛选条件
+    if (typeof hasPrice === 'boolean') {
+      if (hasPrice) {
+        // 只显示有价格的农药
+        queryBuilder.andWhere(
+          `EXISTS (
+            SELECT 1 FROM pesticide_price_trends ppt 
+            WHERE ppt.pesticideId = pesticide.id 
+            AND ppt.deletedAt IS NULL
+          )`
+        );
+      } else {
+        // 只显示没有价格的农药
+        queryBuilder.andWhere(
+          `NOT EXISTS (
+            SELECT 1 FROM pesticide_price_trends ppt 
+            WHERE ppt.pesticideId = pesticide.id 
+            AND ppt.deletedAt IS NULL
+          )`
+        );
+      }
     }
     
     // 分页和排序
