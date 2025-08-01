@@ -5,6 +5,31 @@ import { PriceTrendsService } from './price-trends.service';
 import { ParsedPriceData, ImageParseResult } from './dto/parse-price-images.dto';
 import { CreatePriceTrendDto } from './dto/create-price-trend.dto';
 import { StorageService } from '../storage/storage.service';
+import { v4 as uuidv4 } from 'uuid';
+
+// 图片解析结果接口
+export interface ImageParseResultItem {
+  imageIndex: number;
+  imageName: string;
+  imageUrl: string;
+  parsedData: ParsedPriceData[];
+  parseStatus: 'success' | 'failed';
+  errorMessage?: string;
+}
+
+// 任务状态接口
+export interface ParseTask {
+  taskId: string;
+  status: 'processing' | 'completed' | 'failed';
+  totalImages: number;
+  processedImages: number;
+  totalParsedData: number;
+  progress: number;
+  imageResults: ImageParseResultItem[];  // 按图片分组的结果
+  globalErrors: string[];  // 全局错误（如网络错误等）
+  createdAt: Date;
+  completedAt?: Date;
+}
 
 @Injectable()
 export class ImageParseService {
@@ -12,6 +37,9 @@ export class ImageParseService {
   private readonly openRouterApiKey: string;
   private readonly openRouterApiUrl: string;
   private readonly openRouterModel: string;
+  
+  // 内存任务存储（生产环境应使用Redis）
+  private readonly tasks = new Map<string, ParseTask>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -23,16 +51,6 @@ export class ImageParseService {
     this.openRouterApiUrl = this.configService.get<string>('openrouter.apiUrl') || 'https://openrouter.ai/api/v1/chat/completions';
     this.openRouterModel = this.configService.get<string>('openrouter.model') || 'openai/gpt-4o';
 
-    // 添加调试日志，查看API Key的状态
-    this.logger.log(`OpenRouter API Key 长度: ${this.openRouterApiKey ? this.openRouterApiKey.length : 0}`);
-    this.logger.log(`OpenRouter API Key 前缀: ${this.openRouterApiKey ? this.openRouterApiKey.substring(0, 10) + '...' : 'EMPTY'}`);
-    this.logger.log(`OpenRouter API URL: ${this.openRouterApiUrl}`);
-    this.logger.log(`OpenRouter Model: ${this.openRouterModel}`);
-    
-    // 额外的调试：显示实际配置值
-    this.logger.log(`配置系统中的值: ${this.configService.get<string>('openrouter.apiKey') || 'NULL'}`);
-    this.logger.log(`环境变量直接读取: ${process.env.OPENROUTER_API_KEY || 'NULL'}`);
-
     if (!this.openRouterApiKey) {
       this.logger.error('OPENROUTER_API_KEY 配置为空或未找到');
       throw new Error('OPENROUTER_API_KEY is not configured');
@@ -40,8 +58,201 @@ export class ImageParseService {
   }
 
   /**
-   * 解析图片中的价格数据
+   * 创建异步解析任务
    */
+  async createParseTask(
+    imageFiles: Express.Multer.File[],
+    exchangeRate: number
+  ): Promise<string> {
+    const taskId = uuidv4();
+    
+    const task: ParseTask = {
+      taskId,
+      status: 'processing',
+      totalImages: imageFiles.length,
+      processedImages: 0,
+      totalParsedData: 0,
+      progress: 0,
+      imageResults: imageFiles.map((file, index) => ({
+        imageIndex: index + 1,
+        imageName: file.originalname,
+        imageUrl: '', // 将在处理时填充
+        parsedData: [],
+        parseStatus: 'success', // 初始状态
+      })),
+      globalErrors: [],
+      createdAt: new Date()
+    };
+
+    this.tasks.set(taskId, task);
+    
+    // 启动异步处理（不等待结果）
+    this.processImagesAsync(taskId, imageFiles, exchangeRate).catch(error => {
+      this.logger.error(`任务 ${taskId} 处理失败:`, error);
+      task.status = 'failed';
+      task.globalErrors.push(`任务处理失败: ${error.message}`);
+      task.completedAt = new Date();
+    });
+
+    return taskId;
+  }
+
+  /**
+   * 获取任务状态
+   */
+  async getTaskStatus(taskId: string): Promise<ParseTask> {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      throw new BadRequestException(`任务 ${taskId} 不存在`);
+    }
+    return task;
+  }
+
+  /**
+   * 异步处理图片（只解析，不保存数据库）
+   */
+  private async processImagesAsync(
+    taskId: string,
+    imageFiles: Express.Multer.File[],
+    exchangeRate: number
+  ): Promise<void> {
+    const task = this.tasks.get(taskId)!;
+    
+    try {
+      // 处理每张图片
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const imageResult = task.imageResults[i];
+        
+        try {
+          this.logger.log(`任务 ${taskId}: 正在解析第 ${i + 1} 张图片: ${file.originalname}`);
+          
+          // 先上传图片获取URL
+          const uploadResult = await this.storageService.uploadFile(
+            {
+              buffer: file.buffer,
+              originalname: file.originalname,
+              mimetype: file.mimetype,
+              size: file.size,
+            },
+            1, // 系统用户ID
+            'pesticide-price-image'
+          );
+          
+          imageResult.imageUrl = uploadResult.url;
+          this.logger.log(`任务 ${taskId}: 第 ${i + 1} 张图片上传成功: ${uploadResult.url}`);
+          
+          // 解析图片内容
+          const parsedData = await this.parseImageWithOpenRouter(file);
+          imageResult.parsedData = parsedData;
+          imageResult.parseStatus = 'success';
+          
+          this.logger.log(`任务 ${taskId}: 第 ${i + 1} 张图片解析完成，获得 ${parsedData.length} 条数据`);
+          
+        } catch (error) {
+          const errorMsg = `解析图片 ${file.originalname} 失败: ${error.message}`;
+          this.logger.error(`任务 ${taskId}: ${errorMsg}`);
+          
+          imageResult.parseStatus = 'failed';
+          imageResult.errorMessage = errorMsg;
+          imageResult.parsedData = []; // 确保失败时数据为空
+        }
+        
+        // 更新整体进度
+        task.processedImages = i + 1;
+        task.totalParsedData = task.imageResults.reduce((sum, result) => sum + result.parsedData.length, 0);
+        task.progress = Math.round((task.processedImages / task.totalImages) * 100);
+      }
+
+      // 任务完成
+      task.status = 'completed';
+      task.completedAt = new Date();
+      
+      this.logger.log(`任务 ${taskId}: 处理完成，总共解析 ${task.totalParsedData} 条数据`);
+      
+    } catch (error) {
+      task.status = 'failed';
+      task.globalErrors.push(`任务处理失败: ${error.message}`);
+      task.completedAt = new Date();
+      throw error;
+    }
+  }
+
+  /**
+   * 保存用户编辑后的价格数据
+   */
+  async saveParsedPriceData(saveDataDto: {
+    taskId?: string;
+    exchangeRate: number;
+    priceData: Array<{
+      productName: string;
+      weekEndDate: string;
+      unitPrice: number;
+    }>;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      totalItems: number;
+      successfulSaves: number;
+      failedSaves: number;
+      savedData: any[];
+      errors: string[];
+    }
+  }> {
+    const { taskId, exchangeRate, priceData } = saveDataDto;
+    
+    this.logger.log(`开始保存用户编辑的价格数据，共 ${priceData.length} 条${taskId ? `，任务ID: ${taskId}` : ''}`);
+    
+    if (!priceData || priceData.length === 0) {
+      return {
+        success: false,
+        message: '没有提供要保存的数据',
+        data: {
+          totalItems: 0,
+          successfulSaves: 0,
+          failedSaves: 0,
+          savedData: [],
+          errors: ['没有提供要保存的数据']
+        }
+      };
+    }
+
+    // 转换为标准格式
+    const parsedData: ParsedPriceData[] = priceData.map(item => ({
+      productName: item.productName,
+      weekEndDate: item.weekEndDate,
+      unitPrice: item.unitPrice
+    }));
+
+    // 使用现有的匹配和保存逻辑
+    const saveResults = await this.matchAndSavePriceData(parsedData, exchangeRate);
+    
+    const response = {
+      success: saveResults.success.length > 0,
+      message: saveResults.success.length > 0 
+        ? `成功保存 ${saveResults.success.length} 条价格数据${saveResults.failed.length > 0 ? `，${saveResults.failed.length} 条保存失败` : ''}`
+        : '所有数据保存失败，请检查数据格式和农药名称匹配',
+      data: {
+        totalItems: priceData.length,
+        successfulSaves: saveResults.success.length,
+        failedSaves: saveResults.failed.length,
+        savedData: saveResults.success,
+        errors: saveResults.failed.map(f => f.error)
+      }
+    };
+
+    // 如果有任务ID，更新任务状态（可选）
+    if (taskId && this.tasks.has(taskId)) {
+      const task = this.tasks.get(taskId)!;
+      // 可以在这里添加保存状态的记录
+      this.logger.log(`任务 ${taskId} 的数据已被用户手动保存`);
+    }
+
+    this.logger.log(`价格数据保存完成：成功 ${response.data.successfulSaves} 条，失败 ${response.data.failedSaves} 条`);
+    
+    return response;
+  }
   async parseImagesForPriceData(
     imageFiles: Express.Multer.File[],
     exchangeRate: number
@@ -281,7 +492,7 @@ Return the data as JSON with this structure:
   }
 
   /**
-   * 匹配农药数据并保存价格数据
+   * 匹配农药数据并保存价格数据（优化版本 - 支持批量保存）
    */
   private async matchAndSavePriceData(
     parsedData: ParsedPriceData[],
@@ -311,36 +522,60 @@ Return the data as JSON with this structure:
       });
     });
 
-    // 处理每条价格数据
+    // 准备批量保存的数据
+    const priceTrendsToSave: CreatePriceTrendDto[] = [];
+    
+    // 处理每条价格数据，先进行匹配验证
     for (const priceData of parsedData) {
-      try {
-        // 查找匹配的农药ID
-        const pesticideId = nameToIdMap.get(priceData.productName);
-        
-        if (!pesticideId) {
-          failed.push({
-            data: priceData,
-            error: `未找到匹配的农药产品: ${priceData.productName}`
-          });
-          continue;
-        }
-
-        // 创建价格趋势数据
-        const createPriceTrendDto: CreatePriceTrendDto = {
-          weekEndDate: priceData.weekEndDate,
-          unitPrice: priceData.unitPrice,
-          exchangeRate: exchangeRate,
-          pesticideId: pesticideId
-        };
-
-        const savedTrend = await this.priceTrendsService.create(createPriceTrendDto);
-        success.push(savedTrend);
-
-      } catch (error) {
+      // 查找匹配的农药ID
+      const pesticideId = nameToIdMap.get(priceData.productName);
+      
+      if (!pesticideId) {
         failed.push({
           data: priceData,
-          error: error.message || '保存价格数据失败'
+          error: `未找到匹配的农药产品: ${priceData.productName}`
         });
+        continue;
+      }
+
+      // 添加到批量保存列表
+      priceTrendsToSave.push({
+        weekEndDate: priceData.weekEndDate,
+        unitPrice: priceData.unitPrice,
+        exchangeRate: exchangeRate,
+        pesticideId: pesticideId
+      });
+    }
+
+    // 批量保存价格数据（如果有数据需要保存）
+    if (priceTrendsToSave.length > 0) {
+      try {
+        const savedTrends = await this.priceTrendsService.batchCreate(priceTrendsToSave);
+        success.push(...savedTrends);
+        this.logger.log(`批量保存成功: ${savedTrends.length} 条价格数据`);
+      } catch (error) {
+        this.logger.error(`批量保存失败: ${error.message}`);
+        
+        // 如果批量保存失败，回退到逐个保存
+        this.logger.log('回退到逐个保存模式');
+        for (const priceTrendDto of priceTrendsToSave) {
+          try {
+            const savedTrend = await this.priceTrendsService.create(priceTrendDto);
+            success.push(savedTrend);
+          } catch (saveError) {
+            // 找到对应的原始数据
+            const originalData = parsedData.find(data => 
+              nameToIdMap.get(data.productName) === priceTrendDto.pesticideId &&
+              data.weekEndDate === priceTrendDto.weekEndDate &&
+              data.unitPrice === priceTrendDto.unitPrice
+            );
+            
+            failed.push({
+              data: originalData!,
+              error: saveError.message || '保存价格数据失败'
+            });
+          }
+        }
       }
     }
 

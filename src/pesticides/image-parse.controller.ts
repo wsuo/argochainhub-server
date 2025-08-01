@@ -1,12 +1,14 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UseGuards,
   UseInterceptors,
   UploadedFiles,
   HttpStatus,
   BadRequestException,
+  Param,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -17,8 +19,9 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
-import { ImageParseService } from './image-parse.service';
+import { ImageParseService, ParseTask } from './image-parse.service';
 import { ParsePriceImagesDto } from './dto/parse-price-images.dto';
+import { SaveParsedPriceDataDto } from './dto/save-parsed-price-data.dto';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { AdminRoles } from '../common/decorators/admin-roles.decorator';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
@@ -68,7 +71,7 @@ export class ImageParseController {
   })
   @ApiResponse({ 
     status: HttpStatus.CREATED, 
-    description: '图片解析完成',
+    description: '图片解析任务已创建，正在后台处理',
     schema: {
       type: 'object',
       properties: {
@@ -77,25 +80,9 @@ export class ImageParseController {
         data: {
           type: 'object',
           properties: {
-            totalImages: { type: 'number', description: '处理的图片数量' },
-            totalParsedData: { type: 'number', description: '解析出的数据条数' },
-            successfulSaves: { type: 'number', description: '成功保存的记录数' },
-            failedSaves: { type: 'number', description: '保存失败的记录数' },
-            parsedData: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  productName: { type: 'string' },
-                  weekEndDate: { type: 'string' },
-                  unitPrice: { type: 'number' }
-                }
-              }
-            },
-            errors: {
-              type: 'array',
-              items: { type: 'string' }
-            }
+            taskId: { type: 'string', description: '任务ID，用于查询处理进度' },
+            totalImages: { type: 'number', description: '待处理的图片数量' },
+            estimatedTime: { type: 'string', description: '预计处理时间' }
           }
         }
       }
@@ -113,24 +100,129 @@ export class ImageParseController {
       throw new BadRequestException('请至少上传一张图片');
     }
 
-    const result = await this.imageParseService.parseImagesForPriceData(
+    // 立即返回任务ID，后台异步处理
+    const taskId = await this.imageParseService.createParseTask(
       images,
       parsePriceImagesDto.exchangeRate
     );
 
-    const responseData = {
-      totalImages: images.length,
-      totalParsedData: result.data.length,
-      successfulSaves: result.success ? result.data.filter(d => d).length : 0,
-      failedSaves: result.errors.length,
-      parsedData: result.data,
-      errors: result.errors
-    };
+    const estimatedTime = images.length <= 3 ? '30秒内' : 
+                         images.length <= 6 ? '1-2分钟' : '2-3分钟';
 
-    const message = result.success 
-      ? `图片解析完成，成功处理 ${responseData.successfulSaves} 条价格数据`
-      : '图片解析过程中出现错误，请查看详细信息';
-      
-    return ResponseWrapperUtil.success(responseData, message);
+    return ResponseWrapperUtil.success({
+      taskId,
+      totalImages: images.length,
+      estimatedTime
+    }, '图片解析任务已创建，正在后台处理');
+  }
+
+  @Get('task-status/:taskId')
+  @AdminRoles('super_admin', 'admin')
+  @ApiOperation({ summary: '查询图片解析任务状态' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: '任务状态查询成功',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            taskId: { type: 'string' },
+            status: { 
+              type: 'string', 
+              enum: ['processing', 'completed', 'failed'],
+              description: '任务状态: processing(处理中), completed(已完成), failed(失败)'
+            },
+            totalImages: { type: 'number' },
+            processedImages: { type: 'number' },
+            totalParsedData: { type: 'number' },
+            progress: { type: 'number', description: '进度百分比 (0-100)' },
+            imageResults: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  imageIndex: { type: 'number', description: '图片序号（从1开始）' },
+                  imageName: { type: 'string', description: '图片文件名' },
+                  imageUrl: { type: 'string', description: '图片访问URL' },
+                  parseStatus: { type: 'string', enum: ['success', 'failed'], description: '解析状态' },
+                  errorMessage: { type: 'string', description: '错误信息（如果解析失败）' },
+                  parsedData: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        productName: { type: 'string' },
+                        weekEndDate: { type: 'string' },
+                        unitPrice: { type: 'number' }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            globalErrors: { type: 'array', items: { type: 'string' } },
+            completedAt: { type: 'string', nullable: true }
+          }
+        }
+      }
+    }
+  })
+  async getTaskStatus(@Param('taskId') taskId: string): Promise<{ success: boolean; message: string; data: ParseTask }> {
+    const status = await this.imageParseService.getTaskStatus(taskId);
+    return ResponseWrapperUtil.success(status, '任务状态查询成功');
+  }
+
+  @Post('save-price-data')
+  @AdminRoles('super_admin', 'admin')
+  @ApiOperation({ summary: '保存用户编辑后的价格数据' })
+  @ApiResponse({ 
+    status: HttpStatus.CREATED, 
+    description: '价格数据保存成功',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            totalItems: { type: 'number', description: '总数据条数' },
+            successfulSaves: { type: 'number', description: '成功保存条数' },
+            failedSaves: { type: 'number', description: '保存失败条数' },
+            savedData: { 
+              type: 'array',
+              description: '成功保存的数据',
+              items: { type: 'object' }
+            },
+            errors: { 
+              type: 'array',
+              description: '错误信息列表',
+              items: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: HttpStatus.BAD_REQUEST, 
+    description: '请求参数错误' 
+  })
+  async saveParsedPriceData(@Body() saveDataDto: SaveParsedPriceDataDto) {
+    const result = await this.imageParseService.saveParsedPriceData({
+      taskId: saveDataDto.taskId,
+      exchangeRate: saveDataDto.exchangeRate,
+      priceData: saveDataDto.priceData
+    });
+    
+    // 总是返回成功响应，但在数据中标明实际结果
+    return ResponseWrapperUtil.success({
+      ...result.data,
+      operationSuccess: result.success
+    }, result.message);
   }
 }

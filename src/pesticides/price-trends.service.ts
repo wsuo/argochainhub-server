@@ -44,34 +44,54 @@ export class PriceTrendsService {
   }
 
   /**
-   * 批量创建价格走势记录（用于图片解析）
+   * 批量创建价格走势记录（优化版本 - 支持图片解析批量保存）
    */
-  async createBatch(
-    priceTrends: CreatePriceTrendDto[], 
-    exchangeRate: number
-  ): Promise<{
-    success: PesticidePriceTrend[];
-    failed: { data: CreatePriceTrendDto; error: string }[];
-  }> {
-    const success: PesticidePriceTrend[] = [];
-    const failed: { data: CreatePriceTrendDto; error: string }[] = [];
-
-    for (const trendData of priceTrends) {
-      try {
-        const trend = await this.create({
-          ...trendData,
-          exchangeRate
-        });
-        success.push(trend);
-      } catch (error) {
-        failed.push({
-          data: trendData,
-          error: error.message
-        });
-      }
+  async batchCreate(createPriceTrendDtos: CreatePriceTrendDto[]): Promise<PesticidePriceTrend[]> {
+    if (!createPriceTrendDtos || createPriceTrendDtos.length === 0) {
+      return [];
     }
 
-    return { success, failed };
+    // 批量验证农药ID是否存在
+    const pesticideIds = [...new Set(createPriceTrendDtos.map(dto => dto.pesticideId))];
+    const existingPesticides = await this.pesticidesRepository.find({
+      where: pesticideIds.map(id => ({ id })),
+      select: ['id']
+    });
+    
+    const existingIds = new Set(existingPesticides.map(p => p.id));
+    const missingIds = pesticideIds.filter(id => !existingIds.has(id));
+    
+    if (missingIds.length > 0) {
+      throw new NotFoundException(`以下农药ID不存在: ${missingIds.join(', ')}`);
+    }
+
+    // 创建实体数组
+    const priceTrends = createPriceTrendDtos.map(dto => 
+      this.priceTrendsRepository.create(dto)
+    );
+    
+    try {
+      // 使用TypeORM的批量插入，更高效
+      const result = await this.priceTrendsRepository
+        .createQueryBuilder()
+        .insert()
+        .into(PesticidePriceTrend)
+        .values(priceTrends)
+        .orIgnore() // 忽略重复数据而不是报错
+        .execute();
+      
+      // 返回保存成功的记录（需要重新查询获取生成的ID）
+      if (result.identifiers && result.identifiers.length > 0) {
+        const savedIds = result.identifiers.map(item => item.id);
+        return await this.priceTrendsRepository.find({
+          where: savedIds.map(id => ({ id }))
+        });
+      }
+      
+      return [];
+    } catch (error) {
+      throw new ConflictException(`批量创建价格走势记录失败: ${error.message}`);
+    }
   }
 
   /**
