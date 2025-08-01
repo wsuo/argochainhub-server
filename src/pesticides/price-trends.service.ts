@@ -245,12 +245,26 @@ export class PriceTrendsService {
       .orderBy('priceTrend.weekEndDate', 'ASC')
       .getMany();
 
-    const priceData = priceRecords.map(record => ({
-      date: record.weekEndDate.toISOString().split('T')[0],
-      cnyPrice: Number(record.unitPrice),
-      usdPrice: Math.round((Number(record.unitPrice) / Number(record.exchangeRate)) * 100) / 100,
-      exchangeRate: Number(record.exchangeRate)
-    }));
+    const priceData = priceRecords.map(record => {
+      // 确保 weekEndDate 是 Date 对象，如果是字符串则转换
+      let dateStr: string;
+      if (record.weekEndDate instanceof Date) {
+        dateStr = record.weekEndDate.toISOString().split('T')[0];
+      } else if (typeof record.weekEndDate === 'string') {
+        // 如果是字符串，直接使用（假设格式是 YYYY-MM-DD）
+        dateStr = record.weekEndDate;
+      } else {
+        // 其他情况，尝试转换为Date再处理
+        dateStr = new Date(record.weekEndDate).toISOString().split('T')[0];
+      }
+
+      return {
+        date: dateStr,
+        cnyPrice: Number(record.unitPrice),
+        usdPrice: Math.round((Number(record.unitPrice) / Number(record.exchangeRate)) * 100) / 100,
+        exchangeRate: Number(record.exchangeRate)
+      };
+    });
 
     return {
       pesticide,
