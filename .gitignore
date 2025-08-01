@@ -69,3 +69,6 @@ migration-output/
 # Swagger生成的文件
 swagger-spec.json
 docs/
+
+# 项目开发文档（不提交到仓库）
+CLAUDE.md
