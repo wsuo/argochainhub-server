@@ -10,11 +10,13 @@ import { ImageParseService } from './image-parse.service';
 import { PesticidesController } from './pesticides.controller';
 import { PriceTrendsController } from './price-trends.controller';
 import { ImageParseController } from './image-parse.controller';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([StandardPesticide, PesticidePriceTrend]),
     ConfigModule,
+    StorageModule,
     RouterModule.register([
       {
         path: 'admin',

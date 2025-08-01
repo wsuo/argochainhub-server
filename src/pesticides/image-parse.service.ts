@@ -4,6 +4,7 @@ import { PesticidesService } from './pesticides.service';
 import { PriceTrendsService } from './price-trends.service';
 import { ParsedPriceData, ImageParseResult } from './dto/parse-price-images.dto';
 import { CreatePriceTrendDto } from './dto/create-price-trend.dto';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ImageParseService {
@@ -16,12 +17,24 @@ export class ImageParseService {
     private readonly configService: ConfigService,
     private readonly pesticidesService: PesticidesService,
     private readonly priceTrendsService: PriceTrendsService,
+    private readonly storageService: StorageService,
   ) {
-    this.openRouterApiKey = this.configService.get<string>('OPENROUTER_API_KEY') || '';
-    this.openRouterApiUrl = this.configService.get<string>('OPENROUTER_API_URL') || 'https://openrouter.ai/api/v1/chat/completions';
-    this.openRouterModel = this.configService.get<string>('OPENROUTER_MODEL') || 'openai/gpt-4o';
+    this.openRouterApiKey = this.configService.get<string>('openrouter.apiKey') || '';
+    this.openRouterApiUrl = this.configService.get<string>('openrouter.apiUrl') || 'https://openrouter.ai/api/v1/chat/completions';
+    this.openRouterModel = this.configService.get<string>('openrouter.model') || 'openai/gpt-4o';
+
+    // 添加调试日志，查看API Key的状态
+    this.logger.log(`OpenRouter API Key 长度: ${this.openRouterApiKey ? this.openRouterApiKey.length : 0}`);
+    this.logger.log(`OpenRouter API Key 前缀: ${this.openRouterApiKey ? this.openRouterApiKey.substring(0, 10) + '...' : 'EMPTY'}`);
+    this.logger.log(`OpenRouter API URL: ${this.openRouterApiUrl}`);
+    this.logger.log(`OpenRouter Model: ${this.openRouterModel}`);
+    
+    // 额外的调试：显示实际配置值
+    this.logger.log(`配置系统中的值: ${this.configService.get<string>('openrouter.apiKey') || 'NULL'}`);
+    this.logger.log(`环境变量直接读取: ${process.env.OPENROUTER_API_KEY || 'NULL'}`);
 
     if (!this.openRouterApiKey) {
+      this.logger.error('OPENROUTER_API_KEY 配置为空或未找到');
       throw new Error('OPENROUTER_API_KEY is not configured');
     }
   }
@@ -75,12 +88,22 @@ export class ImageParseService {
       // 验证图片文件
       this.validateImageFile(file);
 
-      // 将图片转换为 base64
-      const base64Image = this.convertToBase64(file);
-      const mimeType = this.getMimeType(file);
-      const imageUrl = `data:${mimeType};base64,${base64Image}`;
-
-      this.logger.log(`图片信息: ${file.originalname}, 大小: ${file.size} bytes, 类型: ${mimeType}`);
+      // 上传图片到 TOS 存储
+      this.logger.log(`开始上传图片到TOS: ${file.originalname}`);
+      const uploadResult = await this.storageService.uploadFile(
+        {
+          buffer: file.buffer,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+        },
+        1, // 系统用户ID
+        'pesticide-price-image',
+      );
+      
+      const imageUrl = uploadResult.url;
+      this.logger.log(`图片上传成功，URL: ${imageUrl}`);
+      this.logger.log(`图片信息: ${file.originalname}, 大小: ${file.size} bytes, 类型: ${file.mimetype}`);
 
       // 构建结构化输出的 schema
       const responseSchema = {
@@ -164,12 +187,12 @@ Return the data as JSON with this structure:
         throw new Error(`请求数据序列化失败: ${jsonError.message}`);
       }
 
+      // 使用图片URL调用 OpenRouter API
+      this.logger.log('开始发送请求到 OpenRouter API...');
       const response = await fetch(this.openRouterApiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.openRouterApiKey}`,
-          'HTTP-Referer': 'https://argochainhub.com',
-          'X-Title': 'ArgoChainHub Pesticide Price Management System',
           'Content-Type': 'application/json',
         },
         body: requestBodyStr
@@ -179,7 +202,7 @@ Return the data as JSON with this structure:
         const errorText = await response.text();
         this.logger.error(`OpenRouter API 请求失败: ${response.status} ${response.statusText}`);
         this.logger.error(`错误详情: ${errorText}`);
-        this.logger.error(`请求的图片信息: ${file.originalname}, 大小: ${file.size} bytes`);
+        this.logger.error(`请求的图片URL: ${imageUrl}`);
         throw new Error(`OpenRouter API 请求失败: ${response.status} ${response.statusText}`);
       }
 

@@ -65,6 +65,11 @@ export class TosService {
     metadata?: Record<string, string>,
   ): Promise<UploadResult> {
     try {
+      this.logger.log(`Uploading file to TOS: ${key}`);
+      this.logger.log(`Endpoint: ${this.config.endpoint}`);
+      this.logger.log(`Bucket: ${this.config.bucket}`);
+      this.logger.log(`Region: ${this.config.region}`);
+      
       const response = await this.tosClient.putObject({
         bucket: this.config.bucket,
         key: key,
@@ -84,6 +89,12 @@ export class TosService {
       };
     } catch (error) {
       this.logger.error(`Failed to upload file ${key}:`, error);
+      this.logger.error(`Error details:`, {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        statusCode: error.statusCode,
+      });
       throw new Error(`Upload failed: ${error.message}`);
     }
   }
