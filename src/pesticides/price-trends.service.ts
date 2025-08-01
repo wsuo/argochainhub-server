@@ -6,6 +6,7 @@ import { StandardPesticide } from '../entities/standard-pesticide.entity';
 import { CreatePriceTrendDto } from './dto/create-price-trend.dto';
 import { UpdatePriceTrendDto } from './dto/update-price-trend.dto';
 import { QueryPriceTrendsDto } from './dto/query-price-trends.dto';
+import { PaginatedResult } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class PriceTrendsService {
@@ -76,12 +77,7 @@ export class PriceTrendsService {
   /**
    * 分页查询价格走势
    */
-  async findAll(queryDto: QueryPriceTrendsDto): Promise<{
-    data: PesticidePriceTrend[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async findAll(queryDto: QueryPriceTrendsDto): Promise<PaginatedResult<PesticidePriceTrend>> {
     const { 
       page = 1, 
       limit = 20, 
@@ -133,9 +129,13 @@ export class PriceTrendsService {
 
     return {
       data,
-      total,
-      page,
-      limit,
+      meta: {
+        totalItems: total,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
   }
 

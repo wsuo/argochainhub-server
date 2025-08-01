@@ -29,6 +29,7 @@ import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { QuoteInquiryDto } from './dto/quote-inquiry.dto';
 import { SearchInquiriesDto } from './dto/search-inquiries.dto';
 import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('询价管理')
 @Controller('inquiries')
@@ -49,11 +50,7 @@ export class InquiriesController {
     @Body() createInquiryDto: CreateInquiryDto,
   ) {
     const inquiry = await this.inquiriesService.createInquiry(user, createInquiryDto);
-    return {
-      success: true,
-      message: '询价单创建成功',
-      data: inquiry
-    };
+    return ResponseWrapperUtil.success(inquiry, '询价单创建成功');
   }
 
   @Get()
@@ -64,11 +61,7 @@ export class InquiriesController {
     @Query() searchDto: SearchInquiriesDto,
   ) {
     const result = await this.inquiriesService.getMyInquiries(user, searchDto);
-    return {
-      success: true,
-      message: '获取成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取成功');
   }
 
   @Get(':id')
@@ -81,7 +74,8 @@ export class InquiriesController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.inquiriesService.getInquiryDetail(user, id);
+    const inquiry = await this.inquiriesService.getInquiryDetail(user, id);
+    return ResponseWrapperUtil.success(inquiry, '获取询价单详情成功');
   }
 
   @Patch(':id/quote')
@@ -96,7 +90,8 @@ export class InquiriesController {
     @Param('id', ParseIntPipe) id: number,
     @Body() quoteDto: QuoteInquiryDto,
   ) {
-    return this.inquiriesService.quoteInquiry(user, id, quoteDto);
+    const result = await this.inquiriesService.quoteInquiry(user, id, quoteDto);
+    return ResponseWrapperUtil.success(result, '报价成功');
   }
 
   @Patch(':id/confirm')
@@ -110,7 +105,8 @@ export class InquiriesController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.inquiriesService.confirmInquiry(user, id);
+    const result = await this.inquiriesService.confirmInquiry(user, id);
+    return ResponseWrapperUtil.success(result, '确认成功');
   }
 
   @Patch(':id/decline')
@@ -123,7 +119,8 @@ export class InquiriesController {
     @Param('id', ParseIntPipe) id: number,
     @Body() declineDto: DeclineInquiryDto,
   ) {
-    return this.inquiriesService.declineInquiry(user, id, declineDto);
+    const result = await this.inquiriesService.declineInquiry(user, id, declineDto);
+    return ResponseWrapperUtil.success(result, '拒绝成功');
   }
 
   @Patch(':id/cancel')
@@ -137,6 +134,7 @@ export class InquiriesController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.inquiriesService.cancelInquiry(user, id);
+    const result = await this.inquiriesService.cancelInquiry(user, id);
+    return ResponseWrapperUtil.success(result, '取消成功');
   }
 }

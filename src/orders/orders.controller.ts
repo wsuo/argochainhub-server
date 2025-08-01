@@ -21,6 +21,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('订单管理')
 @Controller('orders')
@@ -38,11 +39,7 @@ export class OrdersController {
     @Body() createOrderDto: CreateOrderDto,
   ) {
     const result = await this.ordersService.createOrder(user, createOrderDto.planId);
-    return {
-      success: true,
-      message: '订单创建成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '订单创建成功');
   }
 
   @Get()
@@ -53,11 +50,7 @@ export class OrdersController {
     @Query() paginationDto: PaginationDto,
   ) {
     const result = await this.ordersService.getMyOrders(user, paginationDto);
-    return {
-      success: true,
-      message: '获取订单列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取订单列表成功');
   }
 
   @Get(':id')
@@ -70,10 +63,6 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const result = await this.ordersService.getOrderDetail(user, id);
-    return {
-      success: true,
-      message: '获取订单详情成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取订单详情成功');
   }
 }

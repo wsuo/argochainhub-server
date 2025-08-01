@@ -6,6 +6,7 @@ import { PesticidePriceTrend } from '../entities/pesticide-price-trend.entity';
 import { CreatePesticideDto } from './dto/create-pesticide.dto';
 import { UpdatePesticideDto } from './dto/update-pesticide.dto';
 import { QueryPesticidesDto } from './dto/query-pesticides.dto';
+import { PaginatedResult } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class PesticidesService {
@@ -32,12 +33,7 @@ export class PesticidesService {
   /**
    * 分页查询标准农药
    */
-  async findAll(queryDto: QueryPesticidesDto): Promise<{
-    data: (StandardPesticide & { latestPrice?: { unitPrice: number; weekEndDate: Date } })[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async findAll(queryDto: QueryPesticidesDto): Promise<PaginatedResult<StandardPesticide & { latestPrice?: { unitPrice: number; weekEndDate: Date } }>> {
     const { page = 1, limit = 20, category, formulation, isVisible, search } = queryDto;
     
     const where: FindOptionsWhere<StandardPesticide> = {};
@@ -88,9 +84,13 @@ export class PesticidesService {
     if (pesticideIds.length === 0) {
       return {
         data: [],
-        total,
-        page,
-        limit,
+        meta: {
+          totalItems: total,
+          itemCount: 0,
+          itemsPerPage: limit,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
       };
     }
     
@@ -128,9 +128,13 @@ export class PesticidesService {
 
     return {
       data: pesticidesWithLatestPrice,
-      total,
-      page,
-      limit,
+      meta: {
+        totalItems: total,
+        itemCount: pesticidesWithLatestPrice.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
   }
 

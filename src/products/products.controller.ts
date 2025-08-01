@@ -30,6 +30,7 @@ import { SearchProductsDto } from './dto/search-products.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { MyProductsDto } from './dto/my-products.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('产品管理')
 @Controller('products')
@@ -43,11 +44,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '搜索成功' })
   async searchProducts(@Query() searchDto: SearchProductsDto) {
     const result = await this.productsService.searchProducts(searchDto);
-    return {
-      success: true,
-      message: '搜索成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '搜索成功');
   }
 
   @Get(':id')
@@ -59,11 +56,7 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: '产品不存在' })
   async getProductDetail(@Param('id', ParseIntPipe) id: number) {
     const product = await this.productsService.getProductDetail(id);
-    return {
-      success: true,
-      message: '获取成功',
-      data: product
-    };
+    return ResponseWrapperUtil.success(product, '获取成功');
   }
 }
 
@@ -83,11 +76,7 @@ export class MyProductsController {
     @Query() myProductsDto: MyProductsDto,
   ) {
     const result = await this.productsService.getMyProducts(user, myProductsDto);
-    return {
-      success: true,
-      message: '获取成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取成功');
   }
 
   @Post()
@@ -101,11 +90,7 @@ export class MyProductsController {
     @Body() createProductDto: CreateProductDto,
   ) {
     const product = await this.productsService.createProduct(user, createProductDto);
-    return {
-      success: true,
-      message: '产品创建成功',
-      data: product
-    };
+    return ResponseWrapperUtil.success(product, '产品创建成功');
   }
 
   @Get(':id')
@@ -118,11 +103,7 @@ export class MyProductsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const product = await this.productsService.getMyProductDetail(user, id);
-    return {
-      success: true,
-      message: '获取成功',
-      data: product
-    };
+    return ResponseWrapperUtil.success(product, '获取成功');
   }
 
   @Put(':id')
@@ -136,11 +117,7 @@ export class MyProductsController {
     @Body() updateProductDto: UpdateProductDto,
   ) {
     const product = await this.productsService.updateMyProduct(user, id, updateProductDto);
-    return {
-      success: true,
-      message: '产品更新成功',
-      data: product
-    };
+    return ResponseWrapperUtil.success(product, '产品更新成功');
   }
 
   @Delete(':id')
@@ -153,10 +130,7 @@ export class MyProductsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     await this.productsService.deleteMyProduct(user, id);
-    return {
-      success: true,
-      message: '产品删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('产品删除成功');
   }
 
   @Post(':id/submit-review')
@@ -169,10 +143,6 @@ export class MyProductsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const product = await this.productsService.submitForReview(user, id);
-    return {
-      success: true,
-      message: '产品已提交审核',
-      data: product
-    };
+    return ResponseWrapperUtil.success(product, '产品已提交审核');
   }
 }

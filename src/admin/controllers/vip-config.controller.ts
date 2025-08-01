@@ -29,6 +29,7 @@ import {
   VipConfigQueryDto,
 } from '../dto/vip-config-management.dto';
 import { VipConfig } from '../../entities/vip-config.entity';
+import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('Admin - VIP配置管理')
 @ApiBearerAuth()
@@ -51,11 +52,7 @@ export class VipConfigController {
   })
   async create(@Body() createDto: CreateVipConfigDto) {
     const result = await this.vipConfigService.create(createDto);
-    return {
-      success: true,
-      message: 'VIP配置创建成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, 'VIP配置创建成功');
   }
 
   @Get()
@@ -69,11 +66,7 @@ export class VipConfigController {
     @Query() query: VipConfigQueryDto
   ) {
     const result = await this.vipConfigService.findAll(query);
-    return {
-      success: true,
-      message: '获取VIP配置列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取VIP配置列表成功');
   }
 
   @Get('statistics')
@@ -85,11 +78,7 @@ export class VipConfigController {
   })
   async getStatistics() {
     const result = await this.vipConfigService.getStatistics();
-    return {
-      success: true,
-      message: '获取统计信息成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取统计信息成功');
   }
 
   @Get(':id')
@@ -107,11 +96,7 @@ export class VipConfigController {
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const result = await this.vipConfigService.findOne(id);
-    return {
-      success: true,
-      message: '获取VIP配置详情成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取VIP配置详情成功');
   }
 
   @Patch(':id')
@@ -136,11 +121,7 @@ export class VipConfigController {
     @Body() updateDto: UpdateVipConfigDto
   ) {
     const result = await this.vipConfigService.update(id, updateDto);
-    return {
-      success: true,
-      message: 'VIP配置更新成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, 'VIP配置更新成功');
   }
 
   @Delete(':id')
@@ -157,10 +138,7 @@ export class VipConfigController {
   })
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.vipConfigService.remove(id);
-    return {
-      success: true,
-      message: 'VIP配置删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('VIP配置删除成功');
   }
 
   @Post(':id/toggle-status')
@@ -180,11 +158,7 @@ export class VipConfigController {
     @Param('id', ParseIntPipe) id: number
   ) {
     const result = await this.vipConfigService.toggleStatus(id);
-    return {
-      success: true,
-      message: '状态切换成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '状态切换成功');
   }
 
   @Post('batch-toggle-status')
@@ -198,10 +172,7 @@ export class VipConfigController {
     @Body() body: { ids: number[]; isActive: boolean }
   ) {
     await this.vipConfigService.batchToggleStatus(body.ids, body.isActive);
-    return {
-      success: true,
-      message: '批量状态切换成功'
-    };
+    return ResponseWrapperUtil.successNoData('批量状态切换成功');
   }
 
   @Patch(':id/sort-order')
@@ -222,11 +193,7 @@ export class VipConfigController {
     @Body() body: { sortOrder: number }
   ) {
     const result = await this.vipConfigService.updateSortOrder(id, body.sortOrder);
-    return {
-      success: true,
-      message: '排序更新成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '排序更新成功');
   }
 
   @Get('platform/:platform')
@@ -242,10 +209,6 @@ export class VipConfigController {
     @Param('platform') platform: string
   ) {
     const result = await this.vipConfigService.findByPlatform(platform as any);
-    return {
-      success: true,
-      message: '获取平台VIP配置成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取平台VIP配置成功');
   }
 }

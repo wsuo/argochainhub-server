@@ -78,6 +78,7 @@ import { SampleRequestStatus } from '../entities/sample-request.entity';
 import { RegistrationRequestStatus } from '../entities/registration-request.entity';
 import { AdminPermission } from '../types/permissions';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 import { UserQueryDto } from './dto/user-query.dto';
 
 @ApiTags('后台管理')
@@ -100,11 +101,7 @@ export class AdminController {
   })
   async getDashboardCharts() {
     const result = await this.adminService.getDashboardCharts();
-    return {
-      success: true,
-      message: '获取图表数据成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取图表数据成功');
   }
 
   @Get('stats')
@@ -112,11 +109,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getStats() {
     const result = await this.adminService.getStats();
-    return {
-      success: true,
-      message: '获取统计数据成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取统计数据成功');
   }
 
   @Get('companies/pending')
@@ -124,11 +117,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getPendingCompanies(@Query() queryDto: CompanyQueryDto) {
     const result = await this.adminService.getPendingCompanies(queryDto);
-    return {
-      success: true,
-      message: '获取待审核企业成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取待审核企业成功');
   }
 
   @Post('companies/:id/review')
@@ -141,11 +130,7 @@ export class AdminController {
     @Body() reviewDto: ReviewCompanyDto,
   ) {
     const result = await this.adminService.reviewCompany(id, reviewDto);
-    return {
-      success: true,
-      message: '企业审核完成',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '企业审核完成');
   }
 
   @Get('companies')
@@ -153,11 +138,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllCompanies(@Query() queryDto: CompanyQueryDto) {
     const result = await this.adminService.getAllCompanies(queryDto);
-    return {
-      success: true,
-      message: '获取企业列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取企业列表成功');
   }
 
   @Get('companies/:id')
@@ -167,11 +148,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '企业不存在' })
   async getCompanyById(@Param('id', ParseIntPipe) companyId: number) {
     const result = await this.adminService.getCompanyById(companyId);
-    return {
-      success: true,
-      message: '获取企业详情成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取企业详情成功');
   }
 
   @Patch('companies/:id/toggle-status')
@@ -181,11 +158,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '企业不存在' })
   async toggleCompanyStatus(@Param('id', ParseIntPipe) id: number) {
     const result = await this.adminService.toggleCompanyStatus(id);
-    return {
-      success: true,
-      message: '企业状态切换成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '企业状态切换成功');
   }
 
   @Get('products/pending')
@@ -194,11 +167,7 @@ export class AdminController {
   async getPendingProducts(@Query() queryDto: ProductQueryDto) {
     const query = { ...queryDto, status: ProductStatus.PENDING_REVIEW };
     const result = await this.adminProductsService.getProducts(query);
-    return {
-      success: true,
-      message: '获取待审核产品成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取待审核产品成功');
   }
 
   @Post('products/:id/review')
@@ -211,11 +180,7 @@ export class AdminController {
     @Body() reviewDto: ReviewProductDto,
   ) {
     const result = await this.adminProductsService.reviewProduct(id, reviewDto);
-    return {
-      success: true,
-      message: '产品审核完成',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '产品审核完成');
   }
 
   @Post('products/batch-review')
@@ -253,11 +218,7 @@ export class AdminController {
     @Body() batchDto: BatchReviewProductsDto,
   ) {
     const result = await this.adminProductsService.batchReviewProducts(batchDto);
-    return {
-      success: true,
-      message: '批量审核完成',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '批量审核完成');
   }
 
   @Get('products')
@@ -265,11 +226,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllProducts(@Query() queryDto: ProductQueryDto) {
     const result = await this.adminProductsService.getProducts(queryDto);
-    return {
-      success: true,
-      message: '获取产品列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取产品列表成功');
   }
 
   @Get('products/:id')
@@ -279,11 +236,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '产品不存在' })
   async getProductById(@Param('id', ParseIntPipe) productId: number) {
     const result = await this.adminProductsService.getProductById(productId);
-    return {
-      success: true,
-      message: '获取产品详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取产品详情成功');
   }
 
   @Patch('products/:id/list')
@@ -294,11 +247,7 @@ export class AdminController {
   @ApiResponse({ status: 400, description: '产品不满足上架条件' })
   async listProduct(@Param('id', ParseIntPipe) id: number) {
     const result = await this.adminProductsService.listProduct(id);
-    return {
-      success: true,
-      message: '产品上架成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '产品上架成功');
   }
 
   @Patch('products/:id/unlist')
@@ -308,11 +257,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '产品不存在' })
   async unlistProduct(@Param('id', ParseIntPipe) id: number) {
     const result = await this.adminProductsService.unlistProduct(id);
-    return {
-      success: true,
-      message: '产品下架成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '产品下架成功');
   }
 
   @Get('test-users')
@@ -320,11 +265,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '测试成功' })
   async testGetAllUsers() {
     const result = await this.adminService.testGetAllUsers();
-    return {
-      success: true,
-      message: '测试查询成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '测试查询成功');
   }
 
   @Get('users')
@@ -332,11 +273,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllUsers(@Query() queryDto: UserQueryDto) {
     const result = await this.adminService.getAllUsers(queryDto);
-    return {
-      success: true,
-      message: '获取用户列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取用户列表成功');
   }
 
   @Get('users/:id')
@@ -346,11 +283,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '用户不存在' })
   async getUserById(@Param('id', ParseIntPipe) userId: number) {
     const result = await this.adminService.getUserById(userId);
-    return {
-      success: true,
-      message: '获取用户详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取用户详情成功');
   }
 
   // 翻译服务接口
@@ -368,11 +301,9 @@ export class AdminController {
     @Body() translateDto: TranslateRequestDto,
   ): Promise<TranslateResponseDto> {
     const translatedText = await this.adminService.translateText(translateDto);
-    return {
-      data: {
-        translated_text: translatedText,
-      },
-    };
+    return ResponseWrapperUtil.success({
+      translated_text: translatedText,
+    }, '翻译成功');
   }
 
   @Post('utilities/detect-language')
@@ -388,12 +319,10 @@ export class AdminController {
     @Body() detectionDto: LanguageDetectionDto,
   ): Promise<LanguageDetectionResponseDto> {
     const result = await this.adminService.detectLanguage(detectionDto);
-    return {
-      data: {
-        detected_language: result.language,
-        confidence: result.confidence,
-      },
-    };
+    return ResponseWrapperUtil.success({
+      detected_language: result.language,
+      confidence: result.confidence,
+    }, '语言检测成功');
   }
 
   // 订阅管理
@@ -407,11 +336,7 @@ export class AdminController {
     @Query() paginationDto: PaginationDto,
   ) {
     const result = await this.adminService.getCompanySubscriptions(companyId, paginationDto);
-    return {
-      success: true,
-      message: '获取订阅历史成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取订阅历史成功');
   }
 
   @Post('companies/:id/subscriptions')
@@ -428,11 +353,7 @@ export class AdminController {
       companyId,
       createSubscriptionDto,
     );
-    return {
-      success: true,
-      message: '订阅添加成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '订阅添加成功');
   }
 
   @Delete('subscriptions/:id')
@@ -443,11 +364,7 @@ export class AdminController {
   @ApiResponse({ status: 400, description: '订阅已终止' })
   async cancelSubscription(@Param('id', ParseIntPipe) subscriptionId: number) {
     const result = await this.adminService.cancelSubscription(subscriptionId);
-    return {
-      success: true,
-      message: '订阅取消成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '订阅取消成功');
   }
 
   // 订单管理
@@ -470,11 +387,7 @@ export class AdminController {
       status,
       search,
     });
-    return {
-      success: true,
-      message: '获取订单列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取订单列表成功');
   }
 
   @Get('orders/:id')
@@ -484,11 +397,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '订单不存在' })
   async getOrderById(@Param('id', ParseIntPipe) orderId: number) {
     const result = await this.adminService.getOrderById(orderId);
-    return {
-      success: true,
-      message: '获取订单详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取订单详情成功');
   }
 
   // 会员计划管理
@@ -508,11 +417,7 @@ export class AdminController {
       ...paginationDto,
       includeInactive: includeInactive === true,
     });
-    return {
-      success: true,
-      message: '获取计划列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取计划列表成功');
   }
 
   @Post('plans')
@@ -521,11 +426,7 @@ export class AdminController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async createPlan(@Body() createPlanDto: CreatePlanDto) {
     const result = await this.adminService.createPlan(createPlanDto);
-    return {
-      success: true,
-      message: '计划创建成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '计划创建成功');
   }
 
   @Put('plans/:id')
@@ -539,11 +440,7 @@ export class AdminController {
     @Body() updatePlanDto: UpdatePlanDto,
   ) {
     const result = await this.adminService.updatePlan(planId, updatePlanDto);
-    return {
-      success: true,
-      message: '计划更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '计划更新成功');
   }
 
   @Patch('plans/:id/status')
@@ -553,11 +450,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '计划不存在' })
   async togglePlanStatus(@Param('id', ParseIntPipe) planId: number) {
     const result = await this.adminService.togglePlanStatus(planId);
-    return {
-      success: true,
-      message: '计划状态切换成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '计划状态切换成功');
   }
 
   // 企业CRUD管理
@@ -567,11 +460,7 @@ export class AdminController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async createCompany(@Body() createCompanyDto: CreateCompanyDto) {
     const result = await this.adminService.createCompany(createCompanyDto);
-    return {
-      success: true,
-      message: '企业创建成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '企业创建成功');
   }
 
   @Put('companies/:id')
@@ -585,11 +474,7 @@ export class AdminController {
     @Body() updateCompanyDto: UpdateCompanyDto,
   ) {
     const result = await this.adminService.updateCompany(companyId, updateCompanyDto);
-    return {
-      success: true,
-      message: '企业信息更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '企业信息更新成功');
   }
 
   // 产品CRUD管理
@@ -600,11 +485,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '供应商企业不存在' })
   async createProduct(@Body() createProductDto: AdminCreateProductDto) {
     const result = await this.adminProductsService.createProduct(createProductDto);
-    return {
-      success: true,
-      message: '产品创建成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '产品创建成功');
   }
 
   @Put('products/:id')
@@ -618,11 +499,7 @@ export class AdminController {
     @Body() updateProductDto: AdminUpdateProductDto,
   ) {
     const result = await this.adminProductsService.updateProduct(productId, updateProductDto);
-    return {
-      success: true,
-      message: '产品更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '产品更新成功');
   }
 
   @Delete('products/:id')
@@ -632,10 +509,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '产品不存在' })
   async deleteProduct(@Param('id', ParseIntPipe) productId: number) {
     await this.adminProductsService.deleteProduct(productId);
-    return {
-      success: true,
-      message: '产品删除成功'
-    };
+        return ResponseWrapperUtil.successNoData('产品删除成功');
   }
 
   // 防治方法管理
@@ -645,11 +519,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getProductControlMethods(@Param('productId', ParseIntPipe) productId: number) {
     const result = await this.adminProductsService.getProductControlMethods(productId);
-    return {
-      success: true,
-      message: '获取防治方法成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取防治方法成功');
   }
 
   @Post('products/:productId/control-methods')
@@ -665,11 +535,7 @@ export class AdminController {
       ...createDto,
       productId,
     });
-    return {
-      success: true,
-      message: '防治方法创建成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '防治方法创建成功');
   }
 
   @Post('products/:productId/control-methods/batch')
@@ -685,11 +551,7 @@ export class AdminController {
       ...batchDto,
       productId,
     });
-    return {
-      success: true,
-      message: '批量创建防治方法成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '批量创建防治方法成功');
   }
 
   @Put('control-methods/:id')
@@ -702,11 +564,7 @@ export class AdminController {
     @Body() updateDto: UpdateControlMethodDto,
   ) {
     const result = await this.adminProductsService.updateControlMethod(id, updateDto);
-    return {
-      success: true,
-      message: '防治方法更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '防治方法更新成功');
   }
 
   @Delete('control-methods/:id')
@@ -716,10 +574,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '防治方法不存在' })
   async deleteControlMethod(@Param('id', ParseIntPipe) id: number) {
     await this.adminProductsService.deleteControlMethod(id);
-    return {
-      success: true,
-      message: '防治方法删除成功'
-    };
+        return ResponseWrapperUtil.successNoData('防治方法删除成功');
   }
 
   @Put('products/:productId/control-methods/order')
@@ -732,11 +587,7 @@ export class AdminController {
     @Body() orderMap: Record<number, number>,
   ) {
     const result = await this.adminProductsService.updateControlMethodsOrder(productId, orderMap);
-    return {
-      success: true,
-      message: '防治方法排序更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '防治方法排序更新成功');
   }
 
   // 询价单业务流程管理
@@ -757,11 +608,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getInquiries(@Query() queryDto: InquiryQueryDto) {
     const result = await this.adminService.getInquiries(queryDto);
-    return {
-      success: true,
-      message: '获取询价单列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取询价单列表成功');
   }
 
   @Get('inquiries/stats')
@@ -769,11 +616,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getInquiryStats() {
     const result = await this.adminService.getInquiryStats();
-    return {
-      success: true,
-      message: '获取询价统计成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取询价统计成功');
   }
 
   @Get('inquiries/:id')
@@ -783,11 +626,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '询价单不存在' })
   async getInquiryById(@Param('id', ParseIntPipe) inquiryId: number) {
     const result = await this.adminService.getInquiryById(inquiryId);
-    return {
-      success: true,
-      message: '获取询价详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取询价详情成功');
   }
 
   @Patch('inquiries/:id/status')
@@ -801,11 +640,7 @@ export class AdminController {
     @Body() updateDto: UpdateInquiryStatusDto,
   ) {
     const result = await this.adminService.updateInquiryStatus(inquiryId, updateDto);
-    return {
-      success: true,
-      message: '询价状态更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '询价状态更新成功');
   }
 
   @Delete('inquiries/:id')
@@ -816,10 +651,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '询价单不存在' })
   async deleteInquiry(@Param('id', ParseIntPipe) inquiryId: number) {
     await this.adminService.deleteInquiry(inquiryId);
-    return {
-      success: true,
-      message: '询价单删除成功'
-    };
+        return ResponseWrapperUtil.successNoData('询价单删除成功');
   }
 
   // 样品申请业务流程管理
@@ -838,11 +670,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getSampleRequests(@Query() queryDto: SampleRequestQueryDto) {
     const result = await this.adminService.getSampleRequests(queryDto);
-    return {
-      success: true,
-      message: '获取样品申请列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取样品申请列表成功');
   }
 
   @Get('sample-requests/stats')
@@ -850,11 +678,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getSampleRequestStats() {
     const result = await this.adminService.getSampleRequestStats();
-    return {
-      success: true,
-      message: '获取样品申请统计成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取样品申请统计成功');
   }
 
   @Get('sample-requests/:id')
@@ -864,11 +688,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '样品申请不存在' })
   async getSampleRequestById(@Param('id', ParseIntPipe) sampleRequestId: number) {
     const result = await this.adminService.getSampleRequestById(sampleRequestId);
-    return {
-      success: true,
-      message: '获取样品申请详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取样品申请详情成功');
   }
 
   @Patch('sample-requests/:id/status')
@@ -882,11 +702,7 @@ export class AdminController {
     @Body() updateDto: UpdateSampleRequestStatusDto,
   ) {
     const result = await this.adminService.updateSampleRequestStatus(sampleRequestId, updateDto);
-    return {
-      success: true,
-      message: '样品申请状态更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '样品申请状态更新成功');
   }
 
   @Delete('sample-requests/:id')
@@ -897,10 +713,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '样品申请不存在' })
   async deleteSampleRequest(@Param('id', ParseIntPipe) sampleRequestId: number) {
     await this.adminService.deleteSampleRequest(sampleRequestId);
-    return {
-      success: true,
-      message: '样品申请删除成功'
-    };
+        return ResponseWrapperUtil.successNoData('样品申请删除成功');
   }
 
   // 登记申请业务流程管理
@@ -920,11 +733,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getRegistrationRequests(@Query() queryDto: RegistrationRequestQueryDto) {
     const result = await this.adminService.getRegistrationRequests(queryDto);
-    return {
-      success: true,
-      message: '获取登记申请列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取登记申请列表成功');
   }
 
   @Get('registration-requests/stats')
@@ -932,11 +741,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getRegistrationRequestStats() {
     const result = await this.adminService.getRegistrationRequestStats();
-    return {
-      success: true,
-      message: '获取登记申请统计成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取登记申请统计成功');
   }
 
   @Get('registration-requests/:id')
@@ -946,11 +751,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '登记申请不存在' })
   async getRegistrationRequestById(@Param('id', ParseIntPipe) registrationRequestId: number) {
     const result = await this.adminService.getRegistrationRequestById(registrationRequestId);
-    return {
-      success: true,
-      message: '获取登记申请详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取登记申请详情成功');
   }
 
   @Patch('registration-requests/:id/status')
@@ -964,11 +765,7 @@ export class AdminController {
     @Body() updateDto: UpdateRegistrationRequestStatusDto,
   ) {
     const result = await this.adminService.updateRegistrationRequestStatus(registrationRequestId, updateDto);
-    return {
-      success: true,
-      message: '登记申请状态更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '登记申请状态更新成功');
   }
 
   @Delete('registration-requests/:id')
@@ -979,10 +776,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '登记申请不存在' })
   async deleteRegistrationRequest(@Param('id', ParseIntPipe) registrationRequestId: number) {
     await this.adminService.deleteRegistrationRequest(registrationRequestId);
-    return {
-      success: true,
-      message: '登记申请删除成功'
-    };
+        return ResponseWrapperUtil.successNoData('登记申请删除成功');
   }
 
   // 管理员账户管理
@@ -998,11 +792,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAdminUsers(@Query() queryDto: AdminUserQueryDto) {
     const result = await this.adminService.getAdminUsers(queryDto);
-    return {
-      success: true,
-      message: '获取管理员列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取管理员列表成功');
   }
 
   @Get('admin-users/stats')
@@ -1010,11 +800,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAdminUserStats() {
     const result = await this.adminService.getAdminUserStats();
-    return {
-      success: true,
-      message: '获取管理员统计成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取管理员统计成功');
   }
 
   @Get('admin-users/:id')
@@ -1024,11 +810,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
   async getAdminUserById(@Param('id', ParseIntPipe) adminUserId: number) {
     const result = await this.adminService.getAdminUserById(adminUserId);
-    return {
-      success: true,
-      message: '获取管理员详情成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取管理员详情成功');
   }
 
   @Post('admin-users')
@@ -1038,11 +820,7 @@ export class AdminController {
   @ApiResponse({ status: 409, description: '用户名已存在' })
   async createAdminUser(@Body() createAdminUserDto: CreateAdminUserDto) {
     const result = await this.adminService.createAdminUser(createAdminUserDto);
-    return {
-      success: true,
-      message: '管理员创建成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '管理员创建成功');
   }
 
   @Put('admin-users/:id')
@@ -1056,11 +834,7 @@ export class AdminController {
     @Body() updateAdminUserDto: UpdateAdminUserDto,
   ) {
     const result = await this.adminService.updateAdminUser(adminUserId, updateAdminUserDto);
-    return {
-      success: true,
-      message: '管理员信息更新成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '管理员信息更新成功');
   }
 
   @Patch('admin-users/:id/password')
@@ -1074,10 +848,7 @@ export class AdminController {
     @Body() changePasswordDto: AdminChangePasswordDto,
   ) {
     await this.adminService.changePassword(adminUserId, changePasswordDto);
-    return {
-      success: true,
-      message: '密码修改成功'
-    };
+        return ResponseWrapperUtil.successNoData('密码修改成功');
   }
 
   @Patch('admin-users/:id/reset-password')
@@ -1090,10 +861,7 @@ export class AdminController {
     @Body() resetPasswordDto: ResetPasswordDto,
   ) {
     await this.adminService.resetPassword(adminUserId, resetPasswordDto);
-    return {
-      success: true,
-      message: '密码重置成功'
-    };
+        return ResponseWrapperUtil.successNoData('密码重置成功');
   }
 
   @Patch('admin-users/:id/toggle-status')
@@ -1103,11 +871,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
   async toggleAdminUserStatus(@Param('id', ParseIntPipe) adminUserId: number) {
     const result = await this.adminService.toggleAdminUserStatus(adminUserId);
-    return {
-      success: true,
-      message: '管理员状态切换成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '管理员状态切换成功');
   }
 
   @Delete('admin-users/:id')
@@ -1118,10 +882,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
   async deleteAdminUser(@Param('id', ParseIntPipe) adminUserId: number) {
     await this.adminService.deleteAdminUser(adminUserId);
-    return {
-      success: true,
-      message: '管理员删除成功'
-    };
+        return ResponseWrapperUtil.successNoData('管理员删除成功');
   }
 
   // ===================== 权限管理相关接口 =====================
@@ -1135,11 +896,7 @@ export class AdminController {
   })
   async getPermissionGroups() {
     const result = await this.adminService.getPermissionGroups();
-    return {
-      success: true,
-      message: '获取权限分组成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取权限分组成功');
   }
 
   @Get('permissions/role-templates')
@@ -1151,11 +908,7 @@ export class AdminController {
   })
   async getRoleTemplates() {
     const result = await this.adminService.getRoleTemplates();
-    return {
-      success: true,
-      message: '获取角色模板成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取角色模板成功');
   }
 
   @Get('admin-users/:id/permissions')
@@ -1169,11 +922,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
   async getAdminUserPermissions(@Param('id', ParseIntPipe) userId: number) {
     const result = await this.adminService.getAdminUserPermissions(userId);
-    return {
-      success: true,
-      message: '获取用户权限成功',
-      data: result
-    };
+        return ResponseWrapperUtil.success(result, '获取用户权限成功');
   }
 
   @Post('admin-users/:id/permissions')
@@ -1187,10 +936,7 @@ export class AdminController {
     @Body() assignPermissionsDto: AssignPermissionsDto,
   ) {
     await this.adminService.assignPermissions(userId, assignPermissionsDto);
-    return {
-      success: true,
-      message: '权限分配成功'
-    };
+        return ResponseWrapperUtil.successNoData('权限分配成功');
   }
 
   @Patch('admin-users/:id/permissions/reset')
@@ -1201,10 +947,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
   async resetPermissionsByRole(@Param('id', ParseIntPipe) userId: number) {
     await this.adminService.resetPermissionsByRole(userId);
-    return {
-      success: true,
-      message: '权限重置成功'
-    };
+        return ResponseWrapperUtil.successNoData('权限重置成功');
   }
 
   @Patch('admin-users/permissions/batch')
@@ -1215,9 +958,6 @@ export class AdminController {
     @Body() updates: Array<{ userId: number; permissions: AdminPermission[] }>,
   ) {
     await this.adminService.batchUpdatePermissions(updates);
-    return {
-      success: true,
-      message: '批量权限更新成功'
-    };
+        return ResponseWrapperUtil.successNoData('批量权限更新成功');
   }
 }

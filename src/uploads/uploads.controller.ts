@@ -32,6 +32,7 @@ import { User } from '../entities/user.entity';
 import { AttachmentType } from '../entities/attachment.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { UploadFileDto } from './dto/upload-file.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('文件管理')
 @Controller('uploads')
@@ -81,7 +82,8 @@ export class UploadsController {
     }
 
     const { type, relatedId } = uploadDto;
-    return this.uploadsService.uploadFile(user, file, type, relatedId);
+    const result = await this.uploadsService.uploadFile(user, file, type, relatedId);
+    return ResponseWrapperUtil.success(result, '文件上传成功');
   }
 
   @Get('my-files')
@@ -94,11 +96,7 @@ export class UploadsController {
     @Query('type') type?: AttachmentType,
   ) {
     const result = await this.uploadsService.getMyFiles(user, { ...paginationDto, type });
-    return {
-      success: true,
-      message: '获取成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取成功');
   }
 
   @Get('by-type/:type')
@@ -118,11 +116,7 @@ export class UploadsController {
       relatedId,
       paginationDto,
     );
-    return {
-      success: true,
-      message: '获取成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取成功');
   }
 
   @Get(':id')
@@ -136,11 +130,7 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const file = await this.uploadsService.getFileById(user, id);
-    return {
-      success: true,
-      message: '获取成功',
-      data: file
-    };
+    return ResponseWrapperUtil.success(file, '获取成功');
   }
 
   @Get(':id/url')
@@ -154,11 +144,12 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const attachment = await this.uploadsService.getFileById(user, id);
-    return {
+    const result = {
       id: attachment.id,
       url: attachment.url,
       filename: attachment.filename,
     };
+    return ResponseWrapperUtil.success(result, '获取文件URL成功');
   }
 
   @Get(':id/download')
@@ -226,6 +217,6 @@ export class UploadsController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     await this.uploadsService.deleteFile(user, id);
-    return { message: 'File deleted successfully' };
+    return ResponseWrapperUtil.successNoData('文件删除成功');
   }
 }

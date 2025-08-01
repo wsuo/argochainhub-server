@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { News } from '../entities/news.entity';
 import { CreateNewsDto, UpdateNewsDto, NewsQueryDto } from './dto/news-management.dto';
 import { getTextByLanguage } from '../types/multilang';
+import { PaginatedResult } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class NewsService {
@@ -27,12 +28,7 @@ export class NewsService {
     return await this.newsRepository.save(news);
   }
 
-  async findAll(query: NewsQueryDto): Promise<{
-    data: News[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }> {
+  async findAll(query: NewsQueryDto): Promise<PaginatedResult<News>> {
     const { category, isPublished, keyword, page = 1, pageSize = 10 } = query;
     const queryBuilder = this.newsRepository.createQueryBuilder('news');
 
@@ -74,9 +70,13 @@ export class NewsService {
 
     return {
       data,
-      total,
-      page,
-      pageSize,
+      meta: {
+        totalItems: total,
+        itemCount: data.length,
+        itemsPerPage: pageSize,
+        totalPages: Math.ceil(total / pageSize),
+        currentPage: page,
+      },
     };
   }
 
@@ -150,12 +150,7 @@ export class NewsService {
     category?: string;
     page?: number;
     pageSize?: number;
-  }): Promise<{
-    data: News[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }> {
+  }): Promise<PaginatedResult<News>> {
     return this.findAll({
       ...query,
       isPublished: true,

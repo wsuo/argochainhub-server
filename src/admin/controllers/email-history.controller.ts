@@ -22,6 +22,7 @@ import {
   ResendEmailDto,
   SendEmailDto,
 } from '../dto/email-management.dto';
+import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('admin-email-history')
 @ApiBearerAuth()
@@ -96,13 +97,18 @@ export class EmailHistoryController {
         : null,
     }));
 
-    return {
-      items: safeHistories,
-      total,
-      page,
-      pageSize: limit,
-      totalPages: Math.ceil(total / limit),
+    const result = {
+      data: safeHistories,
+      meta: {
+        totalItems: total,
+        itemCount: safeHistories.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
+
+    return ResponseWrapperUtil.successWithPagination(result, '获取邮件历史列表成功');
   }
 
   @Get('statistics')
@@ -162,7 +168,7 @@ export class EmailHistoryController {
       count: parseInt(item.count),
     }));
 
-    return {
+    const statisticsData = {
       statusCounts: statusCounts.map(item => ({
         ...item,
         count: parseInt(item.count),
@@ -175,6 +181,8 @@ export class EmailHistoryController {
         days: daysNumber,
       },
     };
+
+    return ResponseWrapperUtil.success(statisticsData, '获取邮件统计信息成功');
   }
 
   @Get(':id')

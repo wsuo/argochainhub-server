@@ -21,6 +21,7 @@ import { ImageParseService } from './image-parse.service';
 import { ParsePriceImagesDto } from './dto/parse-price-images.dto';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { AdminRoles } from '../common/decorators/admin-roles.decorator';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('图片价格解析')
 @ApiBearerAuth()
@@ -126,12 +127,10 @@ export class ImageParseController {
       errors: result.errors
     };
 
-    return {
-      success: result.success,
-      message: result.success 
-        ? `图片解析完成，成功处理 ${responseData.successfulSaves} 条价格数据`
-        : '图片解析过程中出现错误，请查看详细信息',
-      data: responseData
-    };
+    const message = result.success 
+      ? `图片解析完成，成功处理 ${responseData.successfulSaves} 条价格数据`
+      : '图片解析过程中出现错误，请查看详细信息';
+      
+    return ResponseWrapperUtil.success(responseData, message);
   }
 }

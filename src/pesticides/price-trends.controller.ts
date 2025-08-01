@@ -23,6 +23,7 @@ import { UpdatePriceTrendDto } from './dto/update-price-trend.dto';
 import { QueryPriceTrendsDto } from './dto/query-price-trends.dto';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { AdminRoles } from '../common/decorators/admin-roles.decorator';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('价格走势管理')
 @ApiBearerAuth()
@@ -48,11 +49,7 @@ export class PriceTrendsController {
   })
   async create(@Body() createPriceTrendDto: CreatePriceTrendDto) {
     const priceTrend = await this.priceTrendsService.create(createPriceTrendDto);
-    return {
-      success: true,
-      message: '价格记录创建成功',
-      data: priceTrend
-    };
+    return ResponseWrapperUtil.success(priceTrend, '价格记录创建成功');
   }
 
   @Get()
@@ -64,11 +61,7 @@ export class PriceTrendsController {
   })
   async findAll(@Query() queryDto: QueryPriceTrendsDto) {
     const result = await this.priceTrendsService.findAll(queryDto);
-    return {
-      success: true,
-      message: '查询成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '查询成功');
   }
 
   @Get('chart/:pesticideId')
@@ -92,11 +85,7 @@ export class PriceTrendsController {
       startDate,
       endDate
     );
-    return {
-      success: true,
-      message: '查询成功',
-      data: chartData
-    };
+    return ResponseWrapperUtil.success(chartData, '查询成功');
   }
 
   @Get(':id')
@@ -112,11 +101,7 @@ export class PriceTrendsController {
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const priceTrend = await this.priceTrendsService.findOne(id);
-    return {
-      success: true,
-      message: '查询成功',
-      data: priceTrend
-    };
+    return ResponseWrapperUtil.success(priceTrend, '查询成功');
   }
 
   @Patch(':id')
@@ -139,11 +124,7 @@ export class PriceTrendsController {
     @Body() updatePriceTrendDto: UpdatePriceTrendDto,
   ) {
     const priceTrend = await this.priceTrendsService.update(id, updatePriceTrendDto);
-    return {
-      success: true,
-      message: '更新成功',
-      data: priceTrend
-    };
+    return ResponseWrapperUtil.success(priceTrend, '更新成功');
   }
 
   @Delete(':id')
@@ -159,9 +140,6 @@ export class PriceTrendsController {
   })
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.priceTrendsService.remove(id);
-    return {
-      success: true,
-      message: '删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('删除成功');
   }
 }

@@ -28,6 +28,7 @@ import {
   DictionaryCategoryQueryDto,
   DictionaryItemQueryDto,
 } from './dto/dictionary-management.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('字典管理')
 @Controller('admin/dictionaries')
@@ -41,11 +42,7 @@ export class DictionaryController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCategories(@Query() queryDto: DictionaryCategoryQueryDto) {
     const result = await this.dictionaryService.getCategories(queryDto);
-    return {
-      success: true,
-      message: '获取字典分类成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取字典分类成功');
   }
 
   @Get('categories/:code')
@@ -54,11 +51,7 @@ export class DictionaryController {
   @ApiParam({ name: 'code', description: '分类代码' })
   async getCategoryByCode(@Param('code') code: string) {
     const result = await this.dictionaryService.getCategoryByCode(code);
-    return {
-      success: true,
-      message: '获取字典分类详情成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取字典分类详情成功');
   }
 
   @Post('categories')
@@ -66,11 +59,7 @@ export class DictionaryController {
   @ApiResponse({ status: 201, description: '创建成功' })
   async createCategory(@Body() createDto: CreateDictionaryCategoryDto) {
     const result = await this.dictionaryService.createCategory(createDto);
-    return {
-      success: true,
-      message: '字典分类创建成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '字典分类创建成功');
   }
 
   @Put('categories/:id')
@@ -81,11 +70,7 @@ export class DictionaryController {
     @Body() updateDto: UpdateDictionaryCategoryDto,
   ) {
     const result = await this.dictionaryService.updateCategory(id, updateDto);
-    return {
-      success: true,
-      message: '字典分类更新成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '字典分类更新成功');
   }
 
   @Delete('categories/:id')
@@ -93,10 +78,7 @@ export class DictionaryController {
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteCategory(@Param('id', ParseIntPipe) id: number) {
     await this.dictionaryService.deleteCategory(id);
-    return {
-      success: true,
-      message: '字典分类删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('字典分类删除成功');
   }
 
   // 字典项管理
@@ -109,11 +91,7 @@ export class DictionaryController {
     @Query() queryDto: DictionaryItemQueryDto,
   ) {
     const result = await this.dictionaryService.getItems(categoryCode, queryDto);
-    return {
-      success: true,
-      message: '获取字典项列表成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取字典项列表成功');
   }
 
   @Post(':categoryCode/items')
@@ -125,11 +103,7 @@ export class DictionaryController {
     @Body() createDto: CreateDictionaryItemDto,
   ) {
     const result = await this.dictionaryService.createItem(categoryCode, createDto);
-    return {
-      success: true,
-      message: '字典项创建成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '字典项创建成功');
   }
 
   @Put('items/:id')
@@ -140,11 +114,7 @@ export class DictionaryController {
     @Body() updateDto: UpdateDictionaryItemDto,
   ) {
     const result = await this.dictionaryService.updateItem(id, updateDto);
-    return {
-      success: true,
-      message: '字典项更新成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '字典项更新成功');
   }
 
   @Delete('items/:id')
@@ -152,10 +122,7 @@ export class DictionaryController {
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteItem(@Param('id', ParseIntPipe) id: number) {
     await this.dictionaryService.deleteItem(id);
-    return {
-      success: true,
-      message: '字典项删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('字典项删除成功');
   }
 
   @Post(':categoryCode/batch')
@@ -167,11 +134,7 @@ export class DictionaryController {
     @Body() batchDto: BatchImportDictionaryItemDto,
   ) {
     const result = await this.dictionaryService.batchImportItems(categoryCode, batchDto);
-    return {
-      success: true,
-      message: '批量导入字典项成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '批量导入字典项成功');
   }
 }
 
@@ -190,11 +153,7 @@ export class PublicDictionaryController {
   @ApiParam({ name: 'categoryCode', description: '分类代码' })
   async getDictionaryByCode(@Param('categoryCode') categoryCode: string) {
     const result = await this.dictionaryService.getDictionaryByCode(categoryCode);
-    return {
-      success: true,
-      message: '获取字典数据成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取字典数据成功');
   }
 
   @Get('countries/with-flags')
@@ -202,10 +161,6 @@ export class PublicDictionaryController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCountriesWithFlags() {
     const result = await this.countryDictionaryService.getCountriesWithFlags();
-    return {
-      success: true,
-      message: '获取国家列表成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '获取国家列表成功');
   }
 }

@@ -21,6 +21,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('企业管理')
 @Controller()
@@ -34,11 +35,7 @@ export class CompaniesController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCompanyProfile(@CurrentUser() user: User) {
     const company = await this.companiesService.getCompanyProfile(user);
-    return {
-      success: true,
-      message: '获取成功',
-      data: company
-    };
+    return ResponseWrapperUtil.success(company, '获取成功');
   }
 
   @Put('profile/company')
@@ -51,11 +48,7 @@ export class CompaniesController {
     @Body() updateDto: UpdateCompanyProfileDto,
   ) {
     const company = await this.companiesService.updateCompanyProfile(user, updateDto);
-    return {
-      success: true,
-      message: '企业信息更新成功',
-      data: company
-    };
+    return ResponseWrapperUtil.success(company, '企业信息更新成功');
   }
 
   @Get('profile/subscription')
@@ -65,11 +58,7 @@ export class CompaniesController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getSubscriptionStatus(@CurrentUser() user: User) {
     const subscription = await this.companiesService.getSubscriptionStatus(user);
-    return {
-      success: true,
-      message: '获取成功',
-      data: subscription
-    };
+    return ResponseWrapperUtil.success(subscription, '获取成功');
   }
 
   @Get('suppliers')
@@ -79,11 +68,7 @@ export class CompaniesController {
   @ApiResponse({ status: 200, description: '搜索成功' })
   async searchSuppliers(@Query() searchDto: SearchCompaniesDto) {
     const result = await this.companiesService.searchSuppliers(searchDto);
-    return {
-      success: true,
-      message: '搜索成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '搜索成功');
   }
 
   @Get('suppliers/top100')
@@ -93,11 +78,7 @@ export class CompaniesController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getTop100Suppliers() {
     const suppliers = await this.companiesService.getTop100Suppliers();
-    return {
-      success: true,
-      message: '获取成功',
-      data: suppliers
-    };
+    return ResponseWrapperUtil.success(suppliers, '获取成功');
   }
 
   @Get('suppliers/:id')
@@ -109,10 +90,6 @@ export class CompaniesController {
   @ApiResponse({ status: 404, description: '供应商不存在' })
   async getSupplierDetail(@Param('id', ParseIntPipe) id: number) {
     const supplier = await this.companiesService.getSupplierDetail(id);
-    return {
-      success: true,
-      message: '获取成功',
-      data: supplier
-    };
+    return ResponseWrapperUtil.success(supplier, '获取成功');
   }
 }

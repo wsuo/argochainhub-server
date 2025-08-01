@@ -25,6 +25,7 @@ import {
   EmailConfigListDto,
   TestEmailConfigDto,
 } from '../dto/email-management.dto';
+import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('admin-email-config')
 @ApiBearerAuth()
@@ -67,19 +68,24 @@ export class EmailConfigController {
       authPass: '******',
     }));
 
-    return {
-      items: safeConfigs,
-      total,
-      page,
-      pageSize: limit,
-      totalPages: Math.ceil(total / limit),
+    const result = {
+      data: safeConfigs,
+      meta: {
+        totalItems: total,
+        itemCount: safeConfigs.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
+
+    return ResponseWrapperUtil.successWithPagination(result, '获取邮件配置列表成功');
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取邮件配置详情' })
   @ApiResponse({ status: 200, description: '返回邮件配置详情' })
-  async getEmailConfig(@Param('id', ParseIntPipe) id: number): Promise<EmailConfig> {
+  async getEmailConfig(@Param('id', ParseIntPipe) id: number) {
     const config = await this.emailConfigRepository.findOne({
       where: { id },
     });
@@ -89,10 +95,12 @@ export class EmailConfigController {
     }
 
     // 隐藏密码字段
-    return {
+    const safeConfig = {
       ...config,
       authPass: '******',
     };
+
+    return ResponseWrapperUtil.success(safeConfig, '获取邮件配置详情成功');
   }
 
   @Post()
@@ -101,7 +109,7 @@ export class EmailConfigController {
   async createEmailConfig(
     @Body() dto: CreateEmailConfigDto,
     @CurrentAdmin() admin: AdminUser,
-  ): Promise<EmailConfig> {
+  ) {
     // 如果设置为默认，先取消其他默认配置
     if (dto.isDefault) {
       await this.emailConfigRepository.update(
@@ -118,10 +126,12 @@ export class EmailConfigController {
     const savedConfig = await this.emailConfigRepository.save(config);
 
     // 返回时隐藏密码
-    return {
+    const safeConfig = {
       ...savedConfig,
       authPass: '******',
     };
+
+    return ResponseWrapperUtil.success(safeConfig, '邮件配置创建成功');
   }
 
   @Put(':id')
@@ -131,7 +141,7 @@ export class EmailConfigController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateEmailConfigDto,
     @CurrentAdmin() admin: AdminUser,
-  ): Promise<EmailConfig> {
+  ) {
     const config = await this.emailConfigRepository.findOne({
       where: { id },
     });
@@ -164,10 +174,12 @@ export class EmailConfigController {
     });
 
     // 返回时隐藏密码
-    return {
+    const safeConfig = {
       ...updatedConfig!,
       authPass: '******',
     };
+
+    return ResponseWrapperUtil.success(safeConfig, '邮件配置更新成功');
   }
 
   @Delete(':id')
@@ -176,7 +188,7 @@ export class EmailConfigController {
   async deleteEmailConfig(
     @Param('id', ParseIntPipe) id: number,
     @CurrentAdmin() admin: AdminUser,
-  ): Promise<void> {
+  ) {
     const config = await this.emailConfigRepository.findOne({
       where: { id },
     });
@@ -193,6 +205,8 @@ export class EmailConfigController {
 
     // 清理传输器缓存
     await this.emailService.clearTransporterCache(id);
+
+    return ResponseWrapperUtil.successNoData('邮件配置删除成功');
   }
 
   @Post(':id/test')
@@ -202,18 +216,18 @@ export class EmailConfigController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: TestEmailConfigDto,
     @CurrentAdmin() admin: AdminUser,
-  ): Promise<{ success: boolean; message: string }> {
+  ) {
     try {
       await this.emailService.testEmailConfig(id, dto.testEmail);
-      return {
-        success: true,
-        message: '测试邮件发送成功，请检查收件箱',
-      };
+      return ResponseWrapperUtil.success(
+        { testResult: '测试成功' },
+        '测试邮件发送成功，请检查收件箱'
+      );
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+      return ResponseWrapperUtil.success(
+        { testResult: '测试失败', error: error.message },
+        '测试邮件发送失败'
+      );
     }
   }
 }

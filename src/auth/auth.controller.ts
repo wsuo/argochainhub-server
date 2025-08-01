@@ -14,6 +14,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('认证')
 @Controller('auth')
@@ -26,11 +27,7 @@ export class AuthController {
   @ApiResponse({ status: 409, description: '邮箱已存在' })
   async register(@Body() registerDto: RegisterDto) {
     const result = await this.authService.register(registerDto);
-    return {
-      success: true,
-      message: '注册成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '注册成功');
   }
 
   @Post('login')
@@ -39,11 +36,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: '登录失败' })
   async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
-    return {
-      success: true,
-      message: '登录成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '登录成功');
   }
 
   @Get('me')
@@ -54,11 +47,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: '未授权' })
   async getProfile(@CurrentUser() user: User | AdminUser) {
     const profile = await this.authService.getProfile(user);
-    return {
-      success: true,
-      message: '获取成功',
-      data: profile
-    };
+    return ResponseWrapperUtil.success(profile, '获取成功');
   }
 
   @Put('change-password')
@@ -73,10 +62,7 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     await this.authService.changePassword(user, changePasswordDto);
-    return {
-      success: true,
-      message: '密码修改成功'
-    };
+    return ResponseWrapperUtil.successNoData('密码修改成功');
   }
 
   @Post('logout')
@@ -86,10 +72,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登出成功' })
   async logout() {
     // JWT无状态，客户端删除token即可
-    return {
-      success: true,
-      message: '登出成功'
-    };
+    return ResponseWrapperUtil.successNoData('登出成功');
   }
 
   @Post('admin/login')
@@ -98,10 +81,6 @@ export class AuthController {
   @ApiResponse({ status: 401, description: '登录失败' })
   async adminLogin(@Body() adminLoginDto: AdminLoginDto) {
     const result = await this.authService.adminLogin(adminLoginDto);
-    return {
-      success: true,
-      message: '管理员登录成功',
-      data: result
-    };
+    return ResponseWrapperUtil.success(result, '管理员登录成功');
   }
 }

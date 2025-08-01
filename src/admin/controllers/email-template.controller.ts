@@ -26,6 +26,7 @@ import {
   EmailTemplateListDto,
   PreviewEmailTemplateDto,
 } from '../dto/email-management.dto';
+import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('admin-email-template')
 @ApiBearerAuth()
@@ -68,19 +69,24 @@ export class EmailTemplateController {
       take: limit,
     });
 
-    return {
-      items: templates,
-      total,
-      page,
-      pageSize: limit,
-      totalPages: Math.ceil(total / limit),
+    const result = {
+      data: templates,
+      meta: {
+        totalItems: total,
+        itemCount: templates.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
     };
+
+    return ResponseWrapperUtil.successWithPagination(result, '获取邮件模板列表成功');
   }
 
   @Get('trigger-events')
   @ApiOperation({ summary: '获取触发事件列表' })
   @ApiResponse({ status: 200, description: '返回触发事件列表' })
-  async getTriggerEvents(): Promise<any[]> {
+  async getTriggerEvents() {
     // 从字典中获取邮件触发事件
     const result = await this.dictionaryService.getItems('email_trigger_event', {
       page: 1,
@@ -88,17 +94,19 @@ export class EmailTemplateController {
       isActive: true,
     });
     
-    return result.data.map(event => ({
+    const events = result.data.map(event => ({
       code: event.code,
       name: event.name,
       description: event.description,
     }));
+    
+    return ResponseWrapperUtil.success(events, '获取触发事件列表成功');
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取邮件模板详情' })
   @ApiResponse({ status: 200, description: '返回邮件模板详情' })
-  async getEmailTemplate(@Param('id', ParseIntPipe) id: number): Promise<EmailTemplate> {
+  async getEmailTemplate(@Param('id', ParseIntPipe) id: number) {
     const template = await this.emailTemplateRepository.findOne({
       where: { id },
     });
@@ -107,7 +115,7 @@ export class EmailTemplateController {
       throw new BadRequestException('邮件模板不存在');
     }
 
-    return template;
+    return ResponseWrapperUtil.success(template, '获取邮件模板详情成功');
   }
 
   @Post()
@@ -116,7 +124,7 @@ export class EmailTemplateController {
   async createEmailTemplate(
     @Body() dto: CreateEmailTemplateDto,
     @CurrentAdmin() admin: AdminUser,
-  ): Promise<EmailTemplate> {
+  ) {
     // 检查模板代码是否已存在
     const existingTemplate = await this.emailTemplateRepository.findOne({
       where: { code: dto.code },
@@ -131,7 +139,8 @@ export class EmailTemplateController {
       isActive: true,
     });
 
-    return await this.emailTemplateRepository.save(template);
+    const savedTemplate = await this.emailTemplateRepository.save(template);
+    return ResponseWrapperUtil.success(savedTemplate, '邮件模板创建成功');
   }
 
   @Put(':id')

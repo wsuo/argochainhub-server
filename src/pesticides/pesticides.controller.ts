@@ -24,6 +24,7 @@ import { UpdatePesticideDto } from './dto/update-pesticide.dto';
 import { QueryPesticidesDto } from './dto/query-pesticides.dto';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { AdminRoles } from '../common/decorators/admin-roles.decorator';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('农药管理')
 @ApiBearerAuth()
@@ -45,11 +46,7 @@ export class PesticidesController {
   })
   async create(@Body() createPesticideDto: CreatePesticideDto) {
     const pesticide = await this.pesticidesService.create(createPesticideDto);
-    return {
-      success: true,
-      message: '农药创建成功',
-      data: pesticide
-    };
+    return ResponseWrapperUtil.success(pesticide, '农药创建成功');
   }
 
   @Get()
@@ -61,11 +58,7 @@ export class PesticidesController {
   })
   async findAll(@Query() queryDto: QueryPesticidesDto) {
     const result = await this.pesticidesService.findAll(queryDto);
-    return {
-      success: true,
-      message: '查询成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '查询成功');
   }
 
   @Get(':id')
@@ -81,11 +74,7 @@ export class PesticidesController {
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const pesticide = await this.pesticidesService.findOne(id);
-    return {
-      success: true,
-      message: '查询成功',
-      data: pesticide
-    };
+    return ResponseWrapperUtil.success(pesticide, '查询成功');
   }
 
   @Patch(':id')
@@ -108,11 +97,7 @@ export class PesticidesController {
     @Body() updatePesticideDto: UpdatePesticideDto,
   ) {
     const pesticide = await this.pesticidesService.update(id, updatePesticideDto);
-    return {
-      success: true,
-      message: '更新成功',
-      data: pesticide
-    };
+    return ResponseWrapperUtil.success(pesticide, '更新成功');
   }
 
   @Delete(':id')
@@ -128,9 +113,6 @@ export class PesticidesController {
   })
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.pesticidesService.remove(id);
-    return {
-      success: true,
-      message: '删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('删除成功');
   }
 }

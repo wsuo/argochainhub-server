@@ -83,7 +83,7 @@ export class UploadsService {
     type: AttachmentType,
     relatedId?: number,
     paginationDto?: PaginationDto,
-  ): Promise<PaginatedResult<Attachment> | Attachment[]> {
+  ): Promise<PaginatedResult<Attachment>> {
     const queryBuilder = this.attachmentRepository
       .createQueryBuilder('attachment')
       .leftJoinAndSelect('attachment.uploadedBy', 'uploadedBy')
@@ -108,27 +108,23 @@ export class UploadsService {
       queryBuilder.andWhere('attachment.relatedId = :relatedId', { relatedId });
     }
 
-    if (paginationDto) {
-      const { page = 1, limit = 20 } = paginationDto;
-      const [attachments, total] = await queryBuilder
-        .skip((page - 1) * limit)
-        .take(limit)
-        .orderBy('attachment.createdAt', 'DESC')
-        .getManyAndCount();
-
-      return {
-        data: attachments,
-        meta: {
-          totalItems: total,
-          itemCount: attachments.length,
-          itemsPerPage: limit,
-          totalPages: Math.ceil(total / limit),
-          currentPage: page,
-        },
-      };
-    }
-
-    return queryBuilder.orderBy('attachment.createdAt', 'DESC').getMany();
+    const { page = 1, limit = 20 } = paginationDto || {};
+    const [attachments, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('attachment.createdAt', 'DESC')
+      .getManyAndCount();
+      
+    return {
+      data: attachments,
+      meta: {
+        totalItems: total,
+        itemCount: attachments.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
   }
 
   async getFileById(user: User, id: number): Promise<Attachment> {

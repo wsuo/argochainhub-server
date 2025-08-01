@@ -29,6 +29,7 @@ import {
   UpdateCompanyUserDto, 
   CompanyUserQueryDto 
 } from './dto/company-user.dto';
+import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('企业用户管理')
 @ApiBearerAuth()
@@ -48,11 +49,7 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     const result = await this.companyUsersService.getCompanyUsers(companyId, queryDto, currentUser);
-    return {
-      success: true,
-      message: '获取成功',
-      ...result
-    };
+    return ResponseWrapperUtil.successWithPagination(result, '获取成功');
   }
 
   @Get(':userId')
@@ -68,11 +65,7 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     const user = await this.companyUsersService.getCompanyUserById(companyId, userId, currentUser);
-    return {
-      success: true,
-      message: '获取成功',
-      data: user
-    };
+    return ResponseWrapperUtil.success(user, '获取成功');
   }
 
   @Post()
@@ -87,11 +80,7 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     const user = await this.companyUsersService.createCompanyUser(companyId, createDto, currentUser);
-    return {
-      success: true,
-      message: '用户创建成功',
-      data: user
-    };
+    return ResponseWrapperUtil.success(user, '用户创建成功');
   }
 
   @Put(':userId')
@@ -108,11 +97,7 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     const user = await this.companyUsersService.updateCompanyUser(companyId, userId, updateDto, currentUser);
-    return {
-      success: true,
-      message: '用户更新成功',
-      data: user
-    };
+    return ResponseWrapperUtil.success(user, '用户更新成功');
   }
 
   @Delete(':userId')
@@ -129,10 +114,7 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     await this.companyUsersService.deleteCompanyUser(companyId, userId, currentUser);
-    return {
-      success: true,
-      message: '用户删除成功'
-    };
+    return ResponseWrapperUtil.successNoData('用户删除成功');
   }
 
   @Patch(':userId/toggle-status')
@@ -149,10 +131,6 @@ export class CompanyUsersController {
     @CurrentUser() currentUser: User | AdminUser,
   ) {
     const user = await this.companyUsersService.toggleUserStatus(companyId, userId, currentUser);
-    return {
-      success: true,
-      message: '状态切换成功',
-      data: user
-    };
+    return ResponseWrapperUtil.success(user, '状态切换成功');
   }
 }
