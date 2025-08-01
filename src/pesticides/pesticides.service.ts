@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, Like, FindOptionsWhere, IsNull } from 'typeorm';
 import { StandardPesticide } from '../entities/standard-pesticide.entity';
 import { PesticidePriceTrend } from '../entities/pesticide-price-trend.entity';
 import { CreatePesticideDto } from './dto/create-pesticide.dto';
@@ -249,5 +249,21 @@ export class PesticidesService {
     return await queryBuilder
       .where(`(${whereConditions})`, parameters)
       .getMany();
+  }
+
+  /**
+   * 获取所有农药的中文名称（用于AI识别参考）
+   */
+  async getAllPesticideNames(): Promise<string[]> {
+    const pesticides = await this.pesticidesRepository.find({
+      select: ['productName'],
+      where: { deletedAt: IsNull() }
+    });
+    
+    return pesticides
+      .map(p => p.productName['zh-CN'])
+      .filter(Boolean)
+      .map(name => name.trim()) // 去除前后空格
+      .sort();
   }
 }

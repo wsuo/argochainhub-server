@@ -346,20 +346,35 @@ export class ImageParseService {
         required: ['priceData']
       };
 
+      // 获取所有农药的中文名称作为参考
+      const pesticideNames = await this.pesticidesService.getAllPesticideNames();
+
+      const currentYear = new Date().getFullYear();
+      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
       const prompt = `Analyze this Chinese pesticide price data table image.
 
+请参考以下农药产品库进行产品名称匹配，确保识别的产品名称与库中的名称一致：
+${pesticideNames.join('、')}
+
 Extract the following information:
-1. Product names from the first column
+1. Product names from the first column - 请从上述农药库中选择最匹配的名称
 2. Time period from the table header  
 3. Price data from the right column (second time period)
 4. Convert time period to week end date (YYYY-MM-DD format)
+
+IMPORTANT NOTES:
+- 产品名称必须严格匹配上述参考库中的名称，如果无法确定匹配，请选择最相似的名称
+- 当前年份是 ${currentYear} 年，今天是 ${currentDate}
+- 如果图片中的日期显示的是过时的年份，请将年份更新为 ${currentYear}
+- 周结束日期应该使用正确的年份 ${currentYear}
 
 Return the data as JSON with this structure:
 {
   "priceData": [
     {
       "productName": "product name",
-      "weekEndDate": "2024-07-18",
+      "weekEndDate": "${currentYear}-MM-DD",
       "unitPrice": 12000
     }
   ]
@@ -506,10 +521,30 @@ Return the data as JSON with this structure:
 
     // 获取所有产品名称进行批量查询
     const productNames = [...new Set(parsedData.map(item => item.productName))];
-    const matchedPesticides = await this.pesticidesService.findByProductNames(productNames);
+    
+    // 扩展查询名称列表，包含常见的格式变体
+    const expandedProductNames = new Set<string>();
+    productNames.forEach(name => {
+      expandedProductNames.add(name);
+      
+      // 添加标准化变体
+      const normalized = name
+        .replace(/[\s\-\.，,]/g, '') // 移除空格、破折号、点、逗号
+        .replace(/[()（）]/g, ''); // 移除括号
+      expandedProductNames.add(normalized);
+      
+      // 针对 "2, 4-D" 这种情况，添加特殊处理
+      if (name.includes('2, 4-D') || name.includes('2,4-D')) {
+        expandedProductNames.add('2,4D');
+        expandedProductNames.add('2,4-D');
+        expandedProductNames.add('2, 4-D');
+      }
+    });
+    
+    const matchedPesticides = await this.pesticidesService.findByProductNames([...expandedProductNames]);
 
-    // 创建产品名称到ID的映射
-    const nameToIdMap = new Map<string, number>();
+    // 创建产品名称到ID的映射（精确匹配）
+    const exactNameToIdMap = new Map<string, number>();
     matchedPesticides.forEach(pesticide => {
       const names = [
         pesticide.productName['zh-CN'],
@@ -518,7 +553,7 @@ Return the data as JSON with this structure:
       ].filter(Boolean);
       
       names.forEach(name => {
-        nameToIdMap.set(name, pesticide.id);
+        exactNameToIdMap.set(name, pesticide.id);
       });
     });
 
@@ -527,8 +562,13 @@ Return the data as JSON with this structure:
     
     // 处理每条价格数据，先进行匹配验证
     for (const priceData of parsedData) {
-      // 查找匹配的农药ID
-      const pesticideId = nameToIdMap.get(priceData.productName);
+      // 首先尝试精确匹配
+      let pesticideId = exactNameToIdMap.get(priceData.productName);
+      
+      // 如果精确匹配失败，尝试模糊匹配
+      if (!pesticideId) {
+        pesticideId = this.findFuzzyMatch(priceData.productName, matchedPesticides) || undefined;
+      }
       
       if (!pesticideId) {
         failed.push({
@@ -564,15 +604,23 @@ Return the data as JSON with this structure:
             success.push(savedTrend);
           } catch (saveError) {
             // 找到对应的原始数据
-            const originalData = parsedData.find(data => 
-              nameToIdMap.get(data.productName) === priceTrendDto.pesticideId &&
-              data.weekEndDate === priceTrendDto.weekEndDate &&
-              data.unitPrice === priceTrendDto.unitPrice
-            );
+            const originalData = parsedData.find(data => {
+              // 通过多种方式匹配：精确匹配或者模糊匹配
+              const exactMatch = exactNameToIdMap.get(data.productName) === priceTrendDto.pesticideId;
+              const fuzzyMatch = this.findFuzzyMatch(data.productName, matchedPesticides) === priceTrendDto.pesticideId;
+              
+              return (exactMatch || fuzzyMatch) &&
+                data.weekEndDate === priceTrendDto.weekEndDate &&
+                data.unitPrice === priceTrendDto.unitPrice;
+            });
             
             failed.push({
-              data: originalData!,
-              error: saveError.message || '保存价格数据失败'
+              data: originalData || {
+                productName: `ID:${priceTrendDto.pesticideId}的农药`,
+                weekEndDate: priceTrendDto.weekEndDate,
+                unitPrice: priceTrendDto.unitPrice
+              },
+              error: `保存价格数据失败: ${saveError.message || '未知错误'}`
             });
           }
         }
@@ -580,6 +628,54 @@ Return the data as JSON with this structure:
     }
 
     return { success, failed };
+  }
+
+  /**
+   * 模糊匹配农药名称
+   * 处理格式差异，如空格、破折号、标点符号等
+   */
+  private findFuzzyMatch(searchName: string, pesticides: any[]): number | null {
+    // 标准化名称：移除前后空格、破折号、点等标点符号，转为小写
+    const normalizeString = (str: string): string => {
+      return str
+        .trim() // 移除前后空格
+        .toLowerCase()
+        .replace(/[\s\-\.，,]/g, '') // 移除空格、破折号、点、逗号
+        .replace(/[()（）]/g, ''); // 移除括号
+    };
+
+    const normalizedSearchName = normalizeString(searchName);
+    
+    for (const pesticide of pesticides) {
+      const names = [
+        pesticide.productName['zh-CN'],
+        pesticide.productName.en,
+        pesticide.productName.es
+      ].filter(Boolean);
+      
+      for (const name of names) {
+        const normalizedDbName = normalizeString(name);
+        
+        // 检查标准化后的名称是否相等
+        if (normalizedDbName === normalizedSearchName) {
+          this.logger.log(`模糊匹配成功: "${searchName}" -> "${name}" (ID: ${pesticide.id})`);
+          return pesticide.id;
+        }
+        
+        // 检查是否包含关系（处理更复杂的情况）
+        if (normalizedDbName.includes(normalizedSearchName) || normalizedSearchName.includes(normalizedDbName)) {
+          // 如果长度差异不大，认为是匹配的
+          const lengthDiff = Math.abs(normalizedDbName.length - normalizedSearchName.length);
+          if (lengthDiff <= 2) {
+            this.logger.log(`模糊匹配成功(包含): "${searchName}" -> "${name}" (ID: ${pesticide.id})`);
+            return pesticide.id;
+          }
+        }
+      }
+    }
+    
+    this.logger.warn(`模糊匹配失败: 未找到与 "${searchName}" 匹配的农药`);
+    return null;
   }
 
   /**
