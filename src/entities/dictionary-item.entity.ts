@@ -1,9 +1,10 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany, Unique } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { DictionaryCategory } from './dictionary-category.entity';
 import { MultiLangText } from '../types/multilang';
 
 @Entity('dictionary_items')
+@Unique('uk_dictionary_items_category_code', ['categoryId', 'code'])
 export class DictionaryItem extends BaseEntity {
   @Column({ length: 100 })
   code: string;

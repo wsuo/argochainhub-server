@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class FixDictionaryDuplicates1754020524088 implements MigrationInterface {
+export class FixDictionaryDuplicates1754020722794 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         // 修复字典重复数据问题 - 2025-08-01
