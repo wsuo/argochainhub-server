@@ -39,7 +39,7 @@ export class InquiriesService {
     createInquiryDto: CreateInquiryDto,
   ): Promise<Inquiry> {
     // 验证企业类型
-    if (user.company.type !== CompanyType.BUYER) {
+    if (!user.company || user.company.type !== CompanyType.BUYER) {
       throw new ForbiddenException('Only buyers can create inquiries');
     }
 
@@ -128,6 +128,10 @@ export class InquiriesService {
       .leftJoinAndSelect('inquiry.items', 'items');
 
     // 根据用户企业类型确定查询条件
+    if (!user.company) {
+      throw new ForbiddenException('User must be associated with a company to access inquiries');
+    }
+
     if (user.company.type === CompanyType.BUYER) {
       queryBuilder.where('inquiry.buyerId = :companyId', {
         companyId: user.companyId,

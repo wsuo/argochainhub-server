@@ -75,6 +75,9 @@ export class SubscriptionsService {
   }
 
   async getQuotaUsage(user: User) {
+    if (!user.companyId) {
+      throw new BadRequestException('User must be associated with a company to check quota usage');
+    }
     return this.quotaService.getQuotaUsage(user.companyId);
   }
 

@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { User, UserRole } from '../entities/user.entity';
+import { User, UserRole, UserType } from '../entities/user.entity';
 import {
   Company,
   CompanyStatus,
@@ -41,6 +41,7 @@ export class AuthService {
       email, 
       password, 
       userName, 
+      userType,
       companyName, 
       companyType,
       country,
@@ -61,44 +62,60 @@ export class AuthService {
       where: { email },
     });
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('邮箱已存在');
     }
 
     // 哈希密码
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 创建企业 - 使用用户提供的多语言企业名称和详细信息
-    const company = this.companyRepository.create({
-      name: companyName,
-      type: companyType,
-      status: CompanyStatus.PENDING_REVIEW,
-      country,
-      businessCategories,
-      businessScope,
-      companySize,
-      mainProducts,
-      mainSuppliers,
-      annualImportExportValue,
-      registrationNumber,
-      taxNumber,
-      businessLicenseUrl,
-      companyPhotosUrls,
-    });
-    const savedCompany = await this.companyRepository.save(company);
+    let savedCompany: Company | null = null;
+
+    // 根据用户类型处理注册逻辑
+    if (userType === UserType.SUPPLIER) {
+      // 供应商注册：创建企业
+      if (!companyName) {
+        throw new BadRequestException('供应商注册必须提供企业名称');
+      }
+
+      const company = this.companyRepository.create({
+        name: companyName,
+        type: companyType || CompanyType.SUPPLIER, // 默认为供应商类型
+        status: CompanyStatus.PENDING_REVIEW,
+        country,
+        businessCategories,
+        businessScope,
+        companySize,
+        mainProducts,
+        mainSuppliers,
+        annualImportExportValue,
+        registrationNumber,
+        taxNumber,
+        businessLicenseUrl,
+        companyPhotosUrls,
+      });
+      savedCompany = await this.companyRepository.save(company);
+    }
 
     // 创建用户
     const user = this.userRepository.create({
       email,
       password: hashedPassword,
       name: userName,
-      role: UserRole.OWNER, // 注册用户默认为企业所有者
-      companyId: savedCompany.id,
-      isActive: false, // 等待审核激活
+      userType,
+      role: userType === UserType.SUPPLIER ? UserRole.OWNER : UserRole.MEMBER,
+      companyId: savedCompany?.id,
+      isActive: userType === UserType.INDIVIDUAL_BUYER, // 个人采购商立即激活，供应商需要审核
     });
     await this.userRepository.save(user);
 
+    const message = userType === UserType.SUPPLIER 
+      ? '供应商注册成功，请等待审核通过后使用'
+      : '个人采购商注册成功，您可以立即开始使用平台';
+
     return {
-      message: 'Registration successful. Please wait for approval.',
+      message,
+      userType,
+      needsApproval: userType === UserType.SUPPLIER,
     };
   }
 
@@ -113,19 +130,21 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException(
-        'Invalid credentials or inactive account',
+        '用户不存在或账户未激活',
       );
     }
 
     // 验证密码
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('密码错误');
     }
 
-    // 检查企业状态
-    if (user.company.status !== CompanyStatus.ACTIVE) {
-      throw new UnauthorizedException('Company is not active');
+    // 检查企业状态（仅供应商需要检查）
+    if (user.userType === UserType.SUPPLIER && user.company) {
+      if (user.company.status !== CompanyStatus.ACTIVE) {
+        throw new UnauthorizedException('企业尚未通过审核，请等待审核完成');
+      }
     }
 
     // 更新最后登录时间
@@ -136,8 +155,9 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      companyId: user.companyId,
-      companyType: user.company.type,
+      companyId: user.companyId || null,
+      companyType: user.company?.type || null,
+      userType: user.userType,
       role: user.role,
     };
 
@@ -149,13 +169,14 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        userType: user.userType,
         role: user.role,
-        company: {
+        company: user.company ? {
           id: user.company.id,
           name: user.company.name,
           type: user.company.type,
           status: user.company.status,
-        },
+        } : null,
       },
     };
   }
@@ -200,6 +221,7 @@ export class AuthService {
       id: regularUser.id,
       email: regularUser.email,
       name: regularUser.name,
+      userType: regularUser.userType,
       role: regularUser.role,
       lastLoginAt: regularUser.lastLoginAt,
       type: 'user',

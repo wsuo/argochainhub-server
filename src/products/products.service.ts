@@ -113,7 +113,7 @@ export class ProductsService {
     createProductDto: CreateProductDto,
   ): Promise<Product> {
     // 验证企业类型
-    if (user.company.type !== CompanyType.SUPPLIER) {
+    if (!user.company || user.company.type !== CompanyType.SUPPLIER) {
       throw new ForbiddenException('Only suppliers can create products');
     }
 
@@ -131,7 +131,7 @@ export class ProductsService {
     myProductsDto: MyProductsDto,
   ): Promise<PaginatedResult<Product>> {
     // 验证企业类型
-    if (user.company.type !== CompanyType.SUPPLIER) {
+    if (!user.company || user.company.type !== CompanyType.SUPPLIER) {
       throw new ForbiddenException('Only suppliers can access this endpoint');
     }
 
@@ -195,7 +195,7 @@ export class ProductsService {
 
   async getMyProductDetail(user: User, id: number): Promise<Product> {
     // 验证企业类型
-    if (user.company.type !== CompanyType.SUPPLIER) {
+    if (!user.company || user.company.type !== CompanyType.SUPPLIER) {
       throw new ForbiddenException('Only suppliers can access this endpoint');
     }
 

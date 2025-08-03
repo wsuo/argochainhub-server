@@ -12,6 +12,11 @@ export enum UserRole {
   MEMBER = 'member',
 }
 
+export enum UserType {
+  INDIVIDUAL_BUYER = 'individual_buyer',  // 个人采购商
+  SUPPLIER = 'supplier',                  // 供应商企业用户
+}
+
 @Entity('users')
 export class User extends BaseEntity {
   @Column({ length: 255, unique: true })
@@ -69,6 +74,14 @@ export class User extends BaseEntity {
   })
   emailVerified: boolean;
 
+  @Column({ 
+    type: 'enum',
+    enum: UserType,
+    default: UserType.INDIVIDUAL_BUYER,
+    comment: '用户类型'
+  })
+  userType: UserType;
+
   @Column({
     type: 'enum',
     enum: UserRole,
@@ -83,12 +96,12 @@ export class User extends BaseEntity {
   lastLoginAt?: Date;
 
   // 关联关系
-  @Column({ type: 'bigint', unsigned: true })
-  companyId: number;
+  @Column({ type: 'bigint', unsigned: true, nullable: true, comment: '企业ID，个人采购商为空' })
+  companyId?: number;
 
-  @ManyToOne(() => Company, (company) => company.users)
+  @ManyToOne(() => Company, (company) => company.users, { nullable: true })
   @JoinColumn({ name: 'companyId' })
-  company: Company;
+  company?: Company;
 
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];

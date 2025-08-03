@@ -4,15 +4,16 @@ import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { User } from '../entities/user.entity';
+import { User, UserType } from '../entities/user.entity';
 import { AdminUser } from '../entities/admin-user.entity';
 
 export interface JwtPayload {
   sub: number;
   email?: string;
   username?: string;
-  companyId?: number;
-  companyType?: string;
+  companyId?: number | null;
+  companyType?: string | null;
+  userType?: UserType;
   role: string;
   type?: string; // 'admin' for AdminUser, undefined for regular User
 }
