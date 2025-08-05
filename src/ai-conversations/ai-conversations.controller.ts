@@ -15,6 +15,7 @@ import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { StoreCompleteConversationDto } from './dto/store-conversation.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 import { FlexibleAuthGuard } from '../common/guards/flexible-auth.guard';
+import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities';
 
@@ -62,8 +63,7 @@ export class AiConversationsController {
   }
 
   @Get(':conversationId')
-  @UseGuards(FlexibleAuthGuard)
-  @ApiBearerAuth()
+  @UseGuards(OptionalAuthGuard)
   @ApiOperation({ summary: '获取对话详情' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async getConversationDetail(
@@ -80,8 +80,7 @@ export class AiConversationsController {
   }
 
   @Delete(':conversationId')
-  @UseGuards(FlexibleAuthGuard)
-  @ApiBearerAuth()
+  @UseGuards(OptionalAuthGuard)
   @ApiOperation({ summary: '删除对话记录' })
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteConversation(
