@@ -40,6 +40,11 @@ export class DictionaryInitService {
       // 邮件管理相关字典
       await this.initializeEmailTriggerEvents();
       
+      // AI对话相关字典
+      await this.initializeAiMessageTypes();
+      await this.initializeAiWorkflowStatuses();
+      await this.initializeAiUserTypes();
+      
       // 3. 初始化国家数据
       await this.countryDictionaryService.initializeCountries();
       
@@ -246,6 +251,51 @@ export class DictionaryInitService {
         } as MultiLangText,
         isSystem: true,
         sortOrder: 13,
+      },
+      {
+        code: 'ai_message_type',
+        name: {
+          'zh-CN': 'AI消息类型',
+          en: 'AI Message Type',
+          es: 'Tipo de Mensaje de IA',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI对话中的消息类型',
+          en: 'Message types in AI conversations',
+          es: 'Tipos de mensajes en conversaciones de IA',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 14,
+      },
+      {
+        code: 'ai_workflow_status',
+        name: {
+          'zh-CN': 'AI工作流状态',
+          en: 'AI Workflow Status',
+          es: 'Estado del Flujo de Trabajo de IA',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI工作流的运行状态',
+          en: 'AI workflow execution status',
+          es: 'Estado de ejecución del flujo de trabajo de IA',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 15,
+      },
+      {
+        code: 'ai_user_type',
+        name: {
+          'zh-CN': 'AI用户类型',
+          en: 'AI User Type',
+          es: 'Tipo de Usuario de IA',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI对话中的用户类型',
+          en: 'User types in AI conversations',
+          es: 'Tipos de usuarios en conversaciones de IA',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 16,
       },
     ];
 
@@ -1123,6 +1173,136 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('email_trigger_event', emailTriggerEvents);
+  }
+
+  private async initializeAiMessageTypes(): Promise<void> {
+    const aiMessageTypes = [
+      {
+        code: 'user_query',
+        name: {
+          'zh-CN': '用户查询',
+          en: 'User Query',
+          es: 'Consulta de Usuario',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '用户向AI发起的查询消息',
+          en: 'Query message sent by user to AI',
+          es: 'Mensaje de consulta enviado por el usuario a la IA',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'ai_response',
+        name: {
+          'zh-CN': 'AI回复',
+          en: 'AI Response',
+          es: 'Respuesta de IA',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI对用户查询的回复消息',
+          en: 'Response message from AI to user query',
+          es: 'Mensaje de respuesta de la IA a la consulta del usuario',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+    ];
+    await this.batchCreateItems('ai_message_type', aiMessageTypes);
+  }
+
+  private async initializeAiWorkflowStatuses(): Promise<void> {
+    const aiWorkflowStatuses = [
+      {
+        code: 'running',
+        name: {
+          'zh-CN': '运行中',
+          en: 'Running',
+          es: 'Ejecutándose',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI工作流正在执行中',
+          en: 'AI workflow is currently running',
+          es: 'El flujo de trabajo de IA se está ejecutando actualmente',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'succeeded',
+        name: {
+          'zh-CN': '成功',
+          en: 'Succeeded',
+          es: 'Exitoso',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI工作流成功完成',
+          en: 'AI workflow completed successfully',
+          es: 'El flujo de trabajo de IA se completó con éxito',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'failed',
+        name: {
+          'zh-CN': '失败',
+          en: 'Failed',
+          es: 'Fallido',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'AI工作流执行失败',
+          en: 'AI workflow execution failed',
+          es: 'La ejecución del flujo de trabajo de IA falló',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+    ];
+    await this.batchCreateItems('ai_workflow_status', aiWorkflowStatuses);
+  }
+
+  private async initializeAiUserTypes(): Promise<void> {
+    const aiUserTypes = [
+      {
+        code: 'user',
+        name: {
+          'zh-CN': '注册用户',
+          en: 'Registered User',
+          es: 'Usuario Registrado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '已注册的平台用户',
+          en: 'Registered platform user',
+          es: 'Usuario registrado de la plataforma',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'admin',
+        name: {
+          'zh-CN': '管理员',
+          en: 'Administrator',
+          es: 'Administrador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '平台管理员用户',
+          en: 'Platform administrator user',
+          es: 'Usuario administrador de la plataforma',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'guest',
+        name: {
+          'zh-CN': '访客',
+          en: 'Guest',
+          es: 'Invitado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '未注册的访客用户',
+          en: 'Unregistered guest user',
+          es: 'Usuario invitado no registrado',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+    ];
+    await this.batchCreateItems('ai_user_type', aiUserTypes);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {

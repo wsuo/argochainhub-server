@@ -20,6 +20,7 @@ import { StorageModule } from './storage/storage.module';
 import { SeedModule } from './seed/seed.module';
 import { NewsModule } from './news/news.module';
 import { PesticidesModule } from './pesticides/pesticides.module';
+import { AiConversationsModule } from './ai-conversations/ai-conversations.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -56,6 +57,7 @@ import openrouterConfig from './config/openrouter.config';
     SeedModule,
     NewsModule,
     PesticidesModule,
+    AiConversationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -31,3 +31,7 @@ export { AuditLog } from './audit-log.entity';
 export { EmailConfig } from './email-config.entity';
 export { EmailTemplate, EmailVariable } from './email-template.entity';
 export { EmailHistory, EmailStatus } from './email-history.entity';
+export { AiConversation, UserType } from './ai-conversation.entity';
+export { AiMessage, MessageType } from './ai-message.entity';
+export { AiWorkflowRun, WorkflowStatus } from './ai-workflow-run.entity';
+export { AiUsageStatistic } from './ai-usage-statistic.entity';
