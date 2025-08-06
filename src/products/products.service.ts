@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { Product, ProductStatus } from '../entities/product.entity';
 import { CompanyStatus, CompanyType } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
@@ -31,45 +31,30 @@ export class ProductsService {
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.supplier', 'supplier')
       .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.isListed = :isListed', { isListed: true })
       .andWhere('supplier.status = :supplierStatus', {
         supplierStatus: CompanyStatus.ACTIVE,
       });
 
     if (search) {
-      // 使用多语言搜索工具
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'name',
-        search,
-        language,
-        'product',
-      );
-      queryBuilder.orWhere('product.casNo LIKE :search', {
-        search: `%${search}%`,
-      });
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'activeIngredient',
-        search,
-        language,
-        'product',
-      );
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'description',
-        search,
-        language,
-        'product',
+      // 直接使用JSON_EXTRACT进行多语言搜索，参考企业搜索的实现
+      queryBuilder.andWhere(
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."zh-CN"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."en"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."es"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."zh-CN"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."en"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."es"')) LIKE :search OR ` +
+        `product.registrationNumber LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.details, '$.description')) LIKE :search)`,
+        { search: `%${search}%` }
       );
     }
 
     if (category) {
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'category',
-        category,
-        language,
-        'product',
+      queryBuilder.andWhere(
+        `JSON_UNQUOTE(JSON_EXTRACT(product.details, '$.productCategory')) LIKE :category`,
+        { category: `%${category}%` }
       );
     }
 
@@ -96,11 +81,17 @@ export class ProductsService {
       where: {
         id,
         status: ProductStatus.ACTIVE,
+        isListed: true,
       },
       relations: ['supplier'],
     });
 
     if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    // 确保供应商也是激活状态
+    if (product.supplier && product.supplier.status !== CompanyStatus.ACTIVE) {
       throw new NotFoundException('Product not found');
     }
 
@@ -144,30 +135,17 @@ export class ProductsService {
       });
 
     if (search) {
-      // 使用多语言搜索工具
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'name',
-        search,
-        undefined,
-        'product',
-      );
-      queryBuilder.orWhere('product.casNo LIKE :search', {
-        search: `%${search}%`,
-      });
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'activeIngredient',
-        search,
-        undefined,
-        'product',
-      );
-      MultiLangQueryUtil.addMultiLangSearch(
-        queryBuilder,
-        'description',
-        search,
-        undefined,
-        'product',
+      // 直接使用JSON_EXTRACT进行多语言搜索，参考企业搜索的实现
+      queryBuilder.andWhere(
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."zh-CN"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."en"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$."es"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."zh-CN"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."en"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$."es"')) LIKE :search OR ` +
+        `product.registrationNumber LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.details, '$.description')) LIKE :search)`,
+        { search: `%${search}%` }
       );
     }
 

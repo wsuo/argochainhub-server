@@ -122,3 +122,25 @@
 - **数据驱动**: 完整的沟通记录便于业务分析和优化
 
 项目开发圆满完成，所有功能均已测试通过，可以投入生产使用。
+
+## 补充说明
+
+### 新增询价状态字典
+根据项目开发规范要求，已在字典管理系统中新增了询价状态字典：
+
+#### 字典分类
+- **分类代码**: `inquiry_status`
+- **分类名称**: 询价状态（中文）/ Inquiry Status（英文）/ Estado de Consulta（西班牙文）
+- **说明**: 询价单状态分类
+
+#### 字典值
+| 代码 | 中文名称 | 英文名称 | 西班牙文名称 | 描述 |
+|------|----------|----------|-------------|------|
+| `pending_quote` | 待报价 | Pending Quote | Pendiente de Cotización | 等待供应商报价 |
+| `quoted` | 已报价 | Quoted | Cotizado | 供应商已提供报价 |
+| `confirmed` | 已确认 | Confirmed | Confirmado | 采购商已确认报价 |
+| `declined` | 已拒绝 | Declined | Rechazado | 询价或报价被拒绝 |
+| `expired` | 已过期 | Expired | Expirado | 询价已过期 |
+| `cancelled` | 已取消 | Cancelled | Cancelado | 询价已被取消 |
+
+这些字典值与项目中的 `InquiryStatus` 枚举保持完全一致，确保了数据的统一性和规范性。
