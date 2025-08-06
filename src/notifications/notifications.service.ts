@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -10,6 +10,7 @@ import { User } from '../entities/user.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { NotificationGateway } from './notification.gateway';
 
 @Injectable()
 export class NotificationsService {
@@ -18,6 +19,8 @@ export class NotificationsService {
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Inject(forwardRef(() => NotificationGateway))
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async createNotification(
@@ -34,13 +37,26 @@ export class NotificationsService {
     content: string,
     data?: any,
   ): Promise<Notification> {
-    return this.createNotification({
+    const notification = await this.createNotification({
       userId,
       type,
       title,
       content,
       data,
     });
+
+    // 实时推送通知
+    await this.notificationGateway.sendNotificationToUser(userId, {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      content: notification.content,
+      data: notification.data,
+      createdAt: notification.createdAt,
+      requiresTokenRefresh: data?.requiresTokenRefresh || false,
+    });
+
+    return notification;
   }
 
   async createNotificationForCompany(
@@ -108,12 +124,17 @@ export class NotificationsService {
   }
 
   async getUnreadCount(userId: number): Promise<number> {
-    return this.notificationRepository.count({
+    const count = await this.notificationRepository.count({
       where: {
         userId,
         status: NotificationStatus.UNREAD,
       },
     });
+
+    // 实时推送未读数量更新
+    this.notificationGateway.server.to(`user_${userId}`).emit('unread_count', { count });
+
+    return count;
   }
 
   async markAsRead(user: User, id: number): Promise<Notification> {
@@ -128,7 +149,19 @@ export class NotificationsService {
     notification.status = NotificationStatus.READ;
     notification.readAt = new Date();
 
-    return this.notificationRepository.save(notification);
+    const savedNotification = await this.notificationRepository.save(notification);
+
+    // 推送未读数量更新
+    const newUnreadCount = await this.notificationRepository.count({
+      where: { userId: user.id, status: NotificationStatus.UNREAD },
+    });
+    
+    await this.notificationGateway.sendNotificationToUser(user.id, {
+      type: 'unread_count_update',
+      count: newUnreadCount,
+    });
+
+    return savedNotification;
   }
 
   async markAllAsRead(user: User): Promise<void> {
@@ -257,6 +290,22 @@ export class NotificationsService {
         relatedId: companyId,
         relatedType: 'company',
         actionUrl: '/company/profile',
+        requiresTokenRefresh: true, // 企业认证通过需要刷新token
+      },
+    );
+  }
+
+  async notifyUserCompanyApproved(userId: number, companyId: number): Promise<void> {
+    await this.createNotificationForUser(
+      userId,
+      NotificationType.COMPANY_APPROVED,
+      '企业认证通过',
+      '恭喜！您的企业认证已通过审核，现在可以正常使用平台功能',
+      {
+        relatedId: companyId,
+        relatedType: 'company',
+        actionUrl: '/company/profile',
+        requiresTokenRefresh: true, // 企业认证通过需要刷新token
       },
     );
   }

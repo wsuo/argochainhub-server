@@ -50,6 +50,7 @@ export class Notification extends BaseEntity {
     relatedId?: number;
     relatedType?: string;
     actionUrl?: string;
+    requiresTokenRefresh?: boolean; // 是否需要刷新token
     [key: string]: any;
   };
 
