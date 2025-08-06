@@ -15,11 +15,14 @@ import {
   CompanyStatus,
 } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
+import { Communication, RelatedService } from '../entities/communication.entity';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { QuoteInquiryDto } from './dto/quote-inquiry.dto';
 import { SearchInquiriesDto } from './dto/search-inquiries.dto';
 import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { GetMessagesDto } from './dto/get-messages.dto';
 
 @Injectable()
 export class InquiriesService {
@@ -32,6 +35,8 @@ export class InquiriesService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
+    @InjectRepository(Communication)
+    private readonly communicationRepository: Repository<Communication>,
   ) {}
 
   async createInquiry(
@@ -189,6 +194,28 @@ export class InquiriesService {
     return inquiry;
   }
 
+  async getInquiryDetailWithMessages(user: User, id: number) {
+    const inquiry = await this.getInquiryDetail(user, id);
+    
+    // 获取最近的消息记录
+    const recentMessages = await this.communicationRepository
+      .createQueryBuilder('communication')
+      .leftJoinAndSelect('communication.sender', 'sender')
+      .leftJoinAndSelect('sender.company', 'company')
+      .where('communication.relatedService = :service', {
+        service: RelatedService.INQUIRY,
+      })
+      .andWhere('communication.relatedId = :inquiryId', { inquiryId: id })
+      .orderBy('communication.createdAt', 'DESC')
+      .limit(5) // 只返回最近5条消息
+      .getMany();
+
+    return {
+      ...inquiry,
+      recentMessages,
+    };
+  }
+
   async quoteInquiry(
     user: User,
     id: number,
@@ -300,5 +327,63 @@ export class InquiriesService {
       .toString()
       .padStart(3, '0');
     return `INQ${timestamp}${random}`;
+  }
+
+  async sendMessage(
+    user: User,
+    inquiryId: number,
+    sendMessageDto: SendMessageDto,
+  ): Promise<Communication> {
+    // 验证询价单存在且用户有权限
+    const inquiry = await this.getInquiryDetail(user, inquiryId);
+
+    // 创建消息
+    const communication = this.communicationRepository.create({
+      relatedService: RelatedService.INQUIRY,
+      relatedId: inquiryId,
+      message: sendMessageDto.message,
+      senderId: user.id,
+    });
+
+    return this.communicationRepository.save(communication);
+  }
+
+  async getMessages(
+    user: User,
+    inquiryId: number,
+    getMessagesDto: GetMessagesDto,
+  ): Promise<PaginatedResult<Communication>> {
+    // 验证询价单存在且用户有权限
+    await this.getInquiryDetail(user, inquiryId);
+
+    const { page = 1, limit = 20, desc = true } = getMessagesDto;
+
+    const queryBuilder = this.communicationRepository
+      .createQueryBuilder('communication')
+      .leftJoinAndSelect('communication.sender', 'sender')
+      .leftJoinAndSelect('sender.company', 'company')
+      .where('communication.relatedService = :service', {
+        service: RelatedService.INQUIRY,
+      })
+      .andWhere('communication.relatedId = :inquiryId', { inquiryId });
+
+    const orderDirection = desc ? 'DESC' : 'ASC';
+    queryBuilder.orderBy('communication.createdAt', orderDirection);
+
+    const [messages, total] = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data: messages,
+      meta: {
+        totalItems: total,
+        itemCount: messages.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
   }
 }

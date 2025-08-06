@@ -29,6 +29,8 @@ import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { QuoteInquiryDto } from './dto/quote-inquiry.dto';
 import { SearchInquiriesDto } from './dto/search-inquiries.dto';
 import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { GetMessagesDto } from './dto/get-messages.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('询价管理')
@@ -74,7 +76,7 @@ export class InquiriesController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const inquiry = await this.inquiriesService.getInquiryDetail(user, id);
+    const inquiry = await this.inquiriesService.getInquiryDetailWithMessages(user, id);
     return ResponseWrapperUtil.success(inquiry, '获取询价单详情成功');
   }
 
@@ -136,5 +138,35 @@ export class InquiriesController {
   ) {
     const result = await this.inquiriesService.cancelInquiry(user, id);
     return ResponseWrapperUtil.success(result, '取消成功');
+  }
+
+  @Post(':id/messages')
+  @ApiOperation({ summary: '发送询价消息' })
+  @ApiParam({ name: 'id', description: '询价单ID' })
+  @ApiResponse({ status: 201, description: '消息发送成功' })
+  @ApiResponse({ status: 403, description: '无权限访问此询价单' })
+  @ApiResponse({ status: 404, description: '询价单不存在' })
+  async sendMessage(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() sendMessageDto: SendMessageDto,
+  ) {
+    const result = await this.inquiriesService.sendMessage(user, id, sendMessageDto);
+    return ResponseWrapperUtil.success(result, '消息发送成功');
+  }
+
+  @Get(':id/messages')
+  @ApiOperation({ summary: '获取询价消息历史' })
+  @ApiParam({ name: 'id', description: '询价单ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 403, description: '无权限访问此询价单' })
+  @ApiResponse({ status: 404, description: '询价单不存在' })
+  async getMessages(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @Query() getMessagesDto: GetMessagesDto,
+  ) {
+    const result = await this.inquiriesService.getMessages(user, id, getMessagesDto);
+    return ResponseWrapperUtil.successWithPagination(result, '获取消息历史成功');
   }
 }
