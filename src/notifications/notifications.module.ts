@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Notification } from '../entities/notification.entity';
 import { AdminNotification } from '../entities/admin-notification.entity';
+import { DictionaryCategory } from '../entities/dictionary-category.entity';
+import { DictionaryItem } from '../entities/dictionary-item.entity';
 import { User } from '../entities/user.entity';
 import { AdminUser } from '../entities/admin-user.entity';
 import { Company } from '../entities/company.entity';
@@ -18,12 +20,15 @@ import { AdminNotificationsService } from './admin-notifications.service';
 import { SystemMonitorService } from './system-monitor.service';
 import { EventsService } from './events.service';
 import { NotificationGateway } from './notification.gateway';
+import { DictionaryService } from '../admin/services/dictionary.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Notification, 
       AdminNotification, 
+      DictionaryCategory,
+      DictionaryItem,
       User, 
       AdminUser, 
       Company, 
@@ -49,7 +54,8 @@ import { NotificationGateway } from './notification.gateway';
     AdminNotificationsService, 
     SystemMonitorService,
     EventsService, 
-    NotificationGateway
+    NotificationGateway,
+    DictionaryService
   ],
   exports: [
     NotificationsService, 
