@@ -46,6 +46,9 @@ export class DictionaryInitService {
       await this.initializeAiWorkflowStatuses();
       await this.initializeAiUserTypes();
       
+      // 通知系统相关字典
+      await this.initializeNotificationTypes();
+      
       // 3. 初始化国家数据
       await this.countryDictionaryService.initializeCountries();
       
@@ -312,6 +315,21 @@ export class DictionaryInitService {
         } as MultiLangText,
         isSystem: true,
         sortOrder: 17,
+      },
+      {
+        code: 'notification_type',
+        name: {
+          'zh-CN': '通知类型',
+          en: 'Notification Type',
+          es: 'Tipo de Notificación',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统消息通知类型分类',
+          en: 'System message notification type classification',
+          es: 'Clasificación de tipos de notificación de mensajes del sistema',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 18,
       },
     ];
 
@@ -1410,6 +1428,97 @@ export class DictionaryInitService {
       },
     ];
     await this.batchCreateItems('ai_user_type', aiUserTypes);
+  }
+
+  private async initializeNotificationTypes(): Promise<void> {
+    const notificationTypes = [
+      {
+        code: 'INQUIRY_NEW',
+        name: {
+          'zh-CN': '新询价单',
+          en: 'New Inquiry',
+          es: 'Nueva Consulta',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '收到新的询价单时发送的通知',
+          en: 'Notification sent when receiving new inquiry',
+          es: 'Notificación enviada al recibir una nueva consulta',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'INQUIRY_QUOTED',
+        name: {
+          'zh-CN': '询价报价',
+          en: 'Inquiry Quoted',
+          es: 'Consulta Cotizada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '供应商对询价单进行报价时发送的通知',
+          en: 'Notification sent when supplier quotes an inquiry',
+          es: 'Notificación enviada cuando el proveedor cotiza una consulta',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'PRODUCT_APPROVED',
+        name: {
+          'zh-CN': '产品审核通过',
+          en: 'Product Approved',
+          es: 'Producto Aprobado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品通过管理员审核时发送的通知',
+          en: 'Notification sent when product is approved by administrator',
+          es: 'Notificación enviada cuando el producto es aprobado por el administrador',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'PRODUCT_REJECTED',
+        name: {
+          'zh-CN': '产品审核被拒',
+          en: 'Product Rejected',
+          es: 'Producto Rechazado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品被管理员拒绝时发送的通知',
+          en: 'Notification sent when product is rejected by administrator',
+          es: 'Notificación enviada cuando el producto es rechazado por el administrador',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'COMPANY_APPROVED',
+        name: {
+          'zh-CN': '企业认证通过',
+          en: 'Company Approved',
+          es: 'Empresa Aprobada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '企业认证申请通过时发送的通知，会触发Token刷新',
+          en: 'Notification sent when company certification is approved, triggers token refresh',
+          es: 'Notificación enviada cuando se aprueba la certificación de la empresa, desencadena actualización de token',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+      {
+        code: 'SUBSCRIPTION_EXPIRING',
+        name: {
+          'zh-CN': '会员即将到期',
+          en: 'Subscription Expiring',
+          es: 'Suscripción por Expirar',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'VIP会员即将到期时发送的提醒通知',
+          en: 'Reminder notification sent when VIP membership is about to expire',
+          es: 'Notificación de recordatorio enviada cuando la membresía VIP está a punto de expirar',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+    ];
+
+    await this.batchCreateItems('notification_type', notificationTypes);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {
