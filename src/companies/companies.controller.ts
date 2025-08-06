@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Body,
   Param,
@@ -21,12 +22,28 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
+import { CreateBuyerCompanyDto } from './dto/create-buyer-company.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('企业管理')
-@Controller()
+@Controller('companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
+
+  @Post('profile/company')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '个人采购商企业认证申请' })
+  @ApiResponse({ status: 201, description: '企业认证申请提交成功，请等待审核' })
+  @ApiResponse({ status: 400, description: '用户已关联企业，无法重复申请' })
+  @ApiResponse({ status: 403, description: '只有个人采购商可以申请企业认证' })
+  async createBuyerCompany(
+    @CurrentUser() user: User,
+    @Body() createBuyerCompanyDto: CreateBuyerCompanyDto,
+  ) {
+    const company = await this.companiesService.createBuyerCompany(user, createBuyerCompanyDto);
+    return ResponseWrapperUtil.success(company, '企业认证申请提交成功，请等待管理员审核通过');
+  }
 
   @Get('profile/company')
   @UseGuards(JwtAuthGuard)

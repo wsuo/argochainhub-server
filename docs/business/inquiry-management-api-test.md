@@ -22,6 +22,12 @@
 - **公司**: 上海农药供应商
 - **状态**: 已认证 (active)
 
+### 个人采购商账号（需要企业认证）
+- **邮箱**: individual.buyer@test.com
+- **密码**: Test123!
+- **用户类型**: individual_buyer
+- **状态**: 需要企业认证才能访问询价功能
+
 ## 测试数据
 系统已创建3条测试询价记录：
 1. **询价ID 5** - 状态: `pending_quote` (等待报价)
@@ -73,6 +79,116 @@ Content-Type: application/json
 {
   "email": "supplier@test.com",
   "password": "Test123!"
+}
+```
+
+### 1.3 个人采购商企业认证流程
+
+个人采购商注册后，需要通过企业认证才能访问询价功能。
+
+#### 1.3.1 个人采购商登录
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "individual.buyer@test.com",
+  "password": "Test123!"
+}
+```
+
+#### 1.3.2 提交企业认证申请
+```http
+POST /api/v1/companies/profile/company
+Authorization: Bearer <individual_buyer_token>
+Content-Type: application/json
+
+{
+  "companyName": {
+    "zh-CN": "上海化工贸易有限公司",
+    "en": "Shanghai Chemical Trading Co., Ltd.",
+    "es": "Shanghai Chemical Trading Co., Ltd."
+  },
+  "businessScope": {
+    "zh-CN": "专业从事农药、化肥等农化产品的采购与贸易业务",
+    "en": "Professional in procurement and trading of pesticides, fertilizers and other agrochemical products",
+    "es": "Profesional en adquisición y comercio de pesticidas, fertilizantes y otros productos agroquímicos"
+  },
+  "mainProducts": {
+    "zh-CN": "除草剂、杀虫剂、杀菌剂采购",
+    "en": "Herbicides, Insecticides, Fungicides procurement",
+    "es": "Adquisición de herbicidas, insecticidas, fungicidas"
+  },
+  "mainSuppliers": {
+    "zh-CN": "先正达、拜耳作物科学、巴斯夫",
+    "en": "Syngenta, Bayer Crop Science, BASF",
+    "es": "Syngenta, Bayer Crop Science, BASF"
+  },
+  "companySize": "medium",
+  "country": "cn",
+  "businessCategories": ["domestic_trade", "international_trade"],
+  "phone": "+86-21-12345678",
+  "address": "上海市浦东新区张江高科技园区",
+  "website": "https://www.shanghai-chem.com",
+  "registrationNumber": "91310000123456789X",
+  "taxNumber": "310000123456789",
+  "annualImportExportValue": 1500000.00,
+  "businessLicenseUrl": "https://example.com/license.jpg",
+  "companyPhotosUrls": ["https://example.com/office1.jpg", "https://example.com/warehouse.jpg"]
+}
+```
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "message": "企业认证申请提交成功，请等待管理员审核通过",
+  "data": {
+    "id": "23",
+    "name": {
+      "zh-CN": "上海化工贸易有限公司",
+      "en": "Shanghai Chemical Trading Co., Ltd.",
+      "es": "Shanghai Chemical Trading Co., Ltd."
+    },
+    "type": "buyer",
+    "status": "pending_review"
+  }
+}
+```
+
+#### 1.3.3 管理员审核通过
+管理员将企业状态更新为 `active` 后，用户可以重新登录获取新的token：
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "individual.buyer@test.com",
+  "password": "Test123!"
+}
+```
+
+**认证后的响应示例**:
+```json
+{
+  "success": true,
+  "message": "登录成功",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": "20",
+      "email": "individual.buyer@test.com",
+      "name": "个人采购商张三",
+      "userType": "individual_buyer",
+      "company": {
+        "id": "23",
+        "name": {"zh-CN": "上海化工贸易有限公司"},
+        "type": "buyer",
+        "status": "active"
+      }
+    }
+  }
 }
 ```
 
@@ -299,6 +415,8 @@ Authorization: Bearer <token>
 ## 3. 业务流程测试
 
 ### 3.1 完整的询价沟通流程
+
+#### 标准企业用户流程
 1. **采购商发起询价** → 系统创建询价记录
 2. **采购商发送询价消息** → 说明采购需求
 3. **供应商查看询价** → 了解具体要求
@@ -307,6 +425,15 @@ Authorization: Bearer <token>
 6. **采购商查看报价** → 通过消息进一步讨论细节
 7. **采购商确认订单** → 更新询价状态为 `confirmed`
 8. **双方继续沟通** → 关于合同、发货等细节
+
+#### 个人采购商认证流程
+1. **个人采购商注册** → 用户类型为 `individual_buyer`
+2. **尝试访问询价** → 收到403错误："User must be associated with a company to access inquiries"
+3. **提交企业认证申请** → 通过 `POST /api/v1/companies/profile/company` 接口
+4. **等待管理员审核** → 企业状态为 `pending_review`
+5. **管理员审核通过** → 企业状态更新为 `active`
+6. **重新登录获取新token** → token包含企业信息
+7. **正常访问询价功能** → 可以创建询价、发送消息等
 
 ### 3.2 消息系统特点
 - ✅ **通用设计**: 支持 inquiry、sample、registration 三种业务类型
@@ -336,18 +463,117 @@ Authorization: Bearer <token>
 
 ## 5. 错误处理
 
-### 5.1 常见错误码
-- `400`: 请求参数错误
-- `401`: 未授权（token无效或过期）
-- `403`: 权限不足（公司未认证或角色不匹配）
-- `404`: 资源不存在（询价不存在）
-- `500`: 服务器内部错误
+### 5.1 询价列表接口 (`GET /api/v1/inquiries`) 错误类型
 
-### 5.2 权限检查
-- 只有已认证的公司（status = 'active'）才能参与询价业务
-- 采购商只能查看自己发起的询价
-- 供应商只能查看发送给自己的询价
-- 消息系统严格按照询价权限控制
+**HTTP 400 Bad Request:**
+- 请求参数格式错误（分页参数非数字等）
+
+**HTTP 401 Unauthorized:**
+- 未提供有效的JWT token
+- Token已过期或无效
+
+**HTTP 403 Forbidden:**
+- `"User must be associated with a company to access inquiries"` - 用户未关联公司（个人采购商需要企业认证）
+- `"Invalid company type for inquiry access"` - 公司类型无效（非采购商或供应商）
+- `"Company status must be active to access inquiries"` - 公司状态必须为active（企业认证未通过）
+
+**HTTP 500 Internal Server Error:**
+- 服务器内部错误
+
+### 5.2 询价详情接口 (`GET /api/v1/inquiries/{id}`) 错误类型
+
+**HTTP 401 Unauthorized:**
+- 未提供有效的JWT token
+
+**HTTP 403 Forbidden:**
+- `"You do not have permission to access this inquiry"` - 无权限访问此询价（不是该询价的买家或卖家）
+
+**HTTP 404 Not Found:**
+- `"Inquiry not found"` - 询价不存在
+
+### 5.3 发送消息接口 (`POST /api/v1/inquiries/{id}/messages`) 错误类型
+
+**HTTP 400 Bad Request:**
+- 消息内容为空或超过长度限制
+
+**HTTP 401 Unauthorized:**
+- 未提供有效的JWT token
+
+**HTTP 403 Forbidden:**
+- 无权限访问该询价（继承询价访问权限）
+
+**HTTP 404 Not Found:**
+- 询价不存在
+
+### 5.4 创建询价接口 (`POST /api/v1/inquiries`) 错误类型
+
+**HTTP 400 Bad Request:**
+- `"Invalid inquiry item: missing required product information"` - 询价项目缺少必要产品信息
+- `"Quote deadline must be in the future"` - 报价截止时间必须是未来时间
+
+**HTTP 403 Forbidden:**
+- `"Only buyers can create inquiries"` - 只有采购商可以创建询价
+
+**HTTP 404 Not Found:**
+- `"Supplier not found or inactive"` - 供应商不存在或未激活
+
+### 5.5 供应商报价接口 (`PATCH /api/v1/inquiries/{id}/quote`) 错误类型
+
+**HTTP 400 Bad Request:**
+- `"Cannot quote inquiry with status 'xxx'"` - 当前状态不允许报价
+- `"Quote deadline has passed"` - 报价截止时间已过
+
+**HTTP 403 Forbidden:**
+- `"Only the supplier can quote this inquiry"` - 只有指定供应商可以报价
+
+**HTTP 404 Not Found:**
+- 询价不存在
+
+### 5.6 确认询价接口 (`PATCH /api/v1/inquiries/{id}/confirm`) 错误类型
+
+**HTTP 400 Bad Request:**
+- `"Cannot confirm inquiry with status 'xxx'"` - 当前状态不允许确认
+
+**HTTP 403 Forbidden:**
+- `"Only the buyer can confirm this inquiry"` - 只有采购商可以确认
+
+### 5.7 拒绝询价接口 (`PATCH /api/v1/inquiries/{id}/decline`) 错误类型
+
+**HTTP 400 Bad Request:**
+- `"Cannot decline inquiry with status 'xxx'"` - 当前状态不允许拒绝
+
+**HTTP 403 Forbidden:**
+- `"Only buyer or supplier can decline this inquiry"` - 只有买家或卖家可以拒绝
+
+### 5.8 取消询价接口 (`PATCH /api/v1/inquiries/{id}/cancel`) 错误类型
+
+**HTTP 400 Bad Request:**
+- `"Cannot cancel inquiry with status 'xxx'"` - 当前状态不允许取消
+
+**HTTP 403 Forbidden:**
+- `"Only the buyer can cancel this inquiry"` - 只有采购商可以取消
+
+### 5.9 常见解决方案
+
+**403 权限错误解决方法:**
+1. 确保用户已登录且token有效
+2. 确认用户已关联公司且公司状态为`active`
+3. 确认用户公司类型正确（采购商/供应商）
+4. 确认用户有权限访问特定询价
+
+**个人采购商企业认证解决方案:**
+1. 用户类型为 `individual_buyer` 的用户需要先进行企业认证
+2. 通过 `POST /api/v1/companies/profile/company` 提交认证申请
+3. 等待管理员审核通过（企业状态变为 `active`）
+4. 重新登录获取包含企业信息的新token
+5. 企业认证后可正常访问询价功能
+
+**认证流程:**
+1. 用户必须先登录获取token
+2. 个人采购商必须先完成企业认证
+3. 用户必须关联已激活的公司
+4. 公司类型必须是`buyer`或`supplier`
+5. 只能访问与自己公司相关的询价
 
 ---
 
@@ -390,9 +616,72 @@ curl -X POST http://localhost:3050/api/v1/auth/login \
 curl -X POST http://localhost:3050/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"supplier@test.com","password":"Test123!"}'
+
+# 个人采购商登录
+curl -X POST http://localhost:3050/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"individual.buyer@test.com","password":"Test123!"}'
 ```
 
-### A.2 核心功能测试
+### A.2 个人采购商企业认证测试
+```bash
+# 设置个人采购商Token
+INDIVIDUAL_BUYER_TOKEN="your_individual_buyer_token_here"
+
+# 提交企业认证申请
+curl -X POST http://localhost:3050/api/v1/companies/profile/company \
+  -H "Authorization: Bearer $INDIVIDUAL_BUYER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": {
+      "zh-CN": "上海化工贸易有限公司",
+      "en": "Shanghai Chemical Trading Co., Ltd.",
+      "es": "Shanghai Chemical Trading Co., Ltd."
+    },
+    "businessScope": {
+      "zh-CN": "专业从事农药、化肥等农化产品的采购与贸易业务",
+      "en": "Professional in procurement and trading of pesticides, fertilizers and other agrochemical products",
+      "es": "Profesional en adquisición y comercio de pesticidas, fertilizantes y otros productos agroquímicos"
+    },
+    "mainProducts": {
+      "zh-CN": "除草剂、杀虫剂、杀菌剂采购",
+      "en": "Herbicides, Insecticides, Fungicides procurement",
+      "es": "Adquisición de herbicidas, insecticidas, fungicidas"
+    },
+    "mainSuppliers": {
+      "zh-CN": "先正达、拜耳作物科学、巴斯夫",
+      "en": "Syngenta, Bayer Crop Science, BASF",
+      "es": "Syngenta, Bayer Crop Science, BASF"
+    },
+    "companySize": "medium",
+    "country": "cn",
+    "businessCategories": ["domestic_trade", "international_trade"],
+    "phone": "+86-21-12345678",
+    "address": "上海市浦东新区张江高科技园区",
+    "website": "https://www.shanghai-chem.com",
+    "registrationNumber": "91310000123456789X",
+    "taxNumber": "310000123456789",
+    "annualImportExportValue": 1500000.00,
+    "businessLicenseUrl": "https://example.com/license.jpg",
+    "companyPhotosUrls": ["https://example.com/office1.jpg", "https://example.com/warehouse.jpg"]
+  }'
+
+# 认证前访问询价（应返回403错误）
+curl -X GET http://localhost:3050/api/v1/inquiries \
+  -H "Authorization: Bearer $INDIVIDUAL_BUYER_TOKEN"
+
+# 管理员审核通过后，重新登录获取新Token
+curl -X POST http://localhost:3050/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"individual.buyer@test.com","password":"Test123!"}'
+
+# 使用新Token访问询价（应正常返回）
+NEW_TOKEN="new_token_after_certification"
+curl -X GET http://localhost:3050/api/v1/inquiries \
+  -H "Authorization: Bearer $NEW_TOKEN"
+```
+
+### A.3 核心功能测试
 ```bash
 # 设置Token
 BUYER_TOKEN="your_buyer_token_here"

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,7 +11,7 @@ import {
   CompanyType,
   CompanyStatus,
 } from '../entities/company.entity';
-import { User } from '../entities/user.entity';
+import { User, UserType } from '../entities/user.entity';
 import {
   Subscription,
   SubscriptionStatus,
@@ -18,6 +19,7 @@ import {
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
+import { CreateBuyerCompanyDto } from './dto/create-buyer-company.dto';
 
 @Injectable()
 export class CompaniesService {
@@ -26,6 +28,8 @@ export class CompaniesService {
     private readonly companyRepository: Repository<Company>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async getCompanyProfile(user: User): Promise<Company> {
@@ -165,5 +169,52 @@ export class CompaniesService {
     }
 
     return supplier;
+  }
+
+  async createBuyerCompany(
+    user: User,
+    createBuyerCompanyDto: CreateBuyerCompanyDto,
+  ): Promise<Company> {
+    // 验证用户类型和状态
+    if (user.userType !== UserType.INDIVIDUAL_BUYER) {
+      throw new ForbiddenException('只有个人采购商可以申请企业认证');
+    }
+
+    if (user.companyId) {
+      throw new BadRequestException('用户已关联企业，无法重复申请');
+    }
+
+    // 创建企业记录
+    const company = this.companyRepository.create({
+      name: createBuyerCompanyDto.companyName,
+      type: CompanyType.BUYER,
+      status: CompanyStatus.PENDING_REVIEW, // 需要审核
+      email: createBuyerCompanyDto.email,
+      country: createBuyerCompanyDto.country,
+      businessCategories: createBuyerCompanyDto.businessCategories,
+      businessScope: createBuyerCompanyDto.businessScope,
+      companySize: createBuyerCompanyDto.companySize,
+      mainProducts: createBuyerCompanyDto.mainProducts,
+      mainSuppliers: createBuyerCompanyDto.mainSuppliers,
+      annualImportExportValue: createBuyerCompanyDto.annualPurchaseValue,
+      registrationNumber: createBuyerCompanyDto.registrationNumber,
+      taxNumber: createBuyerCompanyDto.taxNumber,
+      businessLicenseUrl: createBuyerCompanyDto.businessLicenseUrl,
+      companyPhotosUrls: createBuyerCompanyDto.companyPhotosUrls,
+      profile: {
+        address: createBuyerCompanyDto.address,
+        phone: createBuyerCompanyDto.phone,
+        website: createBuyerCompanyDto.website,
+      },
+    });
+
+    const savedCompany = await this.companyRepository.save(company);
+
+    // 更新用户的企业关联
+    await this.userRepository.update(user.id, {
+      companyId: savedCompany.id,
+    });
+
+    return savedCompany;
   }
 }
