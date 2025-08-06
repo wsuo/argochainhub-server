@@ -49,6 +49,9 @@ export class DictionaryInitService {
       // 通知系统相关字典
       await this.initializeNotificationTypes();
       
+      // 管理员通知系统相关字典
+      await this.initializeAdminNotificationTypes();
+      
       // 3. 初始化国家数据
       await this.countryDictionaryService.initializeCountries();
       
@@ -330,6 +333,21 @@ export class DictionaryInitService {
         } as MultiLangText,
         isSystem: true,
         sortOrder: 18,
+      },
+      {
+        code: 'admin_notification_type',
+        name: {
+          'zh-CN': '管理员通知类型',
+          en: 'Admin Notification Type',
+          es: 'Tipo de Notificación de Administrador',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '后台管理员通知类型分类',
+          en: 'Backend administrator notification type classification',
+          es: 'Clasificación de tipos de notificación de administrador backend',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 19,
       },
     ];
 
@@ -1519,6 +1537,232 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('notification_type', notificationTypes);
+  }
+
+  private async initializeAdminNotificationTypes(): Promise<void> {
+    const adminNotificationTypes = [
+      // 审核提醒类
+      {
+        code: 'USER_REGISTRATION_PENDING',
+        name: {
+          'zh-CN': '用户注册待审核',
+          en: 'User Registration Pending',
+          es: 'Registro de Usuario Pendiente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '新用户注册待管理员审核',
+          en: 'New user registration pending admin review',
+          es: 'Nuevo registro de usuario pendiente de revisión del administrador',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'COMPANY_REVIEW_PENDING',
+        name: {
+          'zh-CN': '企业认证待审核',
+          en: 'Company Review Pending',
+          es: 'Revisión de Empresa Pendiente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '企业认证申请待管理员审核',
+          en: 'Company certification application pending admin review',
+          es: 'Aplicación de certificación de empresa pendiente de revisión del administrador',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'PRODUCT_REVIEW_PENDING',
+        name: {
+          'zh-CN': '产品审核待处理',
+          en: 'Product Review Pending',
+          es: 'Revisión de Producto Pendiente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品提交审核待管理员处理',
+          en: 'Product submitted for review pending admin processing',
+          es: 'Producto enviado para revisión pendiente de procesamiento del administrador',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'SAMPLE_REQUEST_PENDING',
+        name: {
+          'zh-CN': '样品申请待处理',
+          en: 'Sample Request Pending',
+          es: 'Solicitud de Muestra Pendiente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '新样品申请待管理员处理',
+          en: 'New sample request pending admin processing',
+          es: 'Nueva solicitud de muestra pendiente de procesamiento del administrador',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'REGISTRATION_REQUEST_PENDING',
+        name: {
+          'zh-CN': '登记申请待处理',
+          en: 'Registration Request Pending',
+          es: 'Solicitud de Registro Pendiente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品登记申请待管理员处理',
+          en: 'Product registration request pending admin processing',
+          es: 'Solicitud de registro de producto pendiente de procesamiento del administrador',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+
+      // 业务监控类
+      {
+        code: 'INQUIRY_CREATED',
+        name: {
+          'zh-CN': '新询价单创建',
+          en: 'Inquiry Created',
+          es: 'Consulta Creada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '平台新询价单创建，业务监控通知',
+          en: 'New inquiry created on platform, business monitoring notification',
+          es: 'Nueva consulta creada en la plataforma, notificación de monitoreo comercial',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+      {
+        code: 'ORDER_STATUS_CHANGED',
+        name: {
+          'zh-CN': '订单状态变更',
+          en: 'Order Status Changed',
+          es: 'Estado de Pedido Cambiado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '重要订单状态发生变更',
+          en: 'Important order status has changed',
+          es: 'El estado de un pedido importante ha cambiado',
+        } as MultiLangText,
+        sortOrder: 7,
+      },
+      {
+        code: 'USER_COMPLAINT',
+        name: {
+          'zh-CN': '用户投诉',
+          en: 'User Complaint',
+          es: 'Queja de Usuario',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '收到用户投诉，需要处理',
+          en: 'User complaint received, needs processing',
+          es: 'Queja de usuario recibida, necesita procesamiento',
+        } as MultiLangText,
+        sortOrder: 8,
+      },
+
+      // 运营提醒类
+      {
+        code: 'VIP_EXPIRING_BATCH',
+        name: {
+          'zh-CN': 'VIP会员批量到期',
+          en: 'VIP Memberships Expiring Batch',
+          es: 'Lote de Membresías VIP Expirando',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '批量VIP会员即将到期提醒',
+          en: 'Batch VIP memberships expiring reminder',
+          es: 'Recordatorio de lote de membresías VIP por expirar',
+        } as MultiLangText,
+        sortOrder: 9,
+      },
+      {
+        code: 'BUSINESS_METRICS_ALERT',
+        name: {
+          'zh-CN': '业务指标告警',
+          en: 'Business Metrics Alert',
+          es: 'Alerta de Métricas Comerciales',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '关键业务指标异常告警',
+          en: 'Critical business metrics anomaly alert',
+          es: 'Alerta de anomalía en métricas comerciales críticas',
+        } as MultiLangText,
+        sortOrder: 10,
+      },
+
+      // 系统告警类
+      {
+        code: 'API_ERROR_RATE_HIGH',
+        name: {
+          'zh-CN': 'API错误率过高',
+          en: 'API Error Rate High',
+          es: 'Tasa de Error de API Alta',
+        } as MultiLangText,
+        description: {
+          'zh-CN': 'API接口错误率超过阈值',
+          en: 'API interface error rate exceeds threshold',
+          es: 'La tasa de error de la interfaz API supera el umbral',
+        } as MultiLangText,
+        sortOrder: 11,
+      },
+      {
+        code: 'DATABASE_CONNECTION_ERROR',
+        name: {
+          'zh-CN': '数据库连接异常',
+          en: 'Database Connection Error',
+          es: 'Error de Conexión de Base de Datos',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '数据库连接出现异常',
+          en: 'Database connection anomaly occurred',
+          es: 'Se produjo una anomalía en la conexión de la base de datos',
+        } as MultiLangText,
+        sortOrder: 12,
+      },
+      {
+        code: 'SYSTEM_RESOURCE_WARNING',
+        name: {
+          'zh-CN': '系统资源告警',
+          en: 'System Resource Warning',
+          es: 'Advertencia de Recursos del Sistema',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统资源使用率过高告警',
+          en: 'System resource usage too high warning',
+          es: 'Advertencia de uso de recursos del sistema demasiado alto',
+        } as MultiLangText,
+        sortOrder: 13,
+      },
+      {
+        code: 'SECURITY_EVENT',
+        name: {
+          'zh-CN': '安全事件',
+          en: 'Security Event',
+          es: 'Evento de Seguridad',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '检测到安全相关事件',
+          en: 'Security-related event detected',
+          es: 'Evento relacionado con seguridad detectado',
+        } as MultiLangText,
+        sortOrder: 14,
+      },
+
+      // 系统通知类
+      {
+        code: 'SYSTEM_MAINTENANCE',
+        name: {
+          'zh-CN': '系统维护通知',
+          en: 'System Maintenance Notice',
+          es: 'Aviso de Mantenimiento del Sistema',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统维护计划通知',
+          en: 'System maintenance schedule notification',
+          es: 'Notificación de programación de mantenimiento del sistema',
+        } as MultiLangText,
+        sortOrder: 15,
+      },
+    ];
+
+    await this.batchCreateItems('admin_notification_type', adminNotificationTypes);
   }
 
   private async batchCreateItems(categoryCode: string, items: any[]): Promise<void> {
