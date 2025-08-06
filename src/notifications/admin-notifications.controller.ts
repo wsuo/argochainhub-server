@@ -20,6 +20,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { AdminNotificationsService, CreateAdminNotificationDto } from './admin-notifications.service';
+import { DictionaryService } from '../admin/services/dictionary.service';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { AdminPermissions } from '../common/decorators/admin-permissions.decorator';
 import { AdminPermissionsGuard } from '../common/guards/admin-permissions.guard';
@@ -64,7 +65,18 @@ class UpdateAdminNotificationDto {
 @UseGuards(AdminAuthGuard, AdminPermissionsGuard)
 @ApiBearerAuth()
 export class AdminNotificationsController {
-  constructor(private readonly adminNotificationsService: AdminNotificationsService) {}
+  constructor(
+    private readonly adminNotificationsService: AdminNotificationsService,
+    private readonly dictionaryService: DictionaryService,
+  ) {}
+
+  @Get('filter-tree')
+  @ApiOperation({ summary: '获取通知类型筛选树状结构' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getNotificationFilterTree() {
+    const tree = await this.buildNotificationFilterTree();
+    return ResponseWrapperUtil.success(tree, '获取筛选树状结构成功');
+  }
 
   @Get()
   @ApiOperation({ summary: '获取我的管理员通知列表' })
@@ -406,5 +418,160 @@ export class AdminNotificationsController {
       { count: notifications.length },
       '新询价单通知发送成功'
     );
+  }
+
+  /**
+   * 构建通知类型筛选树状结构
+   * 从枚举和字典数据动态构建，不硬编码
+   */
+  private async buildNotificationFilterTree() {
+    // 获取admin_notification_type字典数据
+    const notificationTypes = await this.dictionaryService.getDictionaryByCode('admin_notification_type');
+    
+    // 定义分类与类型的映射关系（基于业务逻辑）
+    const categoryTypeMapping: Record<AdminNotificationCategory, {
+      label: string;
+      value: AdminNotificationCategory;
+      children: Array<{ label: string; value: AdminNotificationType }>;
+    }> = {
+      [AdminNotificationCategory.REVIEW]: {
+        label: '审核类',
+        value: AdminNotificationCategory.REVIEW,
+        children: []
+      },
+      [AdminNotificationCategory.BUSINESS]: {
+        label: '业务类', 
+        value: AdminNotificationCategory.BUSINESS,
+        children: []
+      },
+      [AdminNotificationCategory.OPERATION]: {
+        label: '运营类',
+        value: AdminNotificationCategory.OPERATION,
+        children: []
+      },
+      [AdminNotificationCategory.SYSTEM]: {
+        label: '系统类',
+        value: AdminNotificationCategory.SYSTEM,
+        children: []
+      },
+      [AdminNotificationCategory.SECURITY]: {
+        label: '安全类',
+        value: AdminNotificationCategory.SECURITY,
+        children: []
+      }
+    };
+
+    // 根据通知类型枚举值，将其分配到对应的分类下
+    for (const typeItem of notificationTypes) {
+      // 字典中的code是大写+下划线，需要转换为小写+下划线来匹配枚举
+      const typeCode = typeItem.code.toLowerCase() as AdminNotificationType;
+      const typeName = typeItem.name['zh-CN'] || typeItem.name['en'] || typeCode;
+
+      // 根据通知类型的业务含义确定其所属分类
+      let category: AdminNotificationCategory;
+      
+      if (this.isReviewType(typeCode)) {
+        category = AdminNotificationCategory.REVIEW;
+      } else if (this.isBusinessType(typeCode)) {
+        category = AdminNotificationCategory.BUSINESS;  
+      } else if (this.isOperationType(typeCode)) {
+        category = AdminNotificationCategory.OPERATION;
+      } else if (this.isSecurityType(typeCode)) {
+        category = AdminNotificationCategory.SECURITY;
+      } else if (this.isSystemType(typeCode)) {
+        category = AdminNotificationCategory.SYSTEM;
+      } else {
+        // 默认归类到系统类
+        category = AdminNotificationCategory.SYSTEM;
+      }
+
+      categoryTypeMapping[category].children.push({
+        label: typeName,
+        value: typeCode // 使用小写的枚举值
+      });
+    }
+
+    // 按照sortOrder对children排序
+    for (const category of Object.values(categoryTypeMapping)) {
+      category.children.sort((a, b) => {
+        const aItem = notificationTypes.find(item => item.code.toLowerCase() === a.value);
+        const bItem = notificationTypes.find(item => item.code.toLowerCase() === b.value);
+        return (aItem?.sortOrder || 0) - (bItem?.sortOrder || 0);
+      });
+    }
+
+    return Object.values(categoryTypeMapping);
+  }
+
+  /**
+   * 判断是否为审核类通知
+   */
+  private isReviewType(type: AdminNotificationType): boolean {
+    const reviewTypes = [
+      AdminNotificationType.USER_REGISTRATION_PENDING,
+      AdminNotificationType.COMPANY_REVIEW_PENDING,
+      AdminNotificationType.PRODUCT_REVIEW_PENDING,
+      AdminNotificationType.SAMPLE_REQUEST_PENDING,
+      AdminNotificationType.REGISTRATION_REQUEST_PENDING,
+      AdminNotificationType.COMPANY_APPROVED,
+      AdminNotificationType.COMPANY_REJECTED,
+      AdminNotificationType.PRODUCT_APPROVED,
+      AdminNotificationType.PRODUCT_REJECTED,
+    ];
+    return reviewTypes.includes(type);
+  }
+
+  /**
+   * 判断是否为业务类通知
+   */
+  private isBusinessType(type: AdminNotificationType): boolean {
+    const businessTypes = [
+      AdminNotificationType.INQUIRY_CREATED,
+      AdminNotificationType.ORDER_STATUS_CHANGED,
+      AdminNotificationType.USER_COMPLAINT,
+      AdminNotificationType.FEEDBACK_RECEIVED,
+      AdminNotificationType.BUSINESS_TRANSACTION_SUCCESS,
+      AdminNotificationType.BUSINESS_TRANSACTION_FAILED,
+    ];
+    return businessTypes.includes(type);
+  }
+
+  /**
+   * 判断是否为运营类通知
+   */
+  private isOperationType(type: AdminNotificationType): boolean {
+    const operationTypes = [
+      AdminNotificationType.VIP_EXPIRING_BATCH,
+      AdminNotificationType.SUBSCRIPTION_METRICS,
+      AdminNotificationType.BUSINESS_METRICS_ALERT,
+      AdminNotificationType.REVENUE_ALERT,
+    ];
+    return operationTypes.includes(type);
+  }
+
+  /**
+   * 判断是否为安全类通知
+   */
+  private isSecurityType(type: AdminNotificationType): boolean {
+    const securityTypes = [
+      AdminNotificationType.SECURITY_EVENT,
+    ];
+    return securityTypes.includes(type);
+  }
+
+  /**
+   * 判断是否为系统类通知
+   */
+  private isSystemType(type: AdminNotificationType): boolean {
+    const systemTypes = [
+      AdminNotificationType.API_ERROR_RATE_HIGH,
+      AdminNotificationType.DATABASE_CONNECTION_ERROR,
+      AdminNotificationType.SYSTEM_RESOURCE_WARNING,
+      AdminNotificationType.BACKUP_FAILED,
+      AdminNotificationType.SYSTEM_MAINTENANCE,
+      AdminNotificationType.VERSION_UPDATE,
+      AdminNotificationType.FEATURE_ANNOUNCEMENT,
+    ];
+    return systemTypes.includes(type);
   }
 }
