@@ -72,3 +72,5 @@ docs/
 
 # 项目开发文档（不提交到仓库）
 CLAUDE.md
+test*
+@test-scripts/

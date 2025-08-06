@@ -292,4 +292,45 @@ export class AuthService {
       },
     };
   }
+
+  async refreshToken(user: User) {
+    // 重新查询用户最新信息，包含企业关联
+    const freshUser = await this.userRepository.findOne({
+      where: { id: user.id, isActive: true },
+      relations: ['company'],
+    });
+
+    if (!freshUser) {
+      throw new UnauthorizedException('用户不存在或已被禁用');
+    }
+
+    // 生成包含最新信息的JWT
+    const payload: JwtPayload = {
+      sub: freshUser.id,
+      email: freshUser.email,
+      companyId: freshUser.companyId || null,
+      companyType: freshUser.company?.type || null,
+      userType: freshUser.userType,
+      role: freshUser.role,
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: freshUser.id,
+        email: freshUser.email,
+        name: freshUser.name,
+        userType: freshUser.userType,
+        role: freshUser.role,
+        company: freshUser.company ? {
+          id: freshUser.company.id,
+          name: freshUser.company.name,
+          type: freshUser.company.type,
+          status: freshUser.company.status,
+        } : null,
+      },
+    };
+  }
 }

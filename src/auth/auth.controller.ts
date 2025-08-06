@@ -75,6 +75,17 @@ export class AuthController {
     return ResponseWrapperUtil.successNoData('登出成功');
   }
 
+  @Post('refresh-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '刷新Token获取最新用户信息' })
+  @ApiResponse({ status: 200, description: 'Token刷新成功' })
+  @ApiResponse({ status: 401, description: '用户不存在或已被禁用' })
+  async refreshToken(@CurrentUser() user: User) {
+    const result = await this.authService.refreshToken(user);
+    return ResponseWrapperUtil.success(result, 'Token刷新成功');
+  }
+
   @Post('admin/login')
   @ApiOperation({ summary: '系统管理员登录' })
   @ApiResponse({ status: 200, description: '登录成功' })

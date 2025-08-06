@@ -23,6 +23,8 @@ import { SearchInquiriesDto } from './dto/search-inquiries.dto';
 import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
+import { AuthForbiddenException } from '../common/exceptions/auth-forbidden.exception';
+import { AuthErrorCode } from '../common/constants/error-codes';
 
 @Injectable()
 export class InquiriesService {
@@ -134,7 +136,11 @@ export class InquiriesService {
 
     // 根据用户企业类型确定查询条件
     if (!user.company) {
-      throw new ForbiddenException('User must be associated with a company to access inquiries');
+      throw new AuthForbiddenException(AuthErrorCode.COMPANY_NOT_ASSOCIATED);
+    }
+
+    if (user.company.status !== CompanyStatus.ACTIVE) {
+      throw new AuthForbiddenException(AuthErrorCode.COMPANY_NOT_ACTIVE);
     }
 
     if (user.company.type === CompanyType.BUYER) {
@@ -146,7 +152,7 @@ export class InquiriesService {
         companyId: user.companyId,
       });
     } else {
-      throw new ForbiddenException('Invalid company type for inquiry access');
+      throw new AuthForbiddenException(AuthErrorCode.INVALID_COMPANY_TYPE);
     }
 
     if (status) {
