@@ -26,6 +26,7 @@ export class DictionaryInitService {
       await this.initializeProductStatuses();
       await this.initializeFormulationTypes();
       await this.initializeProductCategories();
+      await this.initializeInquiryStatuses();
       
       // 权限系统字典
       await this.initializeAdminRoles();
@@ -163,6 +164,21 @@ export class DictionaryInitService {
         sortOrder: 7,
       },
       {
+        code: 'inquiry_status',
+        name: {
+          'zh-CN': '询价状态',
+          en: 'Inquiry Status',
+          es: 'Estado de Consulta',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '询价单状态分类',
+          en: 'Inquiry status classification',
+          es: 'Clasificación del estado de consulta',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 8,
+      },
+      {
         code: 'countries',
         name: {
           'zh-CN': '国家地区',
@@ -175,7 +191,7 @@ export class DictionaryInitService {
           es: 'Lista de países y regiones del mundo',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 8,
+        sortOrder: 9,
       },
       {
         code: 'admin_roles',
@@ -190,7 +206,7 @@ export class DictionaryInitService {
           es: 'Clasificación de roles de administrador del sistema',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 9,
+        sortOrder: 10,
       },
       {
         code: 'admin_permissions',
@@ -205,7 +221,7 @@ export class DictionaryInitService {
           es: 'Definiciones de permisos de administrador del sistema',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 10,
+        sortOrder: 11,
       },
       {
         code: 'vip_level',
@@ -220,7 +236,7 @@ export class DictionaryInitService {
           es: 'Clasificación de nivel de membresía VIP',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 11,
+        sortOrder: 12,
       },
       {
         code: 'news_category',
@@ -235,7 +251,7 @@ export class DictionaryInitService {
           es: 'Clasificación de contenido de noticias',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 12,
+        sortOrder: 13,
       },
       {
         code: 'email_trigger_event',
@@ -250,7 +266,7 @@ export class DictionaryInitService {
           es: 'Tipos de eventos de activación de plantillas de correo',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 13,
+        sortOrder: 14,
       },
       {
         code: 'ai_message_type',
@@ -265,7 +281,7 @@ export class DictionaryInitService {
           es: 'Tipos de mensajes en conversaciones de IA',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 14,
+        sortOrder: 15,
       },
       {
         code: 'ai_workflow_status',
@@ -280,7 +296,7 @@ export class DictionaryInitService {
           es: 'Estado de ejecución del flujo de trabajo de IA',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 15,
+        sortOrder: 16,
       },
       {
         code: 'ai_user_type',
@@ -295,7 +311,7 @@ export class DictionaryInitService {
           es: 'Tipos de usuarios en conversaciones de IA',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 16,
+        sortOrder: 17,
       },
     ];
 
@@ -720,6 +736,97 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('company_size', companySizes);
+  }
+
+  private async initializeInquiryStatuses(): Promise<void> {
+    const inquiryStatuses = [
+      {
+        code: 'pending_quote',
+        name: {
+          'zh-CN': '待报价',
+          en: 'Pending Quote',
+          es: 'Pendiente de Cotización',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '等待供应商报价',
+          en: 'Waiting for supplier quote',
+          es: 'Esperando cotización del proveedor',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'quoted',
+        name: {
+          'zh-CN': '已报价',
+          en: 'Quoted',
+          es: 'Cotizado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '供应商已提供报价',
+          en: 'Supplier has provided quote',
+          es: 'El proveedor ha proporcionado cotización',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'confirmed',
+        name: {
+          'zh-CN': '已确认',
+          en: 'Confirmed',
+          es: 'Confirmado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '采购商已确认报价',
+          en: 'Buyer has confirmed the quote',
+          es: 'El comprador ha confirmado la cotización',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'declined',
+        name: {
+          'zh-CN': '已拒绝',
+          en: 'Declined',
+          es: 'Rechazado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '询价或报价被拒绝',
+          en: 'Inquiry or quote has been declined',
+          es: 'La consulta o cotización ha sido rechazada',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'expired',
+        name: {
+          'zh-CN': '已过期',
+          en: 'Expired',
+          es: 'Expirado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '询价已过期',
+          en: 'Inquiry has expired',
+          es: 'La consulta ha expirado',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+      {
+        code: 'cancelled',
+        name: {
+          'zh-CN': '已取消',
+          en: 'Cancelled',
+          es: 'Cancelado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '询价已被取消',
+          en: 'Inquiry has been cancelled',
+          es: 'La consulta ha sido cancelada',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+    ];
+
+    await this.batchCreateItems('inquiry_status', inquiryStatuses);
   }
 
   private async initializeAdminRoles(): Promise<void> {
