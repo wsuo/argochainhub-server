@@ -78,6 +78,7 @@ import { VolcTranslateService } from './services/volc-translate.service';
 import { SupportedLanguage } from '../types/multilang';
 import { MultiLangQueryUtil } from '../utils/multilang-query.util';
 import { AdminPermission, DEFAULT_ROLE_PERMISSIONS, PermissionHelper } from '../types/permissions';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AdminService {
@@ -103,6 +104,7 @@ export class AdminService {
     @InjectRepository(Plan)
     private readonly planRepository: Repository<Plan>,
     private readonly volcTranslateService: VolcTranslateService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // 获取仪表盘图表数据
@@ -538,6 +540,7 @@ export class AdminService {
   ): Promise<Company> {
     const company = await this.companyRepository.findOne({
       where: { id: companyId },
+      relations: ['users'], // 加载关联的用户
     });
 
     if (!company) {
@@ -551,9 +554,18 @@ export class AdminService {
     const { approved, reason } = reviewDto;
 
     company.status = approved ? CompanyStatus.ACTIVE : CompanyStatus.DISABLED;
-    // 审核信息可以记录在单独的字段或日志中，这里简化处理
+    
+    const savedCompany = await this.companyRepository.save(company);
 
-    return this.companyRepository.save(company);
+    // 发送通知
+    if (approved && company.users && company.users.length > 0) {
+      // 企业审核通过，给相关用户发送通知
+      for (const user of company.users) {
+        await this.notificationsService.notifyUserCompanyApproved(user.id, companyId);
+      }
+    }
+
+    return savedCompany;
   }
 
   // 获取所有企业列表

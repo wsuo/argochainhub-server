@@ -31,6 +31,7 @@ import { DictionaryInitService } from './services/dictionary-init.service';
 import { VolcTranslateService } from './services/volc-translate.service';
 import { VipConfigService } from './services/vip-config.service';
 import { EmailService } from './services/email.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { EmailService } from './services/email.service';
       EmailTemplate,
       EmailHistory,
     ]),
+    NotificationsModule, // 导入通知模块
   ],
   controllers: [
     AdminController, 
