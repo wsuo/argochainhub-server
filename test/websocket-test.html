@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员WebSocket连接测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .connected { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .disconnected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .message { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 5px 0; border-radius: 3px; }
+        button { padding: 8px 16px; margin: 5px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        input[type="text"] { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 3px; }
+        .log { height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 管理员WebSocket连接测试</h1>
+        
+        <div id="status" class="status disconnected">未连接</div>
+        
+        <div>
+            <label for="token">管理员Token:</label>
+            <input type="text" id="token" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoic3VwZXJhZG1pbiIsInJvbGUiOiJzdXBlcl9hZG1pbiIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc1MzUwODQ2MiwiZXhwIjoxNzU0MTEzMjYyfQ.H1hL94u3QFSTeV5ko2ixbcUF9OxC8TngQTIAze_60IA">
+        </div>
+        
+        <div>
+            <button id="connectBtn" class="btn-primary" onclick="connect()">连接WebSocket</button>
+            <button id="disconnectBtn" class="btn-danger" onclick="disconnect()" disabled>断开连接</button>
+            <button class="btn-success" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <h3>📜 连接日志</h3>
+        <div id="log" class="log"></div>
+        
+        <h3>📢 测试按钮</h3>
+        <div>
+            <button class="btn-primary" onclick="testBroadcastNotification()">测试广播通知</button>
+            <button class="btn-primary" onclick="testPermissionNotification()">测试权限通知</button>
+            <button class="btn-primary" onclick="testSystemAlert()">测试系统告警</button>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        const logElement = document.getElementById('log');
+        const statusElement = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'message';
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            if (type === 'error') logEntry.style.color = 'red';
+            if (type === 'success') logEntry.style.color = 'green';
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusElement.textContent = '✅ 已连接';
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.textContent = '❌ 未连接';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            const token = document.getElementById('token').value;
+            if (!token) {
+                alert('请输入有效的管理员Token');
+                return;
+            }
+
+            log('正在连接WebSocket服务器...');
+            
+            socket = new WebSocket('ws://localhost:3050');
+            
+            socket.onopen = function(event) {
+                log('WebSocket连接已建立', 'success');
+                
+                // 发送认证消息
+                const authMessage = {
+                    type: 'auth',
+                    token: token
+                };
+                
+                log('发送认证消息: ' + JSON.stringify(authMessage));
+                socket.send(JSON.stringify(authMessage));
+            };
+            
+            socket.onmessage = function(event) {
+                let data;
+                try {
+                    data = JSON.parse(event.data);
+                } catch (e) {
+                    log('收到非JSON消息: ' + event.data);
+                    return;
+                }
+                
+                if (data.type === 'auth_success') {
+                    log('🎉 管理员认证成功! 管理员ID: ' + data.adminId, 'success');
+                    updateStatus(true);
+                } else if (data.type === 'auth_error') {
+                    log('❌ 认证失败: ' + data.message, 'error');
+                    socket.close();
+                } else if (data.type === 'notification') {
+                    log('📢 收到通知: ' + JSON.stringify(data, null, 2), 'success');
+                } else if (data.type === 'unread_count_update') {
+                    log('📊 未读数量更新: ' + data.count, 'info');
+                } else {
+                    log('收到消息: ' + JSON.stringify(data, null, 2));
+                }
+            };
+            
+            socket.onerror = function(error) {
+                log('WebSocket错误: ' + error, 'error');
+                updateStatus(false);
+            };
+            
+            socket.onclose = function(event) {
+                log('WebSocket连接已关闭 (代码: ' + event.code + ', 原因: ' + event.reason + ')');
+                updateStatus(false);
+            };
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+        }
+
+        function clearLog() {
+            logElement.innerHTML = '';
+        }
+
+        // 测试按钮功能
+        function testBroadcastNotification() {
+            fetch('/api/v1/admin/notifications/broadcast', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + document.getElementById('token').value
+                },
+                body: JSON.stringify({
+                    type: 'SYSTEM_MAINTENANCE',
+                    title: '测试广播通知',
+                    content: '这是一个测试广播通知消息。',
+                    priority: 'NORMAL',
+                    category: 'SYSTEM'
+                })
+            }).then(response => response.json())
+            .then(data => {
+                log('广播通知发送结果: ' + JSON.stringify(data));
+            }).catch(error => {
+                log('发送广播通知失败: ' + error, 'error');
+            });
+        }
+
+        function testPermissionNotification() {
+            fetch('/api/v1/admin/notifications/by-permission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + document.getElementById('token').value
+                },
+                body: JSON.stringify({
+                    requiredPermissions: ['COMPANY_REVIEW'],
+                    type: 'COMPANY_REVIEW_PENDING',
+                    title: '测试权限通知',
+                    content: '这是一个基于权限的测试通知。',
+                    priority: 'HIGH',
+                    category: 'REVIEW'
+                })
+            }).then(response => response.json())
+            .then(data => {
+                log('权限通知发送结果: ' + JSON.stringify(data));
+            }).catch(error => {
+                log('发送权限通知失败: ' + error, 'error');
+            });
+        }
+
+        function testSystemAlert() {
+            fetch('/api/v1/admin/notifications/system-alert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + document.getElementById('token').value
+                },
+                body: JSON.stringify({
+                    alertType: 'TEST_ALERT',
+                    message: '这是一个测试系统告警消息。',
+                    level: 'warning'
+                })
+            }).then(response => response.json())
+            .then(data => {
+                log('系统告警发送结果: ' + JSON.stringify(data));
+            }).catch(error => {
+                log('发送系统告警失败: ' + error, 'error');
+            });
+        }
+
+        // 页面加载完成后的提示
+        window.onload = function() {
+            log('页面加载完成，请点击"连接WebSocket"开始测试');
+            log('确保后端服务运行在 http://localhost:3050');
+        };
+    </script>
+</body>
+</html>
