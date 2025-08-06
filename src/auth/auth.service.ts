@@ -16,6 +16,7 @@ import {
   CompanyType,
 } from '../entities/company.entity';
 import { AdminUser } from '../entities/admin-user.entity';
+import { AdminNotificationsService } from '../notifications/admin-notifications.service';
 import { JwtPayload } from './jwt.strategy';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -34,6 +35,7 @@ export class AuthService {
     private readonly adminUserRepository: Repository<AdminUser>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly adminNotificationsService: AdminNotificationsService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -106,7 +108,32 @@ export class AuthService {
       companyId: savedCompany?.id,
       isActive: userType === UserType.INDIVIDUAL_BUYER, // 个人采购商立即激活，供应商需要审核
     });
-    await this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    // 发送管理员通知
+    try {
+      if (userType === UserType.SUPPLIER && savedCompany) {
+        // 供应商注册需要审核，通知管理员
+        await this.adminNotificationsService.notifyUserRegistrationPending(
+          savedUser.id,
+          userName || email
+        );
+        // 企业认证审核通知
+        await this.adminNotificationsService.notifyCompanyReviewPending(
+          savedCompany.id,
+          typeof companyName === 'string' ? companyName : `企业ID-${savedCompany.id}`
+        );
+      } else if (userType === UserType.INDIVIDUAL_BUYER) {
+        // 个人采购商注册通知
+        await this.adminNotificationsService.notifyUserRegistrationPending(
+          savedUser.id,
+          userName || email
+        );
+      }
+    } catch (error) {
+      // 通知发送失败不应该影响用户注册，只记录错误
+      console.error('Failed to send admin notification for user registration:', error);
+    }
 
     const message = userType === UserType.SUPPLIER 
       ? '供应商注册成功，请等待审核通过后使用'

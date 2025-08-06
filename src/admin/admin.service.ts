@@ -79,6 +79,8 @@ import { SupportedLanguage } from '../types/multilang';
 import { MultiLangQueryUtil } from '../utils/multilang-query.util';
 import { AdminPermission, DEFAULT_ROLE_PERMISSIONS, PermissionHelper } from '../types/permissions';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AdminNotificationsService } from '../notifications/admin-notifications.service';
+import { MultiLangText } from '../types/multilang';
 
 @Injectable()
 export class AdminService {
@@ -105,7 +107,17 @@ export class AdminService {
     private readonly planRepository: Repository<Plan>,
     private readonly volcTranslateService: VolcTranslateService,
     private readonly notificationsService: NotificationsService,
+    private readonly adminNotificationsService: AdminNotificationsService,
   ) {}
+
+  // 辅助方法：从MultiLangText中提取字符串
+  private extractTextFromMultiLang(text: MultiLangText | string | null | undefined): string {
+    if (!text) return '';
+    if (typeof text === 'string') return text;
+    
+    // 尝试获取中文，如果没有则获取英文，最后获取任何可用的语言
+    return text['zh-CN'] || text['en'] || text['es'] || Object.values(text)[0] || '';
+  }
 
   // 获取仪表盘图表数据
   async getDashboardCharts(): Promise<DashboardChartsDto> {
@@ -557,12 +569,27 @@ export class AdminService {
     
     const savedCompany = await this.companyRepository.save(company);
 
-    // 发送通知
+    // 发送用户通知
     if (approved && company.users && company.users.length > 0) {
       // 企业审核通过，给相关用户发送通知
       for (const user of company.users) {
         await this.notificationsService.notifyUserCompanyApproved(user.id, companyId);
       }
+    }
+
+    // 发送管理员通知
+    try {
+      const companyName = this.extractTextFromMultiLang(company.name) || '未知企业';
+      if (approved) {
+        // 企业审核通过通知
+        await this.adminNotificationsService.notifyCompanyApproved(companyId, companyName);
+      } else {
+        // 企业审核拒绝通知
+        await this.adminNotificationsService.notifyCompanyRejected(companyId, companyName, reason);
+      }
+    } catch (error) {
+      // 管理员通知发送失败不应该影响业务流程
+      console.error('Failed to send admin notification for company review:', error);
     }
 
     return savedCompany;
@@ -895,6 +922,7 @@ export class AdminService {
   ): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id: productId },
+      relations: ['supplier'], // 加载供应商信息用于通知
     });
 
     if (!product) {
@@ -912,7 +940,24 @@ export class AdminService {
       product.rejectionReason = reason;
     }
 
-    return this.productRepository.save(product);
+    const savedProduct = await this.productRepository.save(product);
+
+    // 发送管理员通知
+    try {
+      const productName = this.extractTextFromMultiLang(product.name) || '未知产品';
+      if (approved) {
+        // 产品审核通过通知
+        await this.adminNotificationsService.notifyProductApproved(productId, productName);
+      } else {
+        // 产品审核拒绝通知
+        await this.adminNotificationsService.notifyProductRejected(productId, productName, reason);
+      }
+    } catch (error) {
+      // 管理员通知发送失败不应该影响业务流程
+      console.error('Failed to send admin notification for product review:', error);
+    }
+
+    return savedProduct;
   }
 
   // 获取所有产品列表
@@ -1697,7 +1742,7 @@ export class AdminService {
   ): Promise<Inquiry> {
     const inquiry = await this.inquiryRepository.findOne({
       where: { id: inquiryId },
-      relations: ['buyer', 'supplier', 'items'],
+      relations: ['buyer', 'supplier', 'items', 'items.product'],
     });
 
     if (!inquiry) {
@@ -1722,6 +1767,8 @@ export class AdminService {
       }
     }
 
+    const oldStatus = inquiry.status;
+
     // 更新状态
     inquiry.status = updateDto.status;
 
@@ -1738,7 +1785,39 @@ export class AdminService {
       };
     }
 
-    return this.inquiryRepository.save(inquiry);
+    const savedInquiry = await this.inquiryRepository.save(inquiry);
+
+    // 发送管理员通知（针对重要状态变更）
+    try {
+      const productName = inquiry.items?.[0]?.product?.name ? 
+        this.extractTextFromMultiLang(inquiry.items[0].product.name) : '未知产品';
+      const buyerName = inquiry.buyer?.name ? 
+        this.extractTextFromMultiLang(inquiry.buyer.name) : '未知买方';
+      
+      // 根据状态变更发送不同的通知
+      if (updateDto.status === InquiryStatus.CONFIRMED) {
+        // 询价单确认，交易成功
+        await this.adminNotificationsService.notifyInquiryConfirmed(
+          inquiryId, 
+          buyerName, 
+          productName
+        );
+      } else if (updateDto.status === InquiryStatus.DECLINED) {
+        // 询价单被拒绝
+        await this.adminNotificationsService.notifyInquiryDeclined(
+          inquiryId, 
+          buyerName, 
+          productName, 
+          updateDto.declineReason
+        );
+      }
+      // 其他状态变更也可能需要通知，但不是核心业务流程
+    } catch (error) {
+      // 管理员通知发送失败不应该影响业务流程
+      console.error('Failed to send admin notification for inquiry status update:', error);
+    }
+
+    return savedInquiry;
   }
 
   async getInquiryStats(): Promise<InquiryStatsDto> {
