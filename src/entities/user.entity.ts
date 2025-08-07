@@ -5,6 +5,7 @@ import { Order } from './order.entity';
 import { Communication } from './communication.entity';
 import { Attachment } from './attachment.entity';
 import { Notification } from './notification.entity';
+import { ShoppingCart } from './shopping-cart.entity';
 
 export enum UserRole {
   OWNER = 'owner',
@@ -114,4 +115,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Notification, (notification) => notification.user)
   notifications: Notification[];
+
+  @OneToMany(() => ShoppingCart, (shoppingCart) => shoppingCart.user)
+  shoppingCarts: ShoppingCart[];
 }

@@ -5,6 +5,7 @@ import { InquiryItem } from './inquiry-item.entity';
 import { SampleRequest } from './sample-request.entity';
 import { RegistrationRequest } from './registration-request.entity';
 import { ControlMethod } from './control-method.entity';
+import { CartItem } from './cart-item.entity';
 import { MultiLangText } from '../types/multilang';
 import { 
   ActiveIngredient, 
@@ -178,6 +179,9 @@ export class Product extends BaseEntity {
   // 防治方法关联（一对多）
   @OneToMany(() => ControlMethod, (controlMethod) => controlMethod.product)
   controlMethods: ControlMethod[];
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.product)
+  cartItems: CartItem[];
 
   // ==================== 辅助方法 ====================
   

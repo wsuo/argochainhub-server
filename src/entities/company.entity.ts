@@ -6,6 +6,7 @@ import { Subscription } from './subscription.entity';
 import { Inquiry } from './inquiry.entity';
 import { SampleRequest } from './sample-request.entity';
 import { RegistrationRequest } from './registration-request.entity';
+import { CartItem } from './cart-item.entity';
 import { MultiLangText } from '../types/multilang';
 
 export enum CompanyType {
@@ -150,4 +151,7 @@ export class Company extends BaseEntity {
 
   @OneToMany(() => RegistrationRequest, (regRequest) => regRequest.supplier)
   supplierRegistrationRequests: RegistrationRequest[];
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.supplier)
+  cartItems: CartItem[];
 }
