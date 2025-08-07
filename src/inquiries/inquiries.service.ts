@@ -96,27 +96,38 @@ export class InquiriesService {
     const savedInquiry = await this.inquiryRepository.save(inquiry);
 
     // 创建询价项目
-    for (const itemDto of items) {
-      const product = products.find((p) => p.id === itemDto.productId);
-      if (product) {
-        const inquiryItem = this.inquiryItemRepository.create({
-          inquiryId: savedInquiry.id,
-          productId: product.id,
-          quantity: itemDto.quantity,
-          unit: itemDto.unit,
-          packagingReq: itemDto.packagingReq,
-          productSnapshot: {
-            name: product.name,
-            pesticideName: product.pesticideName,
-            formulation: product.formulation,
-            activeIngredient1: product.activeIngredient1,
-            activeIngredient2: product.activeIngredient2,
-            activeIngredient3: product.activeIngredient3,
-            totalContent: product.totalContent,
-          },
-        });
-        await this.inquiryItemRepository.save(inquiryItem);
+    const inquiryItems: InquiryItem[] = [];
+    
+    try {
+      for (const itemDto of items) {
+        // 修复：使用Number()确保产品ID类型匹配
+        const product = products.find((p) => Number(p.id) === Number(itemDto.productId));
+        
+        if (product) {
+          const inquiryItem = this.inquiryItemRepository.create({
+            inquiryId: savedInquiry.id,
+            productId: product.id,
+            quantity: itemDto.quantity,
+            unit: itemDto.unit,
+            packagingReq: itemDto.packagingReq || undefined,
+            productSnapshot: {
+              name: product.name,
+              pesticideName: product.pesticideName,
+              formulation: product.formulation,
+              activeIngredient1: product.activeIngredient1,
+              activeIngredient2: product.activeIngredient2,
+              activeIngredient3: product.activeIngredient3,
+              totalContent: product.totalContent,
+            },
+          });
+          
+          const savedItem = await this.inquiryItemRepository.save(inquiryItem);
+          inquiryItems.push(savedItem);
+        }
       }
+    } catch (error) {
+      console.error('创建询价项目时出错:', error);
+      throw error;
     }
 
     return this.getInquiryDetail(user, savedInquiry.id);
