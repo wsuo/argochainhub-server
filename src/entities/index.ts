@@ -35,3 +35,5 @@ export { AiConversation, UserType } from './ai-conversation.entity';
 export { AiMessage, MessageType } from './ai-message.entity';
 export { AiWorkflowRun, WorkflowStatus } from './ai-workflow-run.entity';
 export { AiUsageStatistic } from './ai-usage-statistic.entity';
+export { ShoppingCart, ShoppingCartStatus } from './shopping-cart.entity';
+export { CartItem } from './cart-item.entity';
