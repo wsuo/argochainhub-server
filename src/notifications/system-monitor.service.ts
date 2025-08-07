@@ -145,17 +145,26 @@ export class SystemMonitorService {
     const freeMemory = os.freemem();
     const usedMemory = totalMemory - freeMemory;
     
+    // 注意：在macOS/Linux中，os.freemem()返回的是系统认为可用的内存
+    // 这已经考虑了缓存和缓冲区，所以计算相对准确
+    // 但为了避免误报，我们使用更保守的阈值
+    const percentage = Math.round((usedMemory / totalMemory) * 100);
+    
     return {
       used: usedMemory,
       total: totalMemory,
-      percentage: Math.round((usedMemory / totalMemory) * 100),
+      percentage: Math.min(percentage, 100), // 确保不超过100%
     };
   }
 
   private async getDiskUsage() {
     try {
       const stats = await fs.promises.statfs('./');
-      const total = stats.bavail * stats.bsize;
+      // 修复磁盘使用率计算
+      // stats.blocks: 总块数
+      // stats.bfree: 空闲块数  
+      // stats.bavail: 普通用户可用块数
+      const total = stats.blocks * stats.bsize;
       const free = stats.bfree * stats.bsize;
       const used = total - free;
       
@@ -212,17 +221,17 @@ export class SystemMonitorService {
       );
     }
 
-    // 内存告警
-    if (metrics.memoryUsage.percentage > 90) {
+    // 内存告警 - 调整阈值，因为macOS内存管理比较激进
+    if (metrics.memoryUsage.percentage > 95) {
       await this.sendAlert(
         'MEMORY_CRITICAL',
-        `内存使用率严重过高: ${metrics.memoryUsage.percentage}%`,
+        `内存使用率严重过高: ${metrics.memoryUsage.percentage}% (已用: ${Math.round(metrics.memoryUsage.used / 1024 / 1024 / 1024 * 10) / 10}GB / 总计: ${Math.round(metrics.memoryUsage.total / 1024 / 1024 / 1024 * 10) / 10}GB)`,
         'critical'
       );
-    } else if (metrics.memoryUsage.percentage > 80) {
+    } else if (metrics.memoryUsage.percentage > 90) {
       await this.sendAlert(
         'MEMORY_WARNING',
-        `内存使用率较高: ${metrics.memoryUsage.percentage}%`,
+        `内存使用率较高: ${metrics.memoryUsage.percentage}% (已用: ${Math.round(metrics.memoryUsage.used / 1024 / 1024 / 1024 * 10) / 10}GB / 总计: ${Math.round(metrics.memoryUsage.total / 1024 / 1024 / 1024 * 10) / 10}GB)`,
         'warning'
       );
     }
@@ -242,21 +251,25 @@ export class SystemMonitorService {
       );
     }
 
-    // CPU负载告警
-    const avgLoad = metrics.cpuUsage[0];
+    // CPU负载告警 - 修复load average的理解和告警逻辑
+    const [load1, load5, load15] = metrics.cpuUsage;
     const cpuCores = os.cpus().length;
-    const loadPercentage = (avgLoad / cpuCores) * 100;
     
-    if (loadPercentage > 90) {
+    // Load average表示等待CPU的进程数，不是CPU使用率百分比
+    // 通常 load = cpuCores 表示CPU满载
+    // load > cpuCores 表示有进程在等待
+    const loadRatio = load1 / cpuCores;
+    
+    if (loadRatio > 2.0) {
       await this.sendAlert(
         'CPU_CRITICAL',
-        `CPU负载过高: ${loadPercentage.toFixed(2)}%`,
+        `CPU负载过高: ${load1.toFixed(2)} (核心数: ${cpuCores}, 负载比率: ${loadRatio.toFixed(2)})`,
         'critical'
       );
-    } else if (loadPercentage > 80) {
+    } else if (loadRatio > 1.5) {
       await this.sendAlert(
         'CPU_WARNING',
-        `CPU负载较高: ${loadPercentage.toFixed(2)}%`,
+        `CPU负载较高: ${load1.toFixed(2)} (核心数: ${cpuCores}, 负载比率: ${loadRatio.toFixed(2)})`,
         'warning'
       );
     }
@@ -317,15 +330,19 @@ export class SystemMonitorService {
     const lastAlertTime = this.lastAlertTimes.get(alertType);
     const now = new Date();
     
-    if (lastAlertTime && now.getTime() - lastAlertTime.getTime() < this.ALERT_COOLDOWN) {
-      this.logger.debug(`告警 ${alertType} 在冷却期内，跳过发送`);
+    if (lastAlertTime && now.getTime() < lastAlertTime.getTime()) {
+      this.logger.debug(`告警 ${alertType} 在冷却期内，跳过发送 (冷却期到: ${lastAlertTime.toISOString()})`);
       return;
     }
 
     try {
       await this.adminNotificationsService.notifySystemAlert(alertType, message, level);
-      this.lastAlertTimes.set(alertType, now);
-      this.logger.log(`系统告警已发送: ${alertType} - ${message}`);
+      
+      // 设置冷却期到未来30分钟
+      const cooldownEnd = new Date(now.getTime() + this.ALERT_COOLDOWN);
+      this.lastAlertTimes.set(alertType, cooldownEnd);
+      
+      this.logger.log(`系统告警已发送: ${alertType} - ${message} (下次可发送时间: ${cooldownEnd.toISOString()})`);
     } catch (error) {
       this.logger.error('发送系统告警失败:', error);
     }
