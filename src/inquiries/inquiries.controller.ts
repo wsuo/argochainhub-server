@@ -19,9 +19,9 @@ import {
 import { InquiriesService } from './inquiries.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CompanyTypeGuard } from '../common/guards/company-type.guard';
-import { QuotaGuard } from '../common/guards/quota.guard';
+// import { QuotaGuard } from '../common/guards/quota.guard';  // 临时注释，开发阶段暂不使用
 import { CompanyTypes } from '../common/decorators/company-types.decorator';
-import { QuotaType } from '../common/decorators/quota-type.decorator';
+// import { QuotaType } from '../common/decorators/quota-type.decorator';  // 临时注释，开发阶段暂不使用
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CompanyType } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
@@ -41,12 +41,12 @@ export class InquiriesController {
   constructor(private readonly inquiriesService: InquiriesService) {}
 
   @Post()
-  @UseGuards(CompanyTypeGuard, QuotaGuard)
+  @UseGuards(CompanyTypeGuard)  // 临时移除 QuotaGuard，便于开发调试
   @CompanyTypes(CompanyType.BUYER)
-  @QuotaType('inquiry')
+  // @QuotaType('inquiry')  // 临时注释，后续恢复时启用
   @ApiOperation({ summary: '创建询价单' })
   @ApiResponse({ status: 201, description: '创建成功' })
-  @ApiResponse({ status: 403, description: '权限不足或配额不足' })
+  @ApiResponse({ status: 403, description: '权限不足' })  // 临时修改描述
   async createInquiry(
     @CurrentUser() user: User,
     @Body() createInquiryDto: CreateInquiryDto,

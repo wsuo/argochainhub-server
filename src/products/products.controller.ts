@@ -20,9 +20,9 @@ import {
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CompanyTypeGuard } from '../common/guards/company-type.guard';
-import { QuotaGuard } from '../common/guards/quota.guard';
+// import { QuotaGuard } from '../common/guards/quota.guard';  // 临时注释，开发阶段暂不使用
 import { CompanyTypes } from '../common/decorators/company-types.decorator';
-import { QuotaType } from '../common/decorators/quota-type.decorator';
+// import { QuotaType } from '../common/decorators/quota-type.decorator';  // 临时注释，开发阶段暂不使用
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CompanyType } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
@@ -80,11 +80,11 @@ export class MyProductsController {
   }
 
   @Post()
-  @UseGuards(QuotaGuard)
-  @QuotaType('product')
+  // @UseGuards(QuotaGuard)  // 临时移除 QuotaGuard，便于开发调试
+  // @QuotaType('product')  // 临时注释，后续恢复时启用
   @ApiOperation({ summary: '创建新产品' })
   @ApiResponse({ status: 201, description: '创建成功' })
-  @ApiResponse({ status: 403, description: '配额不足或权限不够' })
+  @ApiResponse({ status: 403, description: '权限不够' })  // 临时修改描述
   async createProduct(
     @CurrentUser() user: User,
     @Body() createProductDto: CreateProductDto,
