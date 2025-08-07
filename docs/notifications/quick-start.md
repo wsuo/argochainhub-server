@@ -17,15 +17,13 @@ curl -X GET "http://localhost:3050/api/v1/admin/notifications" \
 
 ### 3. 建立WebSocket连接
 ```javascript
-// 1. 连接WebSocket
-const ws = new WebSocket('ws://localhost:3050');
+// 1. 连接WebSocket时直接提供Token和类型
+const token = 'your_admin_jwt_token';
+const ws = new WebSocket(`ws://localhost:3050/notifications?token=${encodeURIComponent(token)}&type=admin`);
 
-// 2. 认证
+// 2. 连接成功
 ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'auth',
-    token: 'YOUR_ADMIN_TOKEN'
-  }));
+  console.log('管理员WebSocket连接成功');
 };
 
 // 3. 处理消息
@@ -96,10 +94,11 @@ const fetchUnreadCount = async () => {
 
 // 建立WebSocket连接
 const connectWebSocket = () => {
-  const ws = new WebSocket('ws://localhost:3050')
+  const token = localStorage.getItem('adminToken');
+  const ws = new WebSocket(`ws://localhost:3050/notifications?token=${encodeURIComponent(token)}&type=admin`)
   
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'auth', token }))
+    console.log('管理员WebSocket连接成功');
   }
   
   ws.onmessage = (event) => {
