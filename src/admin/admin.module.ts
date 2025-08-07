@@ -17,12 +17,14 @@ import { Order } from '../entities/order.entity';
 import { Plan } from '../entities/plan.entity';
 import { DictionaryCategory } from '../entities/dictionary-category.entity';
 import { DictionaryItem } from '../entities/dictionary-item.entity';
+import { AdminNotification } from '../entities/admin-notification.entity';
 import { AdminController } from './admin.controller';
 import { VipConfigController } from './controllers/vip-config.controller';
 import { EmailConfigController } from './controllers/email-config.controller';
 import { EmailTemplateController } from './controllers/email-template.controller';
 import { EmailHistoryController } from './controllers/email-history.controller';
 import { DictionaryController, PublicDictionaryController } from './dictionary.controller';
+import { AdminNotificationsController } from '../notifications/admin-notifications.controller';
 import { AdminService } from './admin.service';
 import { AdminProductsService } from './services/admin-products.service';
 import { DictionaryService } from './services/dictionary.service';
@@ -49,6 +51,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Plan,
       DictionaryCategory,
       DictionaryItem,
+      AdminNotification,
       VipConfig,
       EmailConfig,
       EmailTemplate,
@@ -64,6 +67,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     EmailConfigController,
     EmailTemplateController,
     EmailHistoryController,
+    AdminNotificationsController,
   ],
   providers: [
     AdminService, 
