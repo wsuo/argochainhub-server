@@ -27,7 +27,20 @@ interface AuthenticatedSocket extends Socket {
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: process.env.NODE_ENV === 'development' ? true : ['http://localhost:3020', 'http://localhost:3070'],
+    origin: (origin, callback) => {
+      // 开发环境：允许所有来源，包括 file:// 协议
+      if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        // 生产环境：只允许特定域名
+        const allowedOrigins = ['http://localhost:3020', 'http://localhost:3070'];
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    },
     credentials: true,
   },
   namespace: '/notifications',
@@ -51,29 +64,36 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
+    console.log('🔌 WebSocket 连接尝试, clientId:', client.id);
     try {
       // 从查询参数或headers中获取token
       const token = client.handshake.auth?.token || client.handshake.query?.token;
       const clientType = client.handshake.query?.type || 'user'; // 'user' or 'admin'
       
+      console.log('🔑 Token存在:', !!token, 'Client类型:', clientType);
+      
       if (!token) {
+        console.log('❌ Token缺失, 断开连接');
         client.disconnect();
         return;
       }
 
       // 验证JWT token
       const payload = this.jwtService.verify(token);
+      console.log('✅ JWT验证成功, payload:', payload);
       
       if (clientType === 'admin') {
         // 管理员连接处理
+        console.log('👨‍💼 处理管理员连接');
         await this.handleAdminConnection(client, payload);
       } else {
         // 普通用户连接处理
+        console.log('👤 处理用户连接');
         await this.handleUserConnection(client, payload);
       }
 
     } catch (error) {
-      console.error('WebSocket认证失败:', error.message);
+      console.error('❌ WebSocket认证失败:', error.message);
       client.disconnect();
     }
   }
@@ -109,21 +129,27 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   private async handleAdminConnection(client: AuthenticatedSocket, payload: any) {
+    console.log('🔍 检查管理员连接, payload.type:', payload.type);
+    
     // 检查是否为管理员token
     if (payload.type !== 'admin') {
+      console.log('❌ 不是管理员token, 断开连接, payload.type:', payload.type);
       client.disconnect();
       return;
     }
 
+    console.log('🔍 查找管理员用户, ID:', payload.sub);
     const adminUser = await this.adminUserRepository.findOne({
       where: { id: payload.sub, isActive: true },
     });
 
     if (!adminUser) {
+      console.log('❌ 管理员用户不存在或未激活, 断开连接');
       client.disconnect();
       return;
     }
 
+    console.log('✅ 管理员用户验证成功:', adminUser.username);
     client.adminUserId = adminUser.id;
     client.adminUser = adminUser;
     client.userType = 'admin';
@@ -135,7 +161,8 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     }
     this.connectedAdmins.get(numericAdminUserId)!.add(client.id);
 
-    console.log(`✅ 管理员 ${adminUser.id} (${adminUser.username}) 连接到通知系统`);
+    console.log('🎉 管理员WebSocket连接成功, 用户:', adminUser.username, 'ID:', adminUser.id);
+    console.log('📊 当前连接的管理员数量:', this.connectedAdmins.size);
     
     // 发送连接成功消息
     client.emit('connected', { 
