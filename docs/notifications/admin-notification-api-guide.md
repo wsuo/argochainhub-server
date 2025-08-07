@@ -415,40 +415,35 @@ GET /api/v1/admin/notifications?page=1&limit=10&status=UNREAD&priority=HIGH
 
 ### 5.1 连接建立
 
-**WebSocket地址：** `ws://localhost:3050`
+**WebSocket地址：** `ws://localhost:3050/notifications`
 
 **连接流程：**
 
-1. 建立WebSocket连接
-2. 发送认证消息
-3. 接收认证结果
-4. 开始接收实时通知
+1. 建立WebSocket连接时在URL中提供Token和类型参数
+2. 连接成功后开始接收实时通知
 
-### 5.2 认证消息
+### 5.2 管理员连接方式
 
-**发送认证消息：**
-```json
-{
-  "type": "auth",
-  "token": "管理员JWT_Token"
-}
+**连接URL格式：**
+```
+ws://localhost:3050/notifications?token={JWT_TOKEN}&type=admin
 ```
 
-**认证成功响应：**
-```json
-{
-  "type": "auth_success",
-  "adminId": 1,
-  "message": "管理员认证成功"
-}
-```
+**JavaScript连接示例：**
+```javascript
+const token = 'your_admin_jwt_token';
+const socket = new WebSocket(`ws://localhost:3050/notifications?token=${encodeURIComponent(token)}&type=admin`);
 
-**认证失败响应：**
-```json
-{
-  "type": "auth_error",
-  "message": "Token invalid or expired"
-}
+socket.onopen = (event) => {
+  console.log('管理员WebSocket连接成功');
+};
+
+socket.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'notification') {
+    console.log('收到新通知:', data);
+  }
+};
 ```
 
 ### 5.3 实时通知消息
