@@ -1613,6 +1613,64 @@ export class DictionaryInitService {
         sortOrder: 5,
       },
 
+      // 审核结果类
+      {
+        code: 'COMPANY_APPROVED',
+        name: {
+          'zh-CN': '企业认证通过',
+          en: 'Company Approved',
+          es: 'Empresa Aprobada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '企业认证申请已通过审核',
+          en: 'Company certification application has been approved',
+          es: 'La aplicación de certificación de empresa ha sido aprobada',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+      {
+        code: 'COMPANY_REJECTED',
+        name: {
+          'zh-CN': '企业认证拒绝',
+          en: 'Company Rejected',
+          es: 'Empresa Rechazada',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '企业认证申请被拒绝',
+          en: 'Company certification application has been rejected',
+          es: 'La aplicación de certificación de empresa ha sido rechazada',
+        } as MultiLangText,
+        sortOrder: 7,
+      },
+      {
+        code: 'PRODUCT_APPROVED',
+        name: {
+          'zh-CN': '产品审核通过',
+          en: 'Product Approved',
+          es: 'Producto Aprobado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品审核已通过',
+          en: 'Product review has been approved',
+          es: 'La revisión del producto ha sido aprobada',
+        } as MultiLangText,
+        sortOrder: 8,
+      },
+      {
+        code: 'PRODUCT_REJECTED',
+        name: {
+          'zh-CN': '产品审核拒绝',
+          en: 'Product Rejected',
+          es: 'Producto Rechazado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品审核被拒绝',
+          en: 'Product review has been rejected',
+          es: 'La revisión del producto ha sido rechazada',
+        } as MultiLangText,
+        sortOrder: 9,
+      },
+
       // 业务监控类
       {
         code: 'INQUIRY_CREATED',
@@ -1626,7 +1684,7 @@ export class DictionaryInitService {
           en: 'New inquiry created on platform, business monitoring notification',
           es: 'Nueva consulta creada en la plataforma, notificación de monitoreo comercial',
         } as MultiLangText,
-        sortOrder: 6,
+        sortOrder: 10,
       },
       {
         code: 'ORDER_STATUS_CHANGED',
@@ -1640,7 +1698,7 @@ export class DictionaryInitService {
           en: 'Important order status has changed',
           es: 'El estado de un pedido importante ha cambiado',
         } as MultiLangText,
-        sortOrder: 7,
+        sortOrder: 11,
       },
       {
         code: 'USER_COMPLAINT',
@@ -1654,7 +1712,49 @@ export class DictionaryInitService {
           en: 'User complaint received, needs processing',
           es: 'Queja de usuario recibida, necesita procesamiento',
         } as MultiLangText,
-        sortOrder: 8,
+        sortOrder: 12,
+      },
+      {
+        code: 'FEEDBACK_RECEIVED',
+        name: {
+          'zh-CN': '收到反馈',
+          en: 'Feedback Received',
+          es: 'Retroalimentación Recibida',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '收到用户反馈信息',
+          en: 'User feedback received',
+          es: 'Retroalimentación de usuario recibida',
+        } as MultiLangText,
+        sortOrder: 13,
+      },
+      {
+        code: 'BUSINESS_TRANSACTION_SUCCESS',
+        name: {
+          'zh-CN': '业务交易成功',
+          en: 'Business Transaction Success',
+          es: 'Transacción Comercial Exitosa',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '重要业务交易成功完成',
+          en: 'Important business transaction completed successfully',
+          es: 'Transacción comercial importante completada con éxito',
+        } as MultiLangText,
+        sortOrder: 14,
+      },
+      {
+        code: 'BUSINESS_TRANSACTION_FAILED',
+        name: {
+          'zh-CN': '业务交易失败',
+          en: 'Business Transaction Failed',
+          es: 'Transacción Comercial Fallida',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '重要业务交易处理失败',
+          en: 'Important business transaction processing failed',
+          es: 'Procesamiento de transacción comercial importante fallido',
+        } as MultiLangText,
+        sortOrder: 15,
       },
 
       // 运营提醒类
@@ -1670,7 +1770,21 @@ export class DictionaryInitService {
           en: 'Batch VIP memberships expiring reminder',
           es: 'Recordatorio de lote de membresías VIP por expirar',
         } as MultiLangText,
-        sortOrder: 9,
+        sortOrder: 16,
+      },
+      {
+        code: 'SUBSCRIPTION_METRICS',
+        name: {
+          'zh-CN': '订阅指标',
+          en: 'Subscription Metrics',
+          es: 'Métricas de Suscripción',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '订阅服务相关指标监控',
+          en: 'Subscription service related metrics monitoring',
+          es: 'Monitoreo de métricas relacionadas con servicios de suscripción',
+        } as MultiLangText,
+        sortOrder: 17,
       },
       {
         code: 'BUSINESS_METRICS_ALERT',
@@ -1684,7 +1798,21 @@ export class DictionaryInitService {
           en: 'Critical business metrics anomaly alert',
           es: 'Alerta de anomalía en métricas comerciales críticas',
         } as MultiLangText,
-        sortOrder: 10,
+        sortOrder: 18,
+      },
+      {
+        code: 'REVENUE_ALERT',
+        name: {
+          'zh-CN': '营收告警',
+          en: 'Revenue Alert',
+          es: 'Alerta de Ingresos',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '营收指标异常告警',
+          en: 'Revenue metrics anomaly alert',
+          es: 'Alerta de anomalía en métricas de ingresos',
+        } as MultiLangText,
+        sortOrder: 19,
       },
 
       // 系统告警类
@@ -1700,7 +1828,7 @@ export class DictionaryInitService {
           en: 'API interface error rate exceeds threshold',
           es: 'La tasa de error de la interfaz API supera el umbral',
         } as MultiLangText,
-        sortOrder: 11,
+        sortOrder: 20,
       },
       {
         code: 'DATABASE_CONNECTION_ERROR',
@@ -1714,7 +1842,7 @@ export class DictionaryInitService {
           en: 'Database connection anomaly occurred',
           es: 'Se produjo una anomalía en la conexión de la base de datos',
         } as MultiLangText,
-        sortOrder: 12,
+        sortOrder: 21,
       },
       {
         code: 'SYSTEM_RESOURCE_WARNING',
@@ -1728,7 +1856,7 @@ export class DictionaryInitService {
           en: 'System resource usage too high warning',
           es: 'Advertencia de uso de recursos del sistema demasiado alto',
         } as MultiLangText,
-        sortOrder: 13,
+        sortOrder: 22,
       },
       {
         code: 'SECURITY_EVENT',
@@ -1742,7 +1870,21 @@ export class DictionaryInitService {
           en: 'Security-related event detected',
           es: 'Evento relacionado con seguridad detectado',
         } as MultiLangText,
-        sortOrder: 14,
+        sortOrder: 23,
+      },
+      {
+        code: 'BACKUP_FAILED',
+        name: {
+          'zh-CN': '备份失败',
+          en: 'Backup Failed',
+          es: 'Copia de Seguridad Falló',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统备份作业失败',
+          en: 'System backup job failed',
+          es: 'Trabajo de copia de seguridad del sistema falló',
+        } as MultiLangText,
+        sortOrder: 24,
       },
 
       // 系统通知类
@@ -1758,7 +1900,35 @@ export class DictionaryInitService {
           en: 'System maintenance schedule notification',
           es: 'Notificación de programación de mantenimiento del sistema',
         } as MultiLangText,
-        sortOrder: 15,
+        sortOrder: 25,
+      },
+      {
+        code: 'VERSION_UPDATE',
+        name: {
+          'zh-CN': '版本更新',
+          en: 'Version Update',
+          es: 'Actualización de Versión',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '系统版本更新通知',
+          en: 'System version update notification',
+          es: 'Notificación de actualización de versión del sistema',
+        } as MultiLangText,
+        sortOrder: 26,
+      },
+      {
+        code: 'FEATURE_ANNOUNCEMENT',
+        name: {
+          'zh-CN': '功能公告',
+          en: 'Feature Announcement',
+          es: 'Anuncio de Funcionalidad',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '新功能发布公告',
+          en: 'New feature release announcement',
+          es: 'Anuncio de lanzamiento de nueva funcionalidad',
+        } as MultiLangText,
+        sortOrder: 27,
       },
     ];
 
