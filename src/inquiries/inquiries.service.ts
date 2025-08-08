@@ -179,8 +179,30 @@ export class InquiriesService {
       .orderBy('inquiry.createdAt', 'DESC')
       .getManyAndCount();
 
+    // 为每个询价单添加最近消息
+    const inquiriesWithMessages = await Promise.all(
+      inquiries.map(async (inquiry) => {
+        const recentMessages = await this.communicationRepository
+          .createQueryBuilder('communication')
+          .leftJoinAndSelect('communication.sender', 'sender')
+          .leftJoinAndSelect('sender.company', 'company')
+          .where('communication.relatedService = :service', {
+            service: RelatedService.INQUIRY,
+          })
+          .andWhere('communication.relatedId = :inquiryId', { inquiryId: inquiry.id })
+          .orderBy('communication.createdAt', 'DESC')
+          .limit(5)
+          .getMany();
+
+        return {
+          ...inquiry,
+          recentMessages,
+        };
+      })
+    );
+
     return {
-      data: inquiries,
+      data: inquiriesWithMessages,
       meta: {
         totalItems: total,
         itemCount: inquiries.length,
