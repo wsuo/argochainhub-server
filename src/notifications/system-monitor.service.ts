@@ -48,6 +48,28 @@ export class SystemMonitorService {
   private readonly logger = new Logger(SystemMonitorService.name);
   private lastAlertTimes = new Map<string, Date>();
   private readonly ALERT_COOLDOWN = 30 * 60 * 1000; // 30分钟冷却期
+  
+  // macOS平台检测和专用阈值
+  private readonly isMacOS = os.platform() === 'darwin';
+  private readonly isAppleSilicon = os.cpus()[0]?.model.includes('Apple') || false;
+  
+  // 针对不同平台的告警阈值配置
+  private readonly alertThresholds = {
+    memory: {
+      // macOS内存管理更激进，99%使用率都是正常的，只在接近100%时才告警
+      critical: this.isMacOS ? 99.5 : 95,
+      warning: this.isMacOS ? 99 : 90
+    },
+    cpu: {
+      // M1芯片性能强劲，可以容忍更高的负载
+      critical: (this.isMacOS && this.isAppleSilicon) ? 4.0 : 2.0,
+      warning: (this.isMacOS && this.isAppleSilicon) ? 3.0 : 1.5
+    },
+    disk: {
+      critical: 95,
+      warning: 85
+    }
+  };
 
   constructor(
     @InjectRepository(User)
@@ -60,7 +82,18 @@ export class SystemMonitorService {
     private readonly inquiryRepository: Repository<Inquiry>,
     private readonly dataSource: DataSource,
     private readonly adminNotificationsService: AdminNotificationsService,
-  ) {}
+  ) {
+    // 记录系统平台信息和告警阈值配置
+    this.logger.log(`系统监控服务启动:`);
+    this.logger.log(`  平台: ${os.platform()} ${os.arch()}`);
+    this.logger.log(`  CPU: ${os.cpus()[0]?.model || '未知'} (${os.cpus().length} 核心)`);
+    this.logger.log(`  是否macOS: ${this.isMacOS}`);
+    this.logger.log(`  是否Apple芯片: ${this.isAppleSilicon}`);
+    this.logger.log(`  告警阈值配置:`);
+    this.logger.log(`    内存 - 警告: ${this.alertThresholds.memory.warning}%, 严重: ${this.alertThresholds.memory.critical}%`);
+    this.logger.log(`    CPU负载 - 警告: ${this.alertThresholds.cpu.warning}x, 严重: ${this.alertThresholds.cpu.critical}x`);
+    this.logger.log(`    磁盘 - 警告: ${this.alertThresholds.disk.warning}%, 严重: ${this.alertThresholds.disk.critical}%`);
+  }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async performSystemHealthCheck() {
@@ -221,17 +254,17 @@ export class SystemMonitorService {
       );
     }
 
-    // 内存告警 - 调整阈值，因为macOS内存管理比较激进
-    if (metrics.memoryUsage.percentage > 95) {
+    // 内存告警 - 使用动态阈值，针对macOS优化
+    if (metrics.memoryUsage.percentage > this.alertThresholds.memory.critical) {
       await this.sendAlert(
         'MEMORY_CRITICAL',
-        `内存使用率严重过高: ${metrics.memoryUsage.percentage}% (已用: ${Math.round(metrics.memoryUsage.used / 1024 / 1024 / 1024 * 10) / 10}GB / 总计: ${Math.round(metrics.memoryUsage.total / 1024 / 1024 / 1024 * 10) / 10}GB)`,
+        `内存使用率严重过高: ${metrics.memoryUsage.percentage}% (已用: ${Math.round(metrics.memoryUsage.used / 1024 / 1024 / 1024 * 10) / 10}GB / 总计: ${Math.round(metrics.memoryUsage.total / 1024 / 1024 / 1024 * 10) / 10}GB)${this.isMacOS ? ' [macOS极限内存使用]' : ''}`,
         'critical'
       );
-    } else if (metrics.memoryUsage.percentage > 90) {
+    } else if (metrics.memoryUsage.percentage > this.alertThresholds.memory.warning) {
       await this.sendAlert(
         'MEMORY_WARNING',
-        `内存使用率较高: ${metrics.memoryUsage.percentage}% (已用: ${Math.round(metrics.memoryUsage.used / 1024 / 1024 / 1024 * 10) / 10}GB / 总计: ${Math.round(metrics.memoryUsage.total / 1024 / 1024 / 1024 * 10) / 10}GB)`,
+        `内存使用率较高: ${metrics.memoryUsage.percentage}% (已用: ${Math.round(metrics.memoryUsage.used / 1024 / 1024 / 1024 * 10) / 10}GB / 总计: ${Math.round(metrics.memoryUsage.total / 1024 / 1024 / 1024 * 10) / 10}GB)${this.isMacOS ? ' [macOS正常内存压力]' : ''}`,
         'warning'
       );
     }
@@ -251,7 +284,7 @@ export class SystemMonitorService {
       );
     }
 
-    // CPU负载告警 - 修复load average的理解和告警逻辑
+    // CPU负载告警 - 使用动态阈值，针对M1芯片优化
     const [load1, load5, load15] = metrics.cpuUsage;
     const cpuCores = os.cpus().length;
     
@@ -260,16 +293,16 @@ export class SystemMonitorService {
     // load > cpuCores 表示有进程在等待
     const loadRatio = load1 / cpuCores;
     
-    if (loadRatio > 2.0) {
+    if (loadRatio > this.alertThresholds.cpu.critical) {
       await this.sendAlert(
         'CPU_CRITICAL',
-        `CPU负载过高: ${load1.toFixed(2)} (核心数: ${cpuCores}, 负载比率: ${loadRatio.toFixed(2)})`,
+        `CPU负载过高: ${load1.toFixed(2)} (核心数: ${cpuCores}, 负载比率: ${loadRatio.toFixed(2)})${this.isAppleSilicon ? ' [Apple M1芯片高性能模式]' : ''}`,
         'critical'
       );
-    } else if (loadRatio > 1.5) {
+    } else if (loadRatio > this.alertThresholds.cpu.warning) {
       await this.sendAlert(
         'CPU_WARNING',
-        `CPU负载较高: ${load1.toFixed(2)} (核心数: ${cpuCores}, 负载比率: ${loadRatio.toFixed(2)})`,
+        `CPU负载较高: ${load1.toFixed(2)} (核心数: ${cpuCores}, 负载比率: ${loadRatio.toFixed(2)})${this.isAppleSilicon ? ' [Apple M1正常负载范围]' : ''}`,
         'warning'
       );
     }
