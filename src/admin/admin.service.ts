@@ -575,6 +575,21 @@ export class AdminService {
       for (const user of company.users) {
         await this.notificationsService.notifyUserCompanyApproved(user.id, companyId);
       }
+
+      // 🎯 新增逻辑：企业审核通过时，自动激活该企业下的owner用户
+      const ownerUsers = company.users.filter(user => user.role === 'owner' && !user.isActive);
+      if (ownerUsers.length > 0) {
+        console.log(`📝 企业审核通过，自动激活 ${ownerUsers.length} 个owner用户`);
+        
+        for (const ownerUser of ownerUsers) {
+          ownerUser.isActive = true;
+          await this.userRepository.save(ownerUser);
+          console.log(`✅ 已激活owner用户: ${ownerUser.email} (ID: ${ownerUser.id})`);
+          
+          // 发送用户激活通知（企业认证通过意味着用户也被激活）
+          await this.notificationsService.notifyUserCompanyApproved(ownerUser.id, companyId);
+        }
+      }
     }
 
     // 发送管理员通知
