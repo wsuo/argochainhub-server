@@ -426,39 +426,50 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
   // 向企业的所有在线用户推送询价消息
   async sendInquiryMessageToCompany(companyId: number, messageEvent: InquiryMessageEvent) {
-    const companySockets = this.connectedCompanies.get(companyId);
+    // 确保使用数字类型作为键
+    const numericCompanyId = Number(companyId);
+    console.log(`🔍 尝试向企业 ${numericCompanyId} 推送消息, 当前在线企业:`, Array.from(this.connectedCompanies.keys()));
+    const companySockets = this.connectedCompanies.get(numericCompanyId);
     
     if (companySockets && companySockets.size > 0) {
       for (const socketId of companySockets) {
         this.server.to(socketId).emit('inquiry_message_received', messageEvent);
       }
-      console.log(`📤 向企业 ${companyId} 推送询价消息: 询价单${messageEvent.inquiryNo}, 消息ID${messageEvent.messageId}`);
+      console.log(`📤 向企业 ${numericCompanyId} 推送询价消息成功: 询价单${messageEvent.inquiryNo}, 消息ID${messageEvent.messageId}, 推送到${companySockets.size}个连接`);
       return true;
     } else {
-      console.log(`⚠️ 企业 ${companyId} 没有在线用户，消息将在下次登录时显示`);
+      console.log(`⚠️ 企业 ${numericCompanyId} 没有在线用户，消息将在下次登录时显示, 企业连接状态:`, companySockets);
+      console.log(`🔍 所有在线企业及其连接数:`, 
+        Object.fromEntries(
+          Array.from(this.connectedCompanies.entries()).map(([id, sockets]) => [id, sockets.size])
+        )
+      );
       return false;
     }
   }
 
   // 向企业的所有在线用户推送询价状态更新
   async sendInquiryStatusUpdateToCompany(companyId: number, statusEvent: InquiryStatusUpdateEvent) {
-    const companySockets = this.connectedCompanies.get(companyId);
+    // 确保使用数字类型作为键
+    const numericCompanyId = Number(companyId);
+    const companySockets = this.connectedCompanies.get(numericCompanyId);
     
     if (companySockets && companySockets.size > 0) {
       for (const socketId of companySockets) {
         this.server.to(socketId).emit('inquiry_status_updated', statusEvent);
       }
-      console.log(`📤 向企业 ${companyId} 推送询价状态更新: 询价单${statusEvent.inquiryNo}, ${statusEvent.oldStatus} -> ${statusEvent.newStatus}`);
+      console.log(`📤 向企业 ${numericCompanyId} 推送询价状态更新: 询价单${statusEvent.inquiryNo}, ${statusEvent.oldStatus} -> ${statusEvent.newStatus}`);
       return true;
     } else {
-      console.log(`⚠️ 企业 ${companyId} 没有在线用户，状态更新将在下次登录时显示`);
+      console.log(`⚠️ 企业 ${numericCompanyId} 没有在线用户，状态更新将在下次登录时显示`);
       return false;
     }
   }
 
   // 检查企业是否在线
   isCompanyOnline(companyId: number): boolean {
-    return this.connectedCompanies.has(companyId);
+    const numericCompanyId = Number(companyId);
+    return this.connectedCompanies.has(numericCompanyId);
   }
 
   // 获取在线企业数量
@@ -468,7 +479,8 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
   // 获取特定企业的在线连接数
   getCompanyConnectionCount(companyId: number): number {
-    const companySockets = this.connectedCompanies.get(companyId);
+    const numericCompanyId = Number(companyId);
+    const companySockets = this.connectedCompanies.get(numericCompanyId);
     return companySockets ? companySockets.size : 0;
   }
 }

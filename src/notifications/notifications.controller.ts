@@ -29,13 +29,17 @@ import {
   NotificationStatus,
 } from '../entities/notification.entity';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
+import { NotificationGateway } from './notification.gateway';
 
 @ApiTags('通知管理')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly notificationGateway: NotificationGateway,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '获取我的通知列表' })
@@ -110,5 +114,31 @@ export class NotificationsController {
   ) {
     await this.notificationsService.deleteNotification(user, id);
     return ResponseWrapperUtil.successNoData('通知删除成功');
+  }
+
+  @Get('websocket/stats')
+  @ApiOperation({ summary: '获取WebSocket连接状态（调试用）' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getWebSocketStats() {
+    const stats = this.notificationGateway.getOnlineStats();
+    const companyConnections = {};
+    
+    // 获取当前用户的企业连接状态
+    for (let companyId = 20; companyId <= 30; companyId++) {
+      const connectionCount = this.notificationGateway.getCompanyConnectionCount(companyId);
+      const isOnline = this.notificationGateway.isCompanyOnline(companyId);
+      if (connectionCount > 0 || companyId === 24 || companyId === 26) { // 重点关注测试企业
+        companyConnections[companyId] = {
+          connectionCount,
+          isOnline
+        };
+      }
+    }
+    
+    return ResponseWrapperUtil.success({
+      ...stats,
+      companyConnections,
+      timestamp: new Date().toISOString()
+    }, 'WebSocket状态获取成功');
   }
 }
