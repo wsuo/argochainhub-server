@@ -14,6 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { AdminUser } from '../entities/admin-user.entity';
+import { AdminNotification, AdminNotificationStatus } from '../entities/admin-notification.entity';
 import { AdminPermission } from '../types/permissions';
 
 interface AuthenticatedSocket extends Socket {
@@ -61,6 +62,8 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     private readonly userRepository: Repository<User>,
     @InjectRepository(AdminUser)
     private readonly adminUserRepository: Repository<AdminUser>,
+    @InjectRepository(AdminNotification)
+    private readonly adminNotificationRepository: Repository<AdminNotification>,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -297,9 +300,26 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   async sendAdminUnreadCount(adminUserId: number) {
     const adminSockets = this.connectedAdmins.get(adminUserId);
     if (adminSockets && adminSockets.size > 0) {
-      // 暂时发送一个占位符，实际实现中通过AdminNotificationService获取真实数量
-      for (const socketId of adminSockets) {
-        this.server.to(socketId).emit('admin_unread_count', { count: 0 });
+      try {
+        // 直接查询数据库获取实际的未读通知数量
+        const unreadCount = await this.adminNotificationRepository.count({
+          where: {
+            adminUserId,
+            status: AdminNotificationStatus.UNREAD,
+          },
+        });
+        
+        for (const socketId of adminSockets) {
+          this.server.to(socketId).emit('admin_unread_count', { count: unreadCount });
+        }
+        
+        console.log(`📊 向管理员 ${adminUserId} 推送未读数量: ${unreadCount}`);
+      } catch (error) {
+        console.error('获取管理员未读数量失败:', error);
+        // 发生错误时仍然发送一个默认值，避免前端卡住
+        for (const socketId of adminSockets) {
+          this.server.to(socketId).emit('admin_unread_count', { count: 0 });
+        }
       }
     }
   }
