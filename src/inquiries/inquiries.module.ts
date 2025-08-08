@@ -7,17 +7,20 @@ import { Company } from '../entities/company.entity';
 import { Communication } from '../entities/communication.entity';
 import { CommonModule } from '../common/common.module';
 import { QuotaModule } from '../quota/quota.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { InquiriesService } from './inquiries.service';
 import { InquiriesController } from './inquiries.controller';
+import { InquiryMessageService } from './inquiry-message.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Inquiry, InquiryItem, Product, Company, Communication]),
     CommonModule,
     QuotaModule,
+    NotificationsModule,
   ],
-  providers: [InquiriesService],
+  providers: [InquiriesService, InquiryMessageService],
   controllers: [InquiriesController],
-  exports: [InquiriesService],
+  exports: [InquiriesService, InquiryMessageService],
 })
 export class InquiriesModule {}

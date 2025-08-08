@@ -23,6 +23,34 @@ interface AuthenticatedSocket extends Socket {
   adminUserId?: number;
   adminUser?: AdminUser;
   userType?: 'user' | 'admin';
+  companyId?: number;
+  companyType?: string;
+}
+
+interface InquiryMessageEvent {
+  inquiryId: number;
+  messageId: number;
+  senderId: number;
+  senderName: string;
+  senderCompany: string;
+  senderCompanyType: string;
+  message: string;
+  timestamp: string;
+  inquiryNo: string;
+}
+
+interface InquiryStatusUpdateEvent {
+  inquiryId: number;
+  inquiryNo: string;
+  oldStatus: string;
+  newStatus: string;
+  timestamp: string;
+  updatedBy: {
+    userId: number;
+    userName: string;
+    companyName: string;
+    companyType: string;
+  };
 }
 
 @Injectable()
@@ -55,6 +83,9 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   
   // 管理员连接管理 - adminUserId -> Set of socket IDs
   private connectedAdmins = new Map<number, Set<string>>();
+
+  // 企业用户连接管理 - companyId -> Set of socket IDs（用于询价消息推送）
+  private connectedCompanies = new Map<number, Set<string>>();
 
   constructor(
     private readonly jwtService: JwtService,
@@ -104,9 +135,11 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   private async handleUserConnection(client: AuthenticatedSocket, payload: any) {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub, isActive: true },
+      relations: ['company'],
     });
 
-    if (!user) {
+    if (!user || !user.company) {
+      console.log('❌ 用户不存在或没有关联企业, 断开连接');
       client.disconnect();
       return;
     }
@@ -114,6 +147,8 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     client.userId = user.id;
     client.user = user;
     client.userType = 'user';
+    client.companyId = user.companyId;
+    client.companyType = user.company.type;
 
     // 将用户连接信息存储到Map中 - 确保使用数字类型的用户ID
     const numericUserId = Number(user.id);
@@ -122,10 +157,22 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     }
     this.connectedUsers.get(numericUserId)!.add(client.id);
 
-    console.log(`✅ 用户 ${user.id} (${user.name}) 连接到通知系统`);
+    // 将企业连接信息存储到Map中（用于询价消息推送）
+    const numericCompanyId = Number(user.companyId);
+    if (!this.connectedCompanies.has(numericCompanyId)) {
+      this.connectedCompanies.set(numericCompanyId, new Set());
+    }
+    this.connectedCompanies.get(numericCompanyId)!.add(client.id);
+
+    console.log(`✅ 用户 ${user.id} (${user.name}) 连接到通知系统, 企业ID: ${user.companyId}, 企业类型: ${user.company.type}`);
     
     // 发送连接成功消息
-    client.emit('connected', { message: '已连接到通知系统', type: 'user' });
+    client.emit('connected', { 
+      message: '已连接到通知系统', 
+      type: 'user',
+      companyId: user.companyId,
+      companyType: user.company.type
+    });
     
     // 发送未读通知数量
     await this.sendUnreadCount(user.id);
@@ -202,6 +249,19 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
           this.connectedUsers.delete(numericUserId);
         }
       }
+
+      // 从企业连接中移除
+      if (client.companyId) {
+        const numericCompanyId = Number(client.companyId);
+        const companySockets = this.connectedCompanies.get(numericCompanyId);
+        if (companySockets) {
+          companySockets.delete(client.id);
+          if (companySockets.size === 0) {
+            this.connectedCompanies.delete(numericCompanyId);
+          }
+        }
+      }
+
       console.log(`❌ 用户 ${client.userId} 断开连接`);
     }
   }
@@ -355,9 +415,60 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     return {
       totalUsers: this.connectedUsers.size,
       totalAdmins: this.connectedAdmins.size,
+      totalCompanies: this.connectedCompanies.size,
       totalConnections: 
         Array.from(this.connectedUsers.values()).reduce((sum, sockets) => sum + sockets.size, 0) +
         Array.from(this.connectedAdmins.values()).reduce((sum, sockets) => sum + sockets.size, 0),
     };
+  }
+
+  // ==================== 询价消息推送相关方法 ====================
+
+  // 向企业的所有在线用户推送询价消息
+  async sendInquiryMessageToCompany(companyId: number, messageEvent: InquiryMessageEvent) {
+    const companySockets = this.connectedCompanies.get(companyId);
+    
+    if (companySockets && companySockets.size > 0) {
+      for (const socketId of companySockets) {
+        this.server.to(socketId).emit('inquiry_message_received', messageEvent);
+      }
+      console.log(`📤 向企业 ${companyId} 推送询价消息: 询价单${messageEvent.inquiryNo}, 消息ID${messageEvent.messageId}`);
+      return true;
+    } else {
+      console.log(`⚠️ 企业 ${companyId} 没有在线用户，消息将在下次登录时显示`);
+      return false;
+    }
+  }
+
+  // 向企业的所有在线用户推送询价状态更新
+  async sendInquiryStatusUpdateToCompany(companyId: number, statusEvent: InquiryStatusUpdateEvent) {
+    const companySockets = this.connectedCompanies.get(companyId);
+    
+    if (companySockets && companySockets.size > 0) {
+      for (const socketId of companySockets) {
+        this.server.to(socketId).emit('inquiry_status_updated', statusEvent);
+      }
+      console.log(`📤 向企业 ${companyId} 推送询价状态更新: 询价单${statusEvent.inquiryNo}, ${statusEvent.oldStatus} -> ${statusEvent.newStatus}`);
+      return true;
+    } else {
+      console.log(`⚠️ 企业 ${companyId} 没有在线用户，状态更新将在下次登录时显示`);
+      return false;
+    }
+  }
+
+  // 检查企业是否在线
+  isCompanyOnline(companyId: number): boolean {
+    return this.connectedCompanies.has(companyId);
+  }
+
+  // 获取在线企业数量
+  getOnlineCompanyCount(): number {
+    return this.connectedCompanies.size;
+  }
+
+  // 获取特定企业的在线连接数
+  getCompanyConnectionCount(companyId: number): number {
+    const companySockets = this.connectedCompanies.get(companyId);
+    return companySockets ? companySockets.size : 0;
   }
 }
