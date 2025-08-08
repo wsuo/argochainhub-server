@@ -113,12 +113,7 @@ export class AuthService {
     // 发送管理员通知
     try {
       if (userType === UserType.SUPPLIER && savedCompany) {
-        // 供应商注册需要审核，通知管理员
-        await this.adminNotificationsService.notifyUserRegistrationPending(
-          savedUser.id,
-          userName || email
-        );
-        // 企业认证审核通知
+        // 供应商注册只发送企业认证审核通知
         await this.adminNotificationsService.notifyCompanyReviewPending(
           savedCompany.id,
           typeof companyName === 'string' ? companyName : `企业ID-${savedCompany.id}`
