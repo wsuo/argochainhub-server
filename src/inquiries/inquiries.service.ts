@@ -23,8 +23,10 @@ import { SearchInquiriesDto } from './dto/search-inquiries.dto';
 import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
+import { SupplierQuoteSearchDto, QuoteStatsDto, BatchUpdateQuoteDto } from './dto/supplier-quote-management.dto';
 import { AuthForbiddenException } from '../common/exceptions/auth-forbidden.exception';
 import { AuthErrorCode } from '../common/constants/error-codes';
+import { InquiryMessageService } from './inquiry-message.service';
 
 @Injectable()
 export class InquiriesService {
@@ -39,6 +41,7 @@ export class InquiriesService {
     private readonly companyRepository: Repository<Company>,
     @InjectRepository(Communication)
     private readonly communicationRepository: Repository<Communication>,
+    private readonly inquiryMessageService: InquiryMessageService,
   ) {}
 
   async createInquiry(
@@ -257,11 +260,23 @@ export class InquiriesService {
       throw new BadRequestException('Quote deadline has passed');
     }
 
+    // 保存旧状态
+    const oldStatus = inquiry.status;
+
     // 更新询价单
     inquiry.quoteDetails = quoteDto.quoteDetails;
     inquiry.status = InquiryStatus.QUOTED;
 
-    return this.inquiryRepository.save(inquiry);
+    const savedInquiry = await this.inquiryRepository.save(inquiry);
+
+    // 推送状态更新
+    await this.inquiryMessageService.pushInquiryStatusUpdate(
+      savedInquiry,
+      oldStatus,
+      user,
+    );
+
+    return savedInquiry;
   }
 
   async confirmInquiry(user: User, id: number): Promise<Inquiry> {
@@ -279,8 +294,20 @@ export class InquiriesService {
       );
     }
 
+    // 保存旧状态
+    const oldStatus = inquiry.status;
+
     inquiry.status = InquiryStatus.CONFIRMED;
-    return this.inquiryRepository.save(inquiry);
+    const savedInquiry = await this.inquiryRepository.save(inquiry);
+
+    // 推送状态更新
+    await this.inquiryMessageService.pushInquiryStatusUpdate(
+      savedInquiry,
+      oldStatus,
+      user,
+    );
+
+    return savedInquiry;
   }
 
   async declineInquiry(
@@ -308,6 +335,9 @@ export class InquiriesService {
       );
     }
 
+    // 保存旧状态
+    const oldStatus = inquiry.status;
+
     // 记录拒绝原因到details中
     inquiry.details = {
       ...inquiry.details,
@@ -316,7 +346,16 @@ export class InquiriesService {
     };
     inquiry.status = InquiryStatus.DECLINED;
 
-    return this.inquiryRepository.save(inquiry);
+    const savedInquiry = await this.inquiryRepository.save(inquiry);
+
+    // 推送状态更新
+    await this.inquiryMessageService.pushInquiryStatusUpdate(
+      savedInquiry,
+      oldStatus,
+      user,
+    );
+
+    return savedInquiry;
   }
 
   async cancelInquiry(user: User, id: number): Promise<Inquiry> {
@@ -334,8 +373,20 @@ export class InquiriesService {
       );
     }
 
+    // 保存旧状态
+    const oldStatus = inquiry.status;
+
     inquiry.status = InquiryStatus.CANCELLED;
-    return this.inquiryRepository.save(inquiry);
+    const savedInquiry = await this.inquiryRepository.save(inquiry);
+
+    // 推送状态更新
+    await this.inquiryMessageService.pushInquiryStatusUpdate(
+      savedInquiry,
+      oldStatus,
+      user,
+    );
+
+    return savedInquiry;
   }
 
   private generateInquiryNumber(): string {
@@ -362,7 +413,24 @@ export class InquiriesService {
       senderId: user.id,
     });
 
-    return this.communicationRepository.save(communication);
+    const savedCommunication = await this.communicationRepository.save(communication);
+
+    // 查询完整的消息信息（包含发送者信息）
+    const fullCommunication = await this.communicationRepository.findOne({
+      where: { id: savedCommunication.id },
+      relations: ['sender', 'sender.company'],
+    });
+
+    if (fullCommunication) {
+      // 推送消息给相关企业
+      await this.inquiryMessageService.pushInquiryMessage(
+        fullCommunication,
+        inquiry,
+        user,
+      );
+    }
+
+    return savedCommunication;
   }
 
   async getMessages(
@@ -401,6 +469,255 @@ export class InquiriesService {
         totalPages: Math.ceil(total / limit),
         currentPage: page,
       },
+    };
+  }
+
+  // 供应端报价管理方法
+  async getSupplierQuotes(
+    user: User,
+    searchDto: SupplierQuoteSearchDto,
+  ): Promise<PaginatedResult<Inquiry>> {
+    // 验证用户是供应商
+    if (!user.company || user.company.type !== CompanyType.SUPPLIER) {
+      throw new ForbiddenException('Only suppliers can access quote management');
+    }
+
+    const { page = 1, limit = 10, status, startDate, endDate, keyword } = searchDto;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .leftJoinAndSelect('inquiry.buyer', 'buyer')
+      .leftJoinAndSelect('inquiry.supplier', 'supplier')
+      .leftJoinAndSelect('inquiry.items', 'items')
+      .leftJoinAndSelect('items.product', 'product')
+      .where('inquiry.supplierId = :supplierId', {
+        supplierId: user.companyId,
+      });
+
+    // 状态筛选
+    if (status) {
+      queryBuilder.andWhere('inquiry.status = :status', { status });
+    }
+
+    // 日期范围筛选
+    if (startDate) {
+      queryBuilder.andWhere('inquiry.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      queryBuilder.andWhere('inquiry.createdAt <= :endDate', { endDate });
+    }
+
+    // 关键词模糊搜索：支持询价单号、采购商公司名称、产品名称、买方备注等
+    if (keyword) {
+      queryBuilder.andWhere(
+        `(
+          inquiry.inquiryNo LIKE :keyword 
+          OR JSON_EXTRACT(buyer.name, '$.\"zh-CN\"') LIKE :keyword 
+          OR JSON_EXTRACT(buyer.name, '$.\"en\"') LIKE :keyword
+          OR JSON_EXTRACT(inquiry.details, '$.\"buyerRemarks\"') LIKE :keyword
+          OR EXISTS (
+            SELECT 1 FROM inquiry_items ii 
+            WHERE ii.inquiryId = inquiry.id 
+            AND (
+              JSON_EXTRACT(ii.productSnapshot, '$.\"name\".\"zh-CN\"') LIKE :keyword
+              OR JSON_EXTRACT(ii.productSnapshot, '$.\"name\".\"en\"') LIKE :keyword
+              OR JSON_EXTRACT(ii.productSnapshot, '$.\"pesticideName\".\"zh-CN\"') LIKE :keyword
+              OR JSON_EXTRACT(ii.productSnapshot, '$.\"pesticideName\".\"en\"') LIKE :keyword
+            )
+          )
+        )`,
+        { keyword: `%${keyword}%` }
+      );
+    }
+
+    // 排序：优先显示待报价和报价截止时间临近的
+    queryBuilder
+      .addOrderBy('inquiry.deadline', 'ASC')
+      .addOrderBy('inquiry.createdAt', 'DESC');
+
+    const [inquiries, total] = await queryBuilder
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    // 为每个询价单添加最近消息
+    const inquiriesWithMessages = await Promise.all(
+      inquiries.map(async (inquiry) => {
+        const recentMessages = await this.communicationRepository
+          .createQueryBuilder('communication')
+          .leftJoinAndSelect('communication.sender', 'sender')
+          .leftJoinAndSelect('sender.company', 'company')
+          .where('communication.relatedService = :service', {
+            service: RelatedService.INQUIRY,
+          })
+          .andWhere('communication.relatedId = :inquiryId', { inquiryId: inquiry.id })
+          .orderBy('communication.createdAt', 'DESC')
+          .limit(5)
+          .getMany();
+
+        return {
+          ...inquiry,
+          recentMessages,
+        };
+      })
+    );
+
+    return {
+      data: inquiriesWithMessages,
+      meta: {
+        totalItems: total,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        itemCount: inquiries.length,
+      },
+    };
+  }
+
+  async getSupplierQuoteStats(user: User): Promise<QuoteStatsDto> {
+    // 验证用户是供应商
+    if (!user.company || user.company.type !== CompanyType.SUPPLIER) {
+      throw new ForbiddenException('Only suppliers can access quote stats');
+    }
+
+    const supplierId = user.companyId;
+
+    // 获取各状态统计
+    const stats = await this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .select('inquiry.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('inquiry.supplierId = :supplierId', { supplierId })
+      .groupBy('inquiry.status')
+      .getRawMany();
+
+    // 获取本月报价数量
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+    
+    const monthlyQuoteCount = await this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .where('inquiry.supplierId = :supplierId', { supplierId })
+      .andWhere('inquiry.status = :status', { status: InquiryStatus.QUOTED })
+      .andWhere('inquiry.updatedAt >= :currentMonth', { currentMonth })
+      .getCount();
+
+    // 统计数据整理
+    const statusMap = stats.reduce((acc, stat) => {
+      acc[stat.status] = parseInt(stat.count);
+      return acc;
+    }, {} as Record<string, number>);
+
+    const pendingQuoteCount = statusMap[InquiryStatus.PENDING_QUOTE] || 0;
+    const quotedCount = statusMap[InquiryStatus.QUOTED] || 0;
+    const confirmedCount = statusMap[InquiryStatus.CONFIRMED] || 0;
+    const declinedCount = statusMap[InquiryStatus.DECLINED] || 0;
+    const totalCount = Object.values(statusMap).reduce((sum: number, count: number) => sum + count, 0) as number;
+
+    // 计算成功率（确认数 / (确认数 + 拒绝数)）
+    const successRate = (confirmedCount + declinedCount) > 0 
+      ? ((confirmedCount / (confirmedCount + declinedCount)) * 100).toFixed(1) + '%'
+      : '0%';
+
+    return {
+      pendingQuoteCount,
+      quotedCount,
+      confirmedCount,
+      declinedCount,
+      totalCount,
+      monthlyQuoteCount,
+      successRate,
+    };
+  }
+
+  async batchUpdateQuotes(
+    user: User,
+    batchUpdateDto: BatchUpdateQuoteDto,
+  ): Promise<{ successCount: number; failCount: number; errors: string[] }> {
+    // 验证用户是供应商
+    if (!user.company || user.company.type !== CompanyType.SUPPLIER) {
+      throw new ForbiddenException('Only suppliers can batch update quotes');
+    }
+
+    const { inquiryIds, action, reason, priority } = batchUpdateDto;
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
+
+    for (const inquiryId of inquiryIds) {
+      try {
+        // 获取询价单
+        const inquiry = await this.inquiryRepository.findOne({
+          where: { id: inquiryId, supplierId: user.companyId },
+        });
+
+        if (!inquiry) {
+          errors.push(`询价单 ${inquiryId} 不存在或无访问权限`);
+          failCount++;
+          continue;
+        }
+
+        if (action === 'decline') {
+          // 批量拒绝
+          if (![InquiryStatus.PENDING_QUOTE, InquiryStatus.QUOTED].includes(inquiry.status)) {
+            errors.push(`询价单 ${inquiryId} 状态不允许拒绝`);
+            failCount++;
+            continue;
+          }
+
+          inquiry.details = {
+            ...inquiry.details,
+            declineReason: reason || '批量拒绝',
+            declinedBy: 'supplier',
+          };
+          inquiry.status = InquiryStatus.DECLINED;
+
+        } else if (action === 'update_priority') {
+          // 批量更新优先级
+          inquiry.details = {
+            ...inquiry.details,
+            supplierPriority: priority || 'normal',
+          };
+        }
+
+        await this.inquiryRepository.save(inquiry);
+        successCount++;
+
+      } catch (error) {
+        errors.push(`询价单 ${inquiryId} 处理失败: ${error.message}`);
+        failCount++;
+      }
+    }
+
+    return { successCount, failCount, errors };
+  }
+
+  async getQuoteHistory(user: User, inquiryId: number): Promise<any> {
+    // 验证用户是供应商并有权限访问该询价单
+    const inquiry = await this.inquiryRepository.findOne({
+      where: { id: inquiryId, supplierId: user.companyId },
+      relations: ['buyer', 'supplier'],
+    });
+
+    if (!inquiry) {
+      throw new NotFoundException('询价单不存在或无访问权限');
+    }
+
+    // 获取历史记录（从communications表）
+    const history = await this.communicationRepository.find({
+      where: {
+        relatedService: RelatedService.INQUIRY,
+        relatedId: inquiryId,
+      },
+      relations: ['sender'],
+      order: { createdAt: 'ASC' },
+    });
+
+    return {
+      inquiry,
+      history,
     };
   }
 }

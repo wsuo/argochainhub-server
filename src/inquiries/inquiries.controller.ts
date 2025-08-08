@@ -31,6 +31,7 @@ import { SearchInquiriesDto } from './dto/search-inquiries.dto';
 import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
+import { SupplierQuoteSearchDto, QuoteStatsDto, BatchUpdateQuoteDto } from './dto/supplier-quote-management.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('询价管理')
@@ -168,5 +169,61 @@ export class InquiriesController {
   ) {
     const result = await this.inquiriesService.getMessages(user, id, getMessagesDto);
     return ResponseWrapperUtil.successWithPagination(result, '获取消息历史成功');
+  }
+
+  // 供应端报价管理接口
+  @Get('supplier/quotes')
+  @UseGuards(CompanyTypeGuard)
+  @CompanyTypes(CompanyType.SUPPLIER)
+  @ApiOperation({ summary: '获取供应商的报价列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 403, description: '仅供应商可访问' })
+  async getSupplierQuotes(
+    @CurrentUser() user: User,
+    @Query() searchDto: SupplierQuoteSearchDto,
+  ) {
+    const result = await this.inquiriesService.getSupplierQuotes(user, searchDto);
+    return ResponseWrapperUtil.successWithPagination(result, '获取报价列表成功');
+  }
+
+  @Get('supplier/quotes/stats')
+  @UseGuards(CompanyTypeGuard)
+  @CompanyTypes(CompanyType.SUPPLIER)
+  @ApiOperation({ summary: '获取供应商报价统计' })
+  @ApiResponse({ status: 200, description: '获取成功', type: QuoteStatsDto })
+  @ApiResponse({ status: 403, description: '仅供应商可访问' })
+  async getSupplierQuoteStats(@CurrentUser() user: User) {
+    const stats = await this.inquiriesService.getSupplierQuoteStats(user);
+    return ResponseWrapperUtil.success(stats, '获取报价统计成功');
+  }
+
+  @Post('supplier/quotes/batch-update')
+  @UseGuards(CompanyTypeGuard)
+  @CompanyTypes(CompanyType.SUPPLIER)
+  @ApiOperation({ summary: '批量操作报价' })
+  @ApiResponse({ status: 200, description: '操作成功' })
+  @ApiResponse({ status: 403, description: '仅供应商可访问' })
+  async batchUpdateQuotes(
+    @CurrentUser() user: User,
+    @Body() batchUpdateDto: BatchUpdateQuoteDto,
+  ) {
+    const result = await this.inquiriesService.batchUpdateQuotes(user, batchUpdateDto);
+    return ResponseWrapperUtil.success(result, '批量操作完成');
+  }
+
+  @Get('supplier/quotes/:id/history')
+  @UseGuards(CompanyTypeGuard)
+  @CompanyTypes(CompanyType.SUPPLIER)
+  @ApiOperation({ summary: '获取询价单报价历史' })
+  @ApiParam({ name: 'id', description: '询价单ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 403, description: '仅供应商可访问' })
+  @ApiResponse({ status: 404, description: '询价单不存在' })
+  async getQuoteHistory(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const result = await this.inquiriesService.getQuoteHistory(user, id);
+    return ResponseWrapperUtil.success(result, '获取报价历史成功');
   }
 }
