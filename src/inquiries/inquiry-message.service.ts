@@ -6,6 +6,7 @@ import { Communication } from '../entities/communication.entity';
 import { Inquiry } from '../entities/inquiry.entity';
 import { User } from '../entities/user.entity';
 import { Company } from '../entities/company.entity';
+import { Notification, NotificationType } from '../entities/notification.entity';
 
 interface InquiryMessageEvent {
   inquiryId: number;
@@ -42,6 +43,10 @@ export class InquiryMessageService {
     private readonly inquiryRepository: Repository<Inquiry>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
+    @InjectRepository(Notification)
+    private readonly notificationRepository: Repository<Notification>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly notificationGateway: NotificationGateway,
   ) {}
 
@@ -72,8 +77,61 @@ export class InquiryMessageService {
       // 确定接收方企业ID
       const receiverCompanyId = sender.companyId === inquiry.buyerId ? inquiry.supplierId : inquiry.buyerId;
 
-      // 推送消息给接收方企业
+      // 获取接收方企业的所有用户，为他们创建通知记录
+      const receiverUsers = await this.userRepository.find({
+        where: { 
+          companyId: receiverCompanyId,
+          isActive: true 
+        }
+      });
+
+      // 为接收方企业的每个用户创建通知记录
+      const notifications = receiverUsers.map(user => {
+        const isBuyerSending = sender.company?.type === 'buyer';
+        const notificationType = isBuyerSending ? NotificationType.INQUIRY_NEW : NotificationType.INQUIRY_QUOTED;
+        
+        return this.notificationRepository.create({
+          type: notificationType,
+          title: `${messageEvent.senderCompany} 发来新消息`,
+          content: messageEvent.message.length > 100 
+            ? messageEvent.message.substring(0, 100) + '...' 
+            : messageEvent.message,
+          userId: user.id,
+          data: {
+            relatedId: inquiry.id,
+            relatedType: 'inquiry',
+            messageId: communication.id,
+            inquiryNo: inquiry.inquiryNo,
+            senderCompanyId: sender.companyId,
+            senderCompanyName: messageEvent.senderCompany,
+            actionUrl: `/inquiries/${inquiry.id}/messages`
+          }
+        });
+      });
+
+      // 批量保存通知
+      if (notifications.length > 0) {
+        await this.notificationRepository.save(notifications);
+        console.log(`📧 为企业${receiverCompanyId}的${notifications.length}个用户创建了询价消息通知`);
+      }
+
+      // 推送WebSocket消息给接收方企业
       await this.notificationGateway.sendInquiryMessageToCompany(receiverCompanyId, messageEvent);
+
+      // 同时为每个在线用户推送通知
+      for (const user of receiverUsers) {
+        const notification = notifications.find(n => n.userId === user.id);
+        if (notification) {
+          await this.notificationGateway.sendNotificationToUser(user.id, {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            content: notification.content,
+            data: notification.data,
+            createdAt: notification.createdAt
+          });
+        }
+      }
 
       console.log(`✅ 询价消息推送成功: 从企业${sender.companyId}推送到企业${receiverCompanyId}, 询价单${inquiry.inquiryNo}`);
     } catch (error) {
