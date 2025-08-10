@@ -39,6 +39,31 @@ export class SampleRequest extends BaseEntity {
       paid: boolean;
       amount?: number;
     };
+    // 扩展字段
+    cancelReason?: string;
+    cancelledAt?: string;
+    deliveryInfo?: {
+      receivedAt?: string;
+      condition?: string;
+      notes?: string;
+      images?: string[];
+    };
+    approvalInfo?: {
+      approvedAt?: string;
+      approvedBy?: string;
+      notes?: string;
+      estimatedShipDate?: string;
+    };
+    rejectionInfo?: {
+      rejectedAt?: string;
+      rejectedBy?: string;
+      reason?: string;
+    };
+    shippingInfo?: {
+      shippedAt?: string;
+      shippedBy?: string;
+      notes?: string;
+    };
   };
 
   @Column('json', { nullable: true })
