@@ -203,6 +203,133 @@ export class AuthService {
     };
   }
 
+  async buyerLogin(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+
+    // 查找用户，只查找采购商类型
+    const user = await this.userRepository.findOne({
+      where: { 
+        email, 
+        isActive: true,
+        userType: UserType.INDIVIDUAL_BUYER 
+      },
+      relations: ['company'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(
+        '采购商账户不存在或账户未激活',
+      );
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('密码错误');
+    }
+
+    // 更新最后登录时间
+    user.lastLoginAt = new Date();
+    await this.userRepository.save(user);
+
+    // 生成JWT，增加登录来源标识
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      companyId: user.companyId || null,
+      companyType: user.company?.type || null,
+      userType: user.userType,
+      role: user.role,
+      loginSource: 'buyer',
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        userType: user.userType,
+        role: user.role,
+        loginSource: 'buyer',
+        company: user.company ? {
+          id: user.company.id,
+          name: user.company.name,
+          type: user.company.type,
+          status: user.company.status,
+        } : null,
+      },
+    };
+  }
+
+  async supplierLogin(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+
+    // 查找用户，只查找供应商类型
+    const user = await this.userRepository.findOne({
+      where: { 
+        email, 
+        isActive: true,
+        userType: UserType.SUPPLIER 
+      },
+      relations: ['company'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(
+        '供应商账户不存在或账户未激活',
+      );
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('密码错误');
+    }
+
+    // 检查企业状态（供应商必须有企业且企业状态必须为ACTIVE）
+    if (!user.company || user.company.status !== CompanyStatus.ACTIVE) {
+      throw new UnauthorizedException('企业尚未通过审核，请等待审核完成');
+    }
+
+    // 更新最后登录时间
+    user.lastLoginAt = new Date();
+    await this.userRepository.save(user);
+
+    // 生成JWT，增加登录来源标识
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      companyId: user.companyId || null,
+      companyType: user.company.type,
+      userType: user.userType,
+      role: user.role,
+      loginSource: 'supplier',
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        userType: user.userType,
+        role: user.role,
+        loginSource: 'supplier',
+        company: {
+          id: user.company.id,
+          name: user.company.name,
+          type: user.company.type,
+          status: user.company.status,
+        },
+      },
+    };
+  }
+
   async changePassword(user: User, changePasswordDto: ChangePasswordDto) {
     const { oldPassword, newPassword } = changePasswordDto;
 
@@ -300,6 +427,7 @@ export class AuthService {
       username: adminUser.username,
       role: adminUser.role,
       type: 'admin', // 标识这是管理员token
+      loginSource: 'admin', // 管理员登录来源
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -311,6 +439,7 @@ export class AuthService {
         username: adminUser.username,
         role: adminUser.role,
         lastLoginAt: adminUser.lastLoginAt,
+        loginSource: 'admin',
       },
     };
   }
@@ -326,6 +455,9 @@ export class AuthService {
       throw new UnauthorizedException('用户不存在或已被禁用');
     }
 
+    // 根据用户类型确定登录来源
+    const loginSource = freshUser.userType === UserType.INDIVIDUAL_BUYER ? 'buyer' : 'supplier';
+
     // 生成包含最新信息的JWT
     const payload: JwtPayload = {
       sub: freshUser.id,
@@ -334,6 +466,7 @@ export class AuthService {
       companyType: freshUser.company?.type || null,
       userType: freshUser.userType,
       role: freshUser.role,
+      loginSource: loginSource,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -346,6 +479,7 @@ export class AuthService {
         name: freshUser.name,
         userType: freshUser.userType,
         role: freshUser.role,
+        loginSource: loginSource,
         company: freshUser.company ? {
           id: freshUser.company.id,
           name: freshUser.company.name,

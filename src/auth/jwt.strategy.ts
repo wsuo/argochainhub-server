@@ -16,6 +16,7 @@ export interface JwtPayload {
   userType?: UserType;
   role: string;
   type?: string; // 'admin' for AdminUser, undefined for regular User
+  loginSource?: 'buyer' | 'supplier' | 'admin'; // 登录来源标识
 }
 
 @Injectable()

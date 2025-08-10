@@ -86,6 +86,24 @@ export class AuthController {
     return ResponseWrapperUtil.success(result, 'Token刷新成功');
   }
 
+  @Post('buyer/login')
+  @ApiOperation({ summary: '采购商登录' })
+  @ApiResponse({ status: 200, description: '登录成功' })
+  @ApiResponse({ status: 401, description: '登录失败' })
+  async buyerLogin(@Body() loginDto: LoginDto) {
+    const result = await this.authService.buyerLogin(loginDto);
+    return ResponseWrapperUtil.success(result, '采购商登录成功');
+  }
+
+  @Post('supplier/login')
+  @ApiOperation({ summary: '供应商登录' })
+  @ApiResponse({ status: 200, description: '登录成功' })
+  @ApiResponse({ status: 401, description: '登录失败' })
+  async supplierLogin(@Body() loginDto: LoginDto) {
+    const result = await this.authService.supplierLogin(loginDto);
+    return ResponseWrapperUtil.success(result, '供应商登录成功');
+  }
+
   @Post('admin/login')
   @ApiOperation({ summary: '系统管理员登录' })
   @ApiResponse({ status: 200, description: '登录成功' })

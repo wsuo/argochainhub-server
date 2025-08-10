@@ -14,6 +14,12 @@ export enum NotificationType {
   COMPANY_REJECTED = 'company_rejected',
   SUBSCRIPTION_EXPIRING = 'subscription_expiring',
   QUOTA_WARNING = 'quota_warning',
+  // 样品相关通知类型
+  SAMPLE_REQUEST_NEW = 'sample_request_new',
+  SAMPLE_REQUEST_APPROVED = 'sample_request_approved',
+  SAMPLE_REQUEST_REJECTED = 'sample_request_rejected',
+  SAMPLE_REQUEST_SHIPPED = 'sample_request_shipped',
+  SAMPLE_REQUEST_DELIVERED = 'sample_request_delivered',
 }
 
 export enum NotificationStatus {
