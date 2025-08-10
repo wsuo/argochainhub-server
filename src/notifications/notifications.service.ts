@@ -7,7 +7,8 @@ import {
   NotificationStatus,
 } from '../entities/notification.entity';
 import { User } from '../entities/user.entity';
-import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
+import { PaginatedResult } from '../common/dto/pagination.dto';
+import { GetNotificationsDto } from './dto/get-notifications.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { NotificationGateway } from './notification.gateway';
@@ -86,12 +87,9 @@ export class NotificationsService {
 
   async getMyNotifications(
     user: User,
-    paginationDto: PaginationDto & {
-      status?: NotificationStatus;
-      type?: NotificationType;
-    },
+    getNotificationsDto: GetNotificationsDto,
   ): Promise<PaginatedResult<Notification>> {
-    const { page = 1, limit = 20, status, type } = paginationDto;
+    const { page = 1, limit = 20, status, type } = getNotificationsDto;
 
     const queryBuilder = this.notificationRepository
       .createQueryBuilder('notification')

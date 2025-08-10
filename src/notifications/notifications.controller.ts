@@ -22,7 +22,7 @@ import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { GetNotificationsDto } from './dto/get-notifications.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import {
   NotificationType,
@@ -43,20 +43,12 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: '获取我的通知列表' })
-  @ApiQuery({ name: 'status', enum: NotificationStatus, required: false })
-  @ApiQuery({ name: 'type', enum: NotificationType, required: false })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getMyNotifications(
     @CurrentUser() user: User,
-    @Query() paginationDto: PaginationDto,
-    @Query('status') status?: NotificationStatus,
-    @Query('type') type?: NotificationType,
+    @Query() getNotificationsDto: GetNotificationsDto,
   ) {
-    const result = await this.notificationsService.getMyNotifications(user, {
-      ...paginationDto,
-      status,
-      type,
-    });
+    const result = await this.notificationsService.getMyNotifications(user, getNotificationsDto);
     return ResponseWrapperUtil.successWithPagination(result, '获取通知列表成功');
   }
 
