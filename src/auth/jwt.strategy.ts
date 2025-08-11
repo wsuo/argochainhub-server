@@ -36,10 +36,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<User | AdminUser> {
+    // 将sub转换为数字（JWT序列化后可能变为字符串）
+    const userId = typeof payload.sub === 'string' ? parseInt(payload.sub, 10) : payload.sub;
+    
     // 如果是管理员token
     if (payload.type === 'admin') {
       const adminUser = await this.adminUserRepository.findOne({
-        where: { id: payload.sub, isActive: true },
+        where: { id: userId, isActive: true },
       });
 
       if (!adminUser) {
@@ -51,7 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // 普通用户token
     const user = await this.userRepository.findOne({
-      where: { id: payload.sub, isActive: true },
+      where: { id: userId, isActive: true },
       relations: ['company'],
     });
 
