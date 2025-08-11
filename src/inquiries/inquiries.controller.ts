@@ -32,6 +32,7 @@ import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { SupplierQuoteSearchDto, QuoteStatsDto, BatchUpdateQuoteDto } from './dto/supplier-quote-management.dto';
+import { BuyerInquiryStatsDto } from './dto/buyer-inquiry-stats.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('询价管理')
@@ -65,6 +66,17 @@ export class InquiriesController {
   ) {
     const result = await this.inquiriesService.getMyInquiries(user, searchDto);
     return ResponseWrapperUtil.successWithPagination(result, '获取成功');
+  }
+
+  @Get('stats')
+  @UseGuards(CompanyTypeGuard)
+  @CompanyTypes(CompanyType.BUYER)
+  @ApiOperation({ summary: '获取询价统计（采购商）' })
+  @ApiResponse({ status: 200, description: '获取成功', type: BuyerInquiryStatsDto })
+  @ApiResponse({ status: 403, description: '仅采购商可访问' })
+  async getBuyerInquiryStats(@CurrentUser() user: User) {
+    const stats = await this.inquiriesService.getBuyerInquiryStats(user);
+    return ResponseWrapperUtil.success(stats, '获取询价统计成功');
   }
 
   @Get(':id')

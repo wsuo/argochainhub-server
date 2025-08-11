@@ -24,6 +24,7 @@ import { DeclineInquiryDto } from './dto/decline-inquiry.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { SupplierQuoteSearchDto, QuoteStatsDto, BatchUpdateQuoteDto } from './dto/supplier-quote-management.dto';
+import { BuyerInquiryStatsDto } from './dto/buyer-inquiry-stats.dto';
 import { AuthForbiddenException } from '../common/exceptions/auth-forbidden.exception';
 import { AuthErrorCode } from '../common/constants/error-codes';
 import { InquiryMessageService } from './inquiry-message.service';
@@ -651,6 +652,45 @@ export class InquiriesService {
       totalCount,
       monthlyQuoteCount,
       successRate,
+    };
+  }
+
+  async getBuyerInquiryStats(user: User): Promise<BuyerInquiryStatsDto> {
+    // 验证用户是采购商
+    if (!user.company || user.company.type !== CompanyType.BUYER) {
+      throw new ForbiddenException('Only buyers can access inquiry stats');
+    }
+
+    const buyerId = user.companyId;
+
+    // 获取各状态统计
+    const stats = await this.inquiryRepository
+      .createQueryBuilder('inquiry')
+      .select('inquiry.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('inquiry.buyerId = :buyerId', { buyerId })
+      .groupBy('inquiry.status')
+      .getRawMany();
+
+    const statusMap = stats.reduce((acc, stat) => {
+      acc[stat.status] = parseInt(stat.count);
+      return acc;
+    }, {} as Record<string, number>);
+
+    const pendingQuoteCount = statusMap[InquiryStatus.PENDING_QUOTE] || 0;
+    const quotedCount = statusMap[InquiryStatus.QUOTED] || 0;
+    const confirmedCount = statusMap[InquiryStatus.CONFIRMED] || 0;
+    const declinedCount = statusMap[InquiryStatus.DECLINED] || 0;
+    const cancelledCount = statusMap[InquiryStatus.CANCELLED] || 0;
+    const totalCount = Object.values(statusMap).reduce((sum: number, count: number) => sum + count, 0) as number;
+
+    return {
+      pendingQuoteCount,
+      quotedCount,
+      confirmedCount,
+      declinedCount,
+      cancelledCount,
+      totalCount,
     };
   }
 
