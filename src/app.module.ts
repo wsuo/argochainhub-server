@@ -23,6 +23,7 @@ import { PesticidesModule } from './pesticides/pesticides.module';
 import { AiConversationsModule } from './ai-conversations/ai-conversations.module';
 import { ShoppingCartModule } from './shopping-cart/shopping-cart.module';
 import { SamplesModule } from './samples/samples.module';
+import { RegistrationRequestsModule } from './registration-requests/registration-requests.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -62,6 +63,7 @@ import openrouterConfig from './config/openrouter.config';
     AiConversationsModule,
     ShoppingCartModule,
     SamplesModule,
+    RegistrationRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
