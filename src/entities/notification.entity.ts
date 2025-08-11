@@ -20,6 +20,13 @@ export enum NotificationType {
   SAMPLE_REQUEST_REJECTED = 'sample_request_rejected',
   SAMPLE_REQUEST_SHIPPED = 'sample_request_shipped',
   SAMPLE_REQUEST_DELIVERED = 'sample_request_delivered',
+  // 登记申请相关通知类型
+  REGISTRATION_REQUEST_NEW = 'registration_request_new',
+  REGISTRATION_REQUEST_ACCEPTED = 'registration_request_accepted',
+  REGISTRATION_REQUEST_REJECTED = 'registration_request_rejected',
+  REGISTRATION_REQUEST_COMPLETED = 'registration_request_completed',
+  REGISTRATION_REQUEST_CANCELLED = 'registration_request_cancelled',
+  REGISTRATION_REQUEST_PROGRESS = 'registration_request_progress',
 }
 
 export enum NotificationStatus {

@@ -39,6 +39,10 @@ export class RegistrationRequest extends BaseEntity {
       currency?: string;
     };
     additionalRequirements?: string;
+    rejectReason?: string;
+    progressNote?: string;
+    estimatedCompletionDate?: string;
+    lastUpdateTime?: string;
   };
 
   @Column('json')
