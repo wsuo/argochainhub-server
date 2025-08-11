@@ -163,4 +163,20 @@ export class PublicDictionaryController {
     const result = await this.countryDictionaryService.getCountriesWithFlags();
     return ResponseWrapperUtil.success(result, '获取国家列表成功');
   }
+
+  @Get('countries')
+  @ApiOperation({ summary: '获取国家字典' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getCountries() {
+    const result = await this.dictionaryService.getDictionaryByCode('countries');
+    return ResponseWrapperUtil.success(result, '获取国家字典成功');
+  }
+
+  @Get('currencies')
+  @ApiOperation({ summary: '获取货币字典' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getCurrencies() {
+    const result = await this.dictionaryService.getDictionaryByCode('currencies');
+    return ResponseWrapperUtil.success(result, '获取货币字典成功');
+  }
 }

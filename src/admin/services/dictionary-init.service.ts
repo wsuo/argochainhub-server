@@ -29,6 +29,7 @@ export class DictionaryInitService {
       await this.initializeInquiryStatuses();
       await this.initializeRegistrationRequestStatuses();
       await this.initializeRegistrationDocumentTypes();
+      await this.initializeCurrencies();
       
       // 权限系统字典
       await this.initializeAdminRoles();
@@ -217,6 +218,21 @@ export class DictionaryInitService {
         sortOrder: 10,
       },
       {
+        code: 'currencies',
+        name: {
+          'zh-CN': '货币类型',
+          en: 'Currencies',
+          es: 'Monedas',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '世界主要货币列表',
+          en: 'List of world major currencies',
+          es: 'Lista de las principales monedas del mundo',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 11,
+      },
+      {
         code: 'countries',
         name: {
           'zh-CN': '国家地区',
@@ -229,7 +245,7 @@ export class DictionaryInitService {
           es: 'Lista de países y regiones del mundo',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 11,
+        sortOrder: 12,
       },
       {
         code: 'admin_roles',
@@ -1091,6 +1107,293 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('registration_document_type', documentTypes);
+  }
+
+  private async initializeCurrencies(): Promise<void> {
+    const currencies = [
+      {
+        code: 'USD',
+        name: {
+          'zh-CN': '美元',
+          en: 'US Dollar',
+          es: 'Dólar Estadounidense',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '美国法定货币',
+          en: 'United States legal tender',
+          es: 'Moneda legal de Estados Unidos',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'EUR',
+        name: {
+          'zh-CN': '欧元',
+          en: 'Euro',
+          es: 'Euro',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '欧盟法定货币',
+          en: 'European Union legal tender',
+          es: 'Moneda legal de la Unión Europea',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'CNY',
+        name: {
+          'zh-CN': '人民币',
+          en: 'Chinese Yuan',
+          es: 'Yuan Chino',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '中华人民共和国法定货币',
+          en: 'People\'s Republic of China legal tender',
+          es: 'Moneda legal de la República Popular China',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'GBP',
+        name: {
+          'zh-CN': '英镑',
+          en: 'British Pound',
+          es: 'Libra Esterlina',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '英国法定货币',
+          en: 'United Kingdom legal tender',
+          es: 'Moneda legal del Reino Unido',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'JPY',
+        name: {
+          'zh-CN': '日元',
+          en: 'Japanese Yen',
+          es: 'Yen Japonés',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '日本法定货币',
+          en: 'Japan legal tender',
+          es: 'Moneda legal de Japón',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+      {
+        code: 'KRW',
+        name: {
+          'zh-CN': '韩元',
+          en: 'South Korean Won',
+          es: 'Won Surcoreano',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '韩国法定货币',
+          en: 'South Korea legal tender',
+          es: 'Moneda legal de Corea del Sur',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+      {
+        code: 'CAD',
+        name: {
+          'zh-CN': '加元',
+          en: 'Canadian Dollar',
+          es: 'Dólar Canadiense',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '加拿大法定货币',
+          en: 'Canada legal tender',
+          es: 'Moneda legal de Canadá',
+        } as MultiLangText,
+        sortOrder: 7,
+      },
+      {
+        code: 'AUD',
+        name: {
+          'zh-CN': '澳元',
+          en: 'Australian Dollar',
+          es: 'Dólar Australiano',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '澳大利亚法定货币',
+          en: 'Australia legal tender',
+          es: 'Moneda legal de Australia',
+        } as MultiLangText,
+        sortOrder: 8,
+      },
+      {
+        code: 'CHF',
+        name: {
+          'zh-CN': '瑞士法郎',
+          en: 'Swiss Franc',
+          es: 'Franco Suizo',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '瑞士法定货币',
+          en: 'Switzerland legal tender',
+          es: 'Moneda legal de Suiza',
+        } as MultiLangText,
+        sortOrder: 9,
+      },
+      {
+        code: 'SEK',
+        name: {
+          'zh-CN': '瑞典克朗',
+          en: 'Swedish Krona',
+          es: 'Corona Sueca',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '瑞典法定货币',
+          en: 'Sweden legal tender',
+          es: 'Moneda legal de Suecia',
+        } as MultiLangText,
+        sortOrder: 10,
+      },
+      {
+        code: 'NOK',
+        name: {
+          'zh-CN': '挪威克朗',
+          en: 'Norwegian Krone',
+          es: 'Corona Noruega',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '挪威法定货币',
+          en: 'Norway legal tender',
+          es: 'Moneda legal de Noruega',
+        } as MultiLangText,
+        sortOrder: 11,
+      },
+      {
+        code: 'DKK',
+        name: {
+          'zh-CN': '丹麦克朗',
+          en: 'Danish Krone',
+          es: 'Corona Danesa',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '丹麦法定货币',
+          en: 'Denmark legal tender',
+          es: 'Moneda legal de Dinamarca',
+        } as MultiLangText,
+        sortOrder: 12,
+      },
+      {
+        code: 'SGD',
+        name: {
+          'zh-CN': '新加坡元',
+          en: 'Singapore Dollar',
+          es: 'Dólar de Singapur',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '新加坡法定货币',
+          en: 'Singapore legal tender',
+          es: 'Moneda legal de Singapur',
+        } as MultiLangText,
+        sortOrder: 13,
+      },
+      {
+        code: 'HKD',
+        name: {
+          'zh-CN': '港币',
+          en: 'Hong Kong Dollar',
+          es: 'Dólar de Hong Kong',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '香港法定货币',
+          en: 'Hong Kong legal tender',
+          es: 'Moneda legal de Hong Kong',
+        } as MultiLangText,
+        sortOrder: 14,
+      },
+      {
+        code: 'INR',
+        name: {
+          'zh-CN': '印度卢比',
+          en: 'Indian Rupee',
+          es: 'Rupia India',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '印度法定货币',
+          en: 'India legal tender',
+          es: 'Moneda legal de India',
+        } as MultiLangText,
+        sortOrder: 15,
+      },
+      {
+        code: 'BRL',
+        name: {
+          'zh-CN': '巴西雷亚尔',
+          en: 'Brazilian Real',
+          es: 'Real Brasileño',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '巴西法定货币',
+          en: 'Brazil legal tender',
+          es: 'Moneda legal de Brasil',
+        } as MultiLangText,
+        sortOrder: 16,
+      },
+      {
+        code: 'MXN',
+        name: {
+          'zh-CN': '墨西哥比索',
+          en: 'Mexican Peso',
+          es: 'Peso Mexicano',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '墨西哥法定货币',
+          en: 'Mexico legal tender',
+          es: 'Moneda legal de México',
+        } as MultiLangText,
+        sortOrder: 17,
+      },
+      {
+        code: 'RUB',
+        name: {
+          'zh-CN': '俄罗斯卢布',
+          en: 'Russian Ruble',
+          es: 'Rublo Ruso',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '俄罗斯法定货币',
+          en: 'Russia legal tender',
+          es: 'Moneda legal de Rusia',
+        } as MultiLangText,
+        sortOrder: 18,
+      },
+      {
+        code: 'ZAR',
+        name: {
+          'zh-CN': '南非兰特',
+          en: 'South African Rand',
+          es: 'Rand Sudafricano',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '南非法定货币',
+          en: 'South Africa legal tender',
+          es: 'Moneda legal de Sudáfrica',
+        } as MultiLangText,
+        sortOrder: 19,
+      },
+      {
+        code: 'TRY',
+        name: {
+          'zh-CN': '土耳其里拉',
+          en: 'Turkish Lira',
+          es: 'Lira Turca',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '土耳其法定货币',
+          en: 'Turkey legal tender',
+          es: 'Moneda legal de Turquía',
+        } as MultiLangText,
+        sortOrder: 20,
+      },
+    ];
+
+    await this.batchCreateItems('currencies', currencies);
   }
 
   private async initializeAdminRoles(): Promise<void> {
