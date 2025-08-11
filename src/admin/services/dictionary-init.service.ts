@@ -27,6 +27,8 @@ export class DictionaryInitService {
       await this.initializeFormulationTypes();
       await this.initializeProductCategories();
       await this.initializeInquiryStatuses();
+      await this.initializeRegistrationRequestStatuses();
+      await this.initializeRegistrationDocumentTypes();
       
       // 权限系统字典
       await this.initializeAdminRoles();
@@ -185,6 +187,36 @@ export class DictionaryInitService {
         sortOrder: 8,
       },
       {
+        code: 'registration_request_status',
+        name: {
+          'zh-CN': '登记申请状态',
+          en: 'Registration Request Status',
+          es: 'Estado de Solicitud de Registro',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请状态分类',
+          en: 'Registration request status classification',
+          es: 'Clasificación del estado de solicitud de registro',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 9,
+      },
+      {
+        code: 'registration_document_type',
+        name: {
+          'zh-CN': '登记文档类型',
+          en: 'Registration Document Type',
+          es: 'Tipo de Documento de Registro',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请所需文档类型',
+          en: 'Document types required for registration request',
+          es: 'Tipos de documentos requeridos para solicitud de registro',
+        } as MultiLangText,
+        isSystem: true,
+        sortOrder: 10,
+      },
+      {
         code: 'countries',
         name: {
           'zh-CN': '国家地区',
@@ -197,7 +229,7 @@ export class DictionaryInitService {
           es: 'Lista de países y regiones del mundo',
         } as MultiLangText,
         isSystem: true,
-        sortOrder: 9,
+        sortOrder: 11,
       },
       {
         code: 'admin_roles',
@@ -863,6 +895,202 @@ export class DictionaryInitService {
     ];
 
     await this.batchCreateItems('inquiry_status', inquiryStatuses);
+  }
+
+  private async initializeRegistrationRequestStatuses(): Promise<void> {
+    const registrationStatuses = [
+      {
+        code: 'pending_response',
+        name: {
+          'zh-CN': '待回复',
+          en: 'Pending Response',
+          es: 'Respuesta Pendiente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请等待供应商回复',
+          en: 'Registration request waiting for supplier response',
+          es: 'Solicitud de registro esperando respuesta del proveedor',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'in_progress',
+        name: {
+          'zh-CN': '进行中',
+          en: 'In Progress',
+          es: 'En Progreso',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请正在处理中',
+          en: 'Registration request is being processed',
+          es: 'La solicitud de registro está siendo procesada',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'completed',
+        name: {
+          'zh-CN': '已完成',
+          en: 'Completed',
+          es: 'Completado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请已完成',
+          en: 'Registration request has been completed',
+          es: 'La solicitud de registro ha sido completada',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'declined',
+        name: {
+          'zh-CN': '已拒绝',
+          en: 'Declined',
+          es: 'Rechazado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请被拒绝',
+          en: 'Registration request has been declined',
+          es: 'La solicitud de registro ha sido rechazada',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'cancelled',
+        name: {
+          'zh-CN': '已取消',
+          en: 'Cancelled',
+          es: 'Cancelado',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '登记申请已被取消',
+          en: 'Registration request has been cancelled',
+          es: 'La solicitud de registro ha sido cancelada',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+    ];
+
+    await this.batchCreateItems('registration_request_status', registrationStatuses);
+  }
+
+  private async initializeRegistrationDocumentTypes(): Promise<void> {
+    const documentTypes = [
+      {
+        code: 'COA',
+        name: {
+          'zh-CN': '分析证书',
+          en: 'Certificate of Analysis',
+          es: 'Certificado de Análisis',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品成分和质量分析证书',
+          en: 'Product composition and quality analysis certificate',
+          es: 'Certificado de análisis de composición y calidad del producto',
+        } as MultiLangText,
+        sortOrder: 1,
+      },
+      {
+        code: 'MSDS',
+        name: {
+          'zh-CN': '安全数据表',
+          en: 'Material Safety Data Sheet',
+          es: 'Hoja de Datos de Seguridad del Material',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '化学品安全数据说明书',
+          en: 'Chemical safety data sheet',
+          es: 'Hoja de datos de seguridad química',
+        } as MultiLangText,
+        sortOrder: 2,
+      },
+      {
+        code: 'GLP',
+        name: {
+          'zh-CN': 'GLP报告',
+          en: 'GLP Report',
+          es: 'Informe GLP',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '良好实验室规范报告',
+          en: 'Good Laboratory Practice report',
+          es: 'Informe de Buenas Prácticas de Laboratorio',
+        } as MultiLangText,
+        sortOrder: 3,
+      },
+      {
+        code: 'TECH_SPEC',
+        name: {
+          'zh-CN': '技术规格书',
+          en: 'Technical Specification',
+          es: 'Especificación Técnica',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品技术规格说明文档',
+          en: 'Product technical specification document',
+          es: 'Documento de especificación técnica del producto',
+        } as MultiLangText,
+        sortOrder: 4,
+      },
+      {
+        code: 'REGISTRATION_CERT',
+        name: {
+          'zh-CN': '登记证书',
+          en: 'Registration Certificate',
+          es: 'Certificado de Registro',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品登记注册证书',
+          en: 'Product registration certificate',
+          es: 'Certificado de registro del producto',
+        } as MultiLangText,
+        sortOrder: 5,
+      },
+      {
+        code: 'PATENT_DOC',
+        name: {
+          'zh-CN': '专利文件',
+          en: 'Patent Document',
+          es: 'Documento de Patente',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品相关专利文件',
+          en: 'Product related patent documents',
+          es: 'Documentos de patente relacionados con el producto',
+        } as MultiLangText,
+        sortOrder: 6,
+      },
+      {
+        code: 'TOXICOLOGY_REPORT',
+        name: {
+          'zh-CN': '毒理学报告',
+          en: 'Toxicology Report',
+          es: 'Informe de Toxicología',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品毒理学测试报告',
+          en: 'Product toxicology test report',
+          es: 'Informe de prueba toxicológica del producto',
+        } as MultiLangText,
+        sortOrder: 7,
+      },
+      {
+        code: 'EFFICACY_REPORT',
+        name: {
+          'zh-CN': '药效报告',
+          en: 'Efficacy Report',
+          es: 'Informe de Eficacia',
+        } as MultiLangText,
+        description: {
+          'zh-CN': '产品药效测试报告',
+          en: 'Product efficacy test report',
+          es: 'Informe de prueba de eficacia del producto',
+        } as MultiLangText,
+        sortOrder: 8,
+      },
+    ];
+
+    await this.batchCreateItems('registration_document_type', documentTypes);
   }
 
   private async initializeAdminRoles(): Promise<void> {
