@@ -13,6 +13,7 @@ import { SearchProductsDto } from './dto/search-products.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { MyProductsDto } from './dto/my-products.dto';
+import { ProductsLookupDto } from './dto/products-lookup.dto';
 import { MultiLangQueryUtil } from '../utils/multilang-query.util';
 
 @Injectable()
@@ -25,7 +26,7 @@ export class ProductsService {
   async searchProducts(
     searchDto: SearchProductsDto,
   ): Promise<PaginatedResult<Product>> {
-    const { search, category, language, page = 1, limit = 20 } = searchDto;
+    const { search, category, supplierId, language, page = 1, limit = 20 } = searchDto;
 
     const queryBuilder = this.productRepository
       .createQueryBuilder('product')
@@ -35,6 +36,11 @@ export class ProductsService {
       .andWhere('supplier.status = :supplierStatus', {
         supplierStatus: CompanyStatus.ACTIVE,
       });
+
+    // 按供应商ID筛选
+    if (supplierId) {
+      queryBuilder.andWhere('product.supplierId = :supplierId', { supplierId });
+    }
 
     if (search) {
       // 直接使用JSON_EXTRACT进行多语言搜索，参考企业搜索的实现
@@ -245,5 +251,65 @@ export class ProductsService {
     product.rejectionReason = undefined;
 
     return this.productRepository.save(product);
+  }
+
+  // 轻量级产品 lookup 接口，支持分页，仅返回 id、本地化名称和供应商ID
+  async productsLookup(
+    lookupDto: ProductsLookupDto,
+  ): Promise<PaginatedResult<{ id: number; name: any; supplierId: number }>> {
+    const { search, supplierId, page = 1, limit = 10 } = lookupDto;
+
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .select(['product.id', 'product.name', 'product.supplierId', 'product.createdAt'])
+      .leftJoin('product.supplier', 'supplier')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.isListed = :isListed', { isListed: true })
+      .andWhere('supplier.status = :supplierStatus', {
+        supplierStatus: CompanyStatus.ACTIVE,
+      });
+
+    // 按供应商ID筛选
+    if (supplierId) {
+      queryBuilder.andWhere('product.supplierId = :supplierId', { supplierId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        `(JSON_UNQUOTE(JSON_EXTRACT(product.name, '$.\"zh-CN\"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$.\"en\"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.name, '$.\"es\"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$.\"zh-CN\"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$.\"en\"')) LIKE :search OR ` +
+        `JSON_UNQUOTE(JSON_EXTRACT(product.pesticideName, '$.\"es\"')) LIKE :search OR ` +
+        `product.registrationNumber LIKE :search)`,
+        { search: `%${search}%` }
+      );
+    }
+
+    // 获取总数和分页数据
+    const [products, total] = await queryBuilder
+      .orderBy('product.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const data = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      supplierId: product.supplierId,
+    }));
+
+    const meta = {
+      totalItems: total,
+      itemCount: data.length,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      itemsPerPage: limit,
+      hasNextPage: page < Math.ceil(total / limit),
+      hasPrevPage: page > 1,
+    };
+
+    return { data, meta };
   }
 }

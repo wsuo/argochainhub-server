@@ -23,6 +23,7 @@ import { User } from '../entities/user.entity';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
 import { CreateBuyerCompanyDto } from './dto/create-buyer-company.dto';
+import { SuppliersLookupDto } from './dto/suppliers-lookup.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('企业管理')
@@ -76,6 +77,37 @@ export class CompaniesController {
   async getSubscriptionStatus(@CurrentUser() user: User) {
     const subscription = await this.companiesService.getSubscriptionStatus(user);
     return ResponseWrapperUtil.success(subscription, '获取成功');
+  }
+
+  @Get('suppliers/lookup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '供应商快速查询（轻量级，支持分页）' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '查询成功，返回 id 和多语言名称，支持分页',
+    schema: {
+      example: {
+        success: true,
+        message: '查询成功',
+        data: [
+          { id: 26, name: { "zh-CN": "阳光农业", "en": "Sunshine Agriculture" } },
+          { id: 27, name: { "zh-CN": "绿色农药", "en": "Green Pesticide" } }
+        ],
+        meta: {
+          totalItems: 25,
+          currentPage: 1,
+          totalPages: 3,
+          itemsPerPage: 10,
+          hasNextPage: true,
+          hasPrevPage: false
+        }
+      }
+    }
+  })
+  async suppliersLookup(@Query() lookupDto: SuppliersLookupDto) {
+    const result = await this.companiesService.suppliersLookup(lookupDto);
+    return ResponseWrapperUtil.successWithPagination(result, '查询成功');
   }
 
   @Get('suppliers')

@@ -20,6 +20,7 @@ import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
 import { CreateBuyerCompanyDto } from './dto/create-buyer-company.dto';
+import { SuppliersLookupDto } from './dto/suppliers-lookup.dto';
 
 @Injectable()
 export class CompaniesService {
@@ -216,5 +217,52 @@ export class CompaniesService {
     });
 
     return savedCompany;
+  }
+
+  // 轻量级供应商 lookup 接口，支持分页，仅返回 id 和本地化名称
+  async suppliersLookup(
+    lookupDto: SuppliersLookupDto,
+  ): Promise<PaginatedResult<{ id: number; name: any }>> {
+    const { search, page = 1, limit = 10 } = lookupDto;
+
+    const queryBuilder = this.companyRepository
+      .createQueryBuilder('company')
+      .select(['company.id', 'company.name'])
+      .where('company.type = :type', { type: CompanyType.SUPPLIER })
+      .andWhere('company.status = :status', { status: CompanyStatus.ACTIVE });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(JSON_EXTRACT(company.name, \'$.\\\"zh-CN\\\"\') LIKE :search OR ' +
+        'JSON_EXTRACT(company.name, \'$.\\\"en\\\"\') LIKE :search OR ' +
+        'JSON_EXTRACT(company.name, \'$.\\\"es\\\"\') LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // 获取总数和分页数据
+    const [companies, total] = await queryBuilder
+      .orderBy('company.isTop100', 'DESC')
+      .addOrderBy('company.rating', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const data = companies.map(company => ({
+      id: company.id,
+      name: company.name,
+    }));
+
+    const meta = {
+      totalItems: total,
+      itemCount: data.length,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      itemsPerPage: limit,
+      hasNextPage: page < Math.ceil(total / limit),
+      hasPrevPage: page > 1,
+    };
+
+    return { data, meta };
   }
 }

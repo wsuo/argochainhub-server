@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { SupportedLanguage } from '../../types/multilang';
 
@@ -13,6 +14,15 @@ export class SearchProductsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @ApiPropertyOptional({ 
+    description: '供应商ID，按供应商筛选产品',
+    example: 26 
+  })
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => parseInt(value))
+  supplierId?: number;
 
   @ApiPropertyOptional({
     description: '搜索语言',

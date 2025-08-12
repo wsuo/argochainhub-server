@@ -33,18 +33,30 @@ export class ResponseWrapperUtil {
       currentPage: number;
       totalPages: number;
       itemsPerPage: number;
+      hasNextPage?: boolean;
+      hasPrevPage?: boolean;
     };
   } {
+    const meta: any = {
+      totalItems: result.meta.totalItems,
+      currentPage: result.meta.currentPage,
+      totalPages: result.meta.totalPages,
+      itemsPerPage: result.meta.itemsPerPage,
+    };
+
+    // 如果有额外的分页信息，也包含进去
+    if (result.meta.hasNextPage !== undefined) {
+      meta.hasNextPage = result.meta.hasNextPage;
+    }
+    if (result.meta.hasPrevPage !== undefined) {
+      meta.hasPrevPage = result.meta.hasPrevPage;
+    }
+
     return {
       success: true,
       message,
       data: result.data,
-      meta: {
-        totalItems: result.meta.totalItems,
-        currentPage: result.meta.currentPage,
-        totalPages: result.meta.totalPages,
-        itemsPerPage: result.meta.itemsPerPage,
-      },
+      meta,
     };
   }
 

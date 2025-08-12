@@ -30,12 +30,44 @@ import { SearchProductsDto } from './dto/search-products.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { MyProductsDto } from './dto/my-products.dto';
+import { ProductsLookupDto } from './dto/products-lookup.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 
 @ApiTags('产品管理')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get('lookup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '产品快速查询（轻量级，支持分页）' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '查询成功，返回 id、多语言名称和供应商ID，支持分页',
+    schema: {
+      example: {
+        success: true,
+        message: '查询成功',
+        data: [
+          { id: 5, name: { "zh-CN": "杀虫剂", "en": "Insecticide" }, supplierId: 26 },
+          { id: 6, name: { "zh-CN": "除草剂", "en": "Herbicide" }, supplierId: 27 }
+        ],
+        meta: {
+          totalItems: 15,
+          currentPage: 1,
+          totalPages: 2,
+          itemsPerPage: 10,
+          hasNextPage: true,
+          hasPrevPage: false
+        }
+      }
+    }
+  })
+  async productsLookup(@Query() lookupDto: ProductsLookupDto) {
+    const result = await this.productsService.productsLookup(lookupDto);
+    return ResponseWrapperUtil.successWithPagination(result, '查询成功');
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard)
