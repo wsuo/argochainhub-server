@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { AiConversationsService } from './ai-conversations.service';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { StoreCompleteConversationDto } from './dto/store-conversation.dto';
+import { PopularQueriesDto } from './dto/popular-queries.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
 import { FlexibleAuthGuard } from '../common/guards/flexible-auth.guard';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
@@ -60,6 +61,14 @@ export class AiConversationsController {
     query.guestId = guestId;
     const result = await this.conversationsService.findConversations(query);
     return ResponseWrapperUtil.successWithPagination(result, '查询成功');
+  }
+
+  @Get('popular/queries')
+  @ApiOperation({ summary: '获取AI热门咨询问题' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getPopularQueries(@Query() query: PopularQueriesDto) {
+    const result = await this.conversationsService.getPopularQueries(query);
+    return ResponseWrapperUtil.success(result, '热门问题查询成功');
   }
 
   @Get(':conversationId')

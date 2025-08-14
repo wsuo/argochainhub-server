@@ -14,6 +14,7 @@ import { PaginatedResult } from '../common/dto/pagination.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { StoreCompleteConversationDto } from './dto/store-conversation.dto';
 import { ConversationStatsDto, ConversationStatsResponseDto } from './dto/conversation-stats.dto';
+import { PopularQueriesDto, PopularQueriesResponseDto, PopularQueryItemDto } from './dto/popular-queries.dto';
 
 @Injectable()
 export class AiConversationsService {
@@ -42,30 +43,60 @@ export class AiConversationsService {
         where: { conversationId: dto.conversationId },
       });
 
+      let isNewConversation = false;
+
       if (conversation) {
-        // 对话已存在，直接返回（幂等性处理）
-        return {
+        // 对话已存在，检查是否为完全相同的问答对（幂等性处理）
+        const existingUserMessage = await manager.findOne(AiMessage, {
+          where: { 
+            conversationId: dto.conversationId,
+            messageType: MessageType.USER_QUERY,
+            content: dto.userQuery
+          },
+        });
+
+        if (existingUserMessage) {
+          // 检查是否已有相同的AI回复
+          const existingAiMessage = await manager.findOne(AiMessage, {
+            where: { 
+              conversationId: dto.conversationId,
+              messageType: MessageType.AI_RESPONSE,
+              content: dto.finalAnswer
+            },
+          });
+
+          if (existingAiMessage) {
+            // 完全相同的问答对已存在，直接返回
+            return {
+              conversationId: dto.conversationId,
+              processed: false,
+            };
+          }
+          
+          // 相同问题但不同答案，允许添加新的回答
+        }
+        
+        // 不同的查询，追加到现有对话中
+        // 跳过创建对话记录，直接添加消息
+      } else {
+        // 2. 创建新的对话记录
+        conversation = manager.create(AiConversation, {
           conversationId: dto.conversationId,
-          processed: false,
-        };
+          guestId: dto.guestId,
+          userType: dto.guestId ? UserType.GUEST : UserType.USER,
+          title: this.generateTitle(dto.userQuery),
+          userQuery: dto.userQuery,
+          userInputs: dto.userInputs,
+          finalAnswer: dto.finalAnswer,
+          duration: dto.duration,
+          totalMessages: 2, // 用户查询 + AI回复
+          totalTokens: dto.usageStats?.totalTokens || 0,
+          totalCost: parseFloat(dto.usageStats?.totalPrice || '0'),
+        });
+
+        await manager.save(conversation);
+        isNewConversation = true;
       }
-
-      // 2. 创建对话记录
-      conversation = manager.create(AiConversation, {
-        conversationId: dto.conversationId,
-        guestId: dto.guestId,
-        userType: dto.guestId ? UserType.GUEST : UserType.USER,
-        title: this.generateTitle(dto.userQuery),
-        userQuery: dto.userQuery,
-        userInputs: dto.userInputs,
-        finalAnswer: dto.finalAnswer,
-        duration: dto.duration,
-        totalMessages: 2, // 用户查询 + AI回复
-        totalTokens: dto.usageStats?.totalTokens || 0,
-        totalCost: parseFloat(dto.usageStats?.totalPrice || '0'),
-      });
-
-      await manager.save(conversation);
 
       // 3. 创建用户查询消息
       const userMessageId = this.generateUUID();
@@ -85,11 +116,30 @@ export class AiConversationsService {
         conversationId: dto.conversationId,
         messageType: MessageType.AI_RESPONSE,
         content: dto.finalAnswer,
-        metadata: dto.streamMessages,
+        metadata: dto.streamMessages ? { streamMessages: dto.streamMessages } : undefined, // 流消息数据包装为对象
       });
       await manager.save(aiMessage);
 
-      // 5. 创建工作流运行记录（如果有）
+      // 5. 更新对话统计信息（仅当追加到已有对话时）
+      if (!isNewConversation) {
+        // 计算新增的消息数和成本
+        const additionalMessages = 2; // 用户查询 + AI回复
+        const additionalTokens = dto.usageStats?.totalTokens || 0;
+        const additionalCost = parseFloat(dto.usageStats?.totalPrice || '0');
+        
+        await manager.update(AiConversation, 
+          { id: conversation.id },
+          {
+            totalMessages: () => `totalMessages + ${additionalMessages}`,
+            totalTokens: () => `totalTokens + ${additionalTokens}`,
+            totalCost: () => `totalCost + ${additionalCost}`,
+            duration: dto.duration, // 更新为最新的持续时间
+            updatedAt: new Date(),
+          }
+        );
+      }
+
+      // 6. 创建工作流运行记录（如果有）
       if (dto.workflowData) {
         const workflowRun = manager.create(AiWorkflowRun, {
           workflowRunId: dto.workflowData.id,
@@ -108,7 +158,7 @@ export class AiConversationsService {
         await manager.save(workflowRun);
       }
 
-      // 6. 创建使用统计记录（如果有）
+      // 7. 创建使用统计记录（如果有）
       if (dto.usageStats) {
         const usageStatistic = manager.create(AiUsageStatistic, {
           messageId: aiMessageId,
@@ -304,6 +354,82 @@ export class AiConversationsService {
         tokens: parseInt(stat.tokens) || 0,
         cost: parseFloat(stat.cost) || 0,
       })),
+    };
+  }
+
+  /**
+   * 获取热门咨询问题
+   */
+  async getPopularQueries(query: PopularQueriesDto): Promise<PopularQueriesResponseDto> {
+    const limit = query.limit || 10;
+    const minCount = query.minCount || 2;
+
+    const queryBuilder = this.conversationRepository.createQueryBuilder('conversation')
+      .select([
+        'conversation.userQuery as query',
+        'COUNT(conversation.userQuery) as count',
+        'MAX(conversation.createdAt) as latestDate'
+      ])
+      .where('conversation.userQuery IS NOT NULL')
+      .andWhere('conversation.userQuery != ""')
+      .andWhere('LENGTH(conversation.userQuery) > 10') // 过滤过短的查询
+      .groupBy('conversation.userQuery')
+      .having('COUNT(conversation.userQuery) >= :minCount', { minCount })
+      .orderBy('COUNT(conversation.userQuery)', 'DESC')
+      .limit(limit);
+
+    // 构建查询条件
+    if (query.userType) {
+      queryBuilder.andWhere('conversation.userType = :userType', { userType: query.userType });
+    }
+
+    if (query.startDate) {
+      queryBuilder.andWhere('DATE(conversation.createdAt) >= :startDate', { startDate: query.startDate });
+    }
+
+    if (query.endDate) {
+      queryBuilder.andWhere('DATE(conversation.createdAt) <= :endDate', { endDate: query.endDate });
+    }
+
+    // 获取热门问题数据
+    const popularQueries = await queryBuilder.getRawMany();
+
+    // 获取总查询数用于计算百分比
+    const totalQueryBuilder = this.conversationRepository.createQueryBuilder('conversation')
+      .select('COUNT(*) as total')
+      .where('conversation.userQuery IS NOT NULL')
+      .andWhere('conversation.userQuery != ""');
+
+    if (query.userType) {
+      totalQueryBuilder.andWhere('conversation.userType = :userType', { userType: query.userType });
+    }
+
+    if (query.startDate) {
+      totalQueryBuilder.andWhere('DATE(conversation.createdAt) >= :startDate', { startDate: query.startDate });
+    }
+
+    if (query.endDate) {
+      totalQueryBuilder.andWhere('DATE(conversation.createdAt) <= :endDate', { endDate: query.endDate });
+    }
+
+    const totalResult = await totalQueryBuilder.getRawOne();
+    const totalQueries = parseInt(totalResult.total) || 0;
+
+    // 处理数据格式
+    const data: PopularQueryItemDto[] = popularQueries.map(item => ({
+      query: item.query,
+      count: parseInt(item.count),
+      latestDate: item.latestDate,
+      percentage: totalQueries > 0 ? Math.round((parseInt(item.count) / totalQueries) * 10000) / 100 : 0
+    }));
+
+    return {
+      data,
+      totalQueries,
+      dateRange: {
+        startDate: query.startDate,
+        endDate: query.endDate
+      }
     };
   }
 
