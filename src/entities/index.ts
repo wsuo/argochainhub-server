@@ -37,3 +37,4 @@ export { AiWorkflowRun, WorkflowStatus } from './ai-workflow-run.entity';
 export { AiUsageStatistic } from './ai-usage-statistic.entity';
 export { ShoppingCart, ShoppingCartStatus } from './shopping-cart.entity';
 export { CartItem } from './cart-item.entity';
+export { SupplierFavorite } from './supplier-favorite.entity';
