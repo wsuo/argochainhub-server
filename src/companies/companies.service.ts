@@ -110,13 +110,26 @@ export class CompaniesService {
   async searchSuppliers(
     searchDto: SearchCompaniesDto,
   ): Promise<PaginatedResult<Company>> {
-    const { search, page = 1, limit = 20 } = searchDto;
+    const { 
+      search, 
+      country, 
+      companySize, 
+      isTop100,
+      sortBy = 'createdAt', 
+      sortOrder = 'DESC',
+      page = 1, 
+      limit = 20 
+    } = searchDto;
 
     const queryBuilder = this.companyRepository
       .createQueryBuilder('company')
+      .leftJoin('company.products', 'product', 'product.status = :productStatus', { productStatus: 'active' })
+      .addSelect('COUNT(product.id)', 'productCount')
       .where('company.type = :type', { type: CompanyType.SUPPLIER })
-      .andWhere('company.status = :status', { status: CompanyStatus.ACTIVE });
+      .andWhere('company.status = :status', { status: CompanyStatus.ACTIVE })
+      .groupBy('company.id');
 
+    // 搜索条件
     if (search) {
       queryBuilder.andWhere(
         '(company.name LIKE :search OR JSON_EXTRACT(company.profile, "$.description") LIKE :search)',
@@ -124,11 +137,43 @@ export class CompaniesService {
       );
     }
 
+    // 国家/地区筛选
+    if (country) {
+      queryBuilder.andWhere('company.country = :country', { country });
+    }
+
+    // 企业规模筛选
+    if (companySize) {
+      queryBuilder.andWhere('company.companySize = :companySize', { companySize });
+    }
+
+    // Top100筛选
+    if (isTop100 !== undefined) {
+      queryBuilder.andWhere('company.isTop100 = :isTop100', { isTop100 });
+    }
+
+    // 排序逻辑
+    switch (sortBy) {
+      case 'productCount':
+        queryBuilder.orderBy('productCount', sortOrder);
+        break;
+      case 'name':
+        queryBuilder.orderBy('company.name', sortOrder);
+        break;
+      case 'createdAt':
+      default:
+        queryBuilder.orderBy('company.createdAt', sortOrder);
+        break;
+    }
+
+    // 添加默认的Top100优先级排序（只有在不是按创建时间倒序时才添加）
+    if (!(sortBy === 'createdAt' && sortOrder === 'DESC')) {
+      queryBuilder.addOrderBy('company.isTop100', 'DESC');
+    }
+
     const [companies, total] = await queryBuilder
       .skip((page - 1) * limit)
       .take(limit)
-      .orderBy('company.isTop100', 'DESC')
-      .addOrderBy('company.rating', 'DESC')
       .getManyAndCount();
 
     return {
