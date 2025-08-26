@@ -1,0 +1,21 @@
+{
+  "apps": [{
+    "name": "argochainhub-server",
+    "script": "dist/src/main.js",
+    "cwd": "/home/wsuo/argochainhub-server",
+    "instances": 1,
+    "exec_mode": "cluster",
+    "env": {
+      "NODE_ENV": "development"
+    },
+    "log_file": "/home/wsuo/argochainhub-server/logs/combined.log",
+    "out_file": "/home/wsuo/argochainhub-server/logs/out.log",
+    "error_file": "/home/wsuo/argochainhub-server/logs/error.log",
+    "pid_file": "/home/wsuo/argochainhub-server/pids/app.pid",
+    "log_date_format": "YYYY-MM-DD HH:mm Z",
+    "merge_logs": true,
+    "autorestart": true,
+    "watch": false,
+    "max_memory_restart": "1G"
+  }]
+}
