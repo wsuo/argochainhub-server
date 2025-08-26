@@ -13,7 +13,10 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like } from 'typeorm';
 import { AdminAuthGuard } from '../../common/guards';
+import { AdminPermissionsGuard } from '../../common/guards/admin-permissions.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
+import { AdminPermissions } from '../../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../../types/permissions';
 import { EmailHistory } from '../../entities/email-history.entity';
 import { AdminUser } from '../../entities/admin-user.entity';
 import { EmailService } from '../services/email.service';
@@ -26,7 +29,7 @@ import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('admin-email-history')
 @ApiBearerAuth()
-@UseGuards(AdminAuthGuard)
+@UseGuards(AdminAuthGuard, AdminPermissionsGuard)
 @Controller('admin/email-histories')
 export class EmailHistoryController {
   constructor(
@@ -37,6 +40,7 @@ export class EmailHistoryController {
 
   @Get()
   @ApiOperation({ summary: '获取邮件发送历史' })
+  @AdminPermissions(AdminPermission.EMAIL_HISTORY_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件发送历史列表' })
   async getEmailHistories(@Query() query: EmailHistoryListDto) {
     const {
@@ -113,6 +117,7 @@ export class EmailHistoryController {
 
   @Get('statistics')
   @ApiOperation({ summary: '获取邮件统计信息' })
+  @AdminPermissions(AdminPermission.EMAIL_HISTORY_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件统计信息' })
   async getEmailStatistics(@Query('days') days?: string) {
     const daysNumber = days ? parseInt(days, 10) : 7;
@@ -187,6 +192,7 @@ export class EmailHistoryController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取邮件详情' })
+  @AdminPermissions(AdminPermission.EMAIL_HISTORY_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件详情' })
   async getEmailHistory(@Param('id', ParseIntPipe) id: number): Promise<EmailHistory> {
     const history = await this.emailHistoryRepository.findOne({
@@ -208,6 +214,7 @@ export class EmailHistoryController {
 
   @Post(':id/resend')
   @ApiOperation({ summary: '重新发送邮件' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '重新发送成功' })
   async resendEmail(
     @Param('id', ParseIntPipe) id: number,
@@ -219,6 +226,7 @@ export class EmailHistoryController {
 
   @Post('send')
   @ApiOperation({ summary: '发送邮件' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '发送成功' })
   async sendEmail(
     @Body() dto: SendEmailDto,

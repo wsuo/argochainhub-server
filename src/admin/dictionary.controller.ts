@@ -29,16 +29,22 @@ import {
   DictionaryItemQueryDto,
 } from './dto/dictionary-management.dto';
 import { ResponseWrapperUtil } from '../common/utils/response-wrapper.util';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
+import { AdminPermissionsGuard } from '../common/guards/admin-permissions.guard';
+import { AdminPermissions } from '../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../types/permissions';
 
 @ApiTags('字典管理')
 @Controller('admin/dictionaries')
 @ApiBearerAuth()
+@UseGuards(AdminAuthGuard, AdminPermissionsGuard)
 export class DictionaryController {
   constructor(private readonly dictionaryService: DictionaryService) {}
 
   // 字典分类管理
   @Get('categories')
   @ApiOperation({ summary: '获取字典分类列表' })
+  @AdminPermissions(AdminPermission.DICTIONARY_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getCategories(@Query() queryDto: DictionaryCategoryQueryDto) {
     const result = await this.dictionaryService.getCategories(queryDto);
@@ -47,6 +53,7 @@ export class DictionaryController {
 
   @Get('categories/:code')
   @ApiOperation({ summary: '根据代码获取字典分类详情' })
+  @AdminPermissions(AdminPermission.DICTIONARY_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'code', description: '分类代码' })
   async getCategoryByCode(@Param('code') code: string) {
@@ -56,6 +63,7 @@ export class DictionaryController {
 
   @Post('categories')
   @ApiOperation({ summary: '创建字典分类' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 201, description: '创建成功' })
   async createCategory(@Body() createDto: CreateDictionaryCategoryDto) {
     const result = await this.dictionaryService.createCategory(createDto);
@@ -64,6 +72,7 @@ export class DictionaryController {
 
   @Put('categories/:id')
   @ApiOperation({ summary: '更新字典分类' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 200, description: '更新成功' })
   async updateCategory(
     @Param('id', ParseIntPipe) id: number,
@@ -75,6 +84,7 @@ export class DictionaryController {
 
   @Delete('categories/:id')
   @ApiOperation({ summary: '删除字典分类' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteCategory(@Param('id', ParseIntPipe) id: number) {
     await this.dictionaryService.deleteCategory(id);
@@ -84,6 +94,7 @@ export class DictionaryController {
   // 字典项管理
   @Get(':categoryCode/items')
   @ApiOperation({ summary: '获取指定分类的字典项列表' })
+  @AdminPermissions(AdminPermission.DICTIONARY_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'categoryCode', description: '分类代码' })
   async getItems(
@@ -96,6 +107,7 @@ export class DictionaryController {
 
   @Post(':categoryCode/items')
   @ApiOperation({ summary: '在指定分类下创建字典项' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiParam({ name: 'categoryCode', description: '分类代码' })
   async createItem(
@@ -108,6 +120,7 @@ export class DictionaryController {
 
   @Put('items/:id')
   @ApiOperation({ summary: '更新字典项' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 200, description: '更新成功' })
   async updateItem(
     @Param('id', ParseIntPipe) id: number,
@@ -119,6 +132,7 @@ export class DictionaryController {
 
   @Delete('items/:id')
   @ApiOperation({ summary: '删除字典项' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteItem(@Param('id', ParseIntPipe) id: number) {
     await this.dictionaryService.deleteItem(id);
@@ -127,6 +141,7 @@ export class DictionaryController {
 
   @Post(':categoryCode/batch')
   @ApiOperation({ summary: '批量导入字典项' })
+  @AdminPermissions(AdminPermission.DICTIONARY_MANAGE)
   @ApiResponse({ status: 201, description: '导入成功' })
   @ApiParam({ name: 'categoryCode', description: '分类代码' })
   async batchImportItems(

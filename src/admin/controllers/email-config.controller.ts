@@ -15,7 +15,10 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdminAuthGuard } from '../../common/guards';
+import { AdminPermissionsGuard } from '../../common/guards/admin-permissions.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
+import { AdminPermissions } from '../../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../../types/permissions';
 import { EmailConfig } from '../../entities/email-config.entity';
 import { AdminUser } from '../../entities/admin-user.entity';
 import { EmailService } from '../services/email.service';
@@ -29,7 +32,7 @@ import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('admin-email-config')
 @ApiBearerAuth()
-@UseGuards(AdminAuthGuard)
+@UseGuards(AdminAuthGuard, AdminPermissionsGuard)
 @Controller('admin/email-configs')
 export class EmailConfigController {
   constructor(
@@ -40,6 +43,7 @@ export class EmailConfigController {
 
   @Get()
   @ApiOperation({ summary: '获取邮件配置列表' })
+  @AdminPermissions(AdminPermission.EMAIL_CONFIG_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件配置列表' })
   async getEmailConfigs(@Query() query: EmailConfigListDto) {
     const { page = 1, limit = 10, isActive, isDefault } = query;
@@ -84,6 +88,7 @@ export class EmailConfigController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取邮件配置详情' })
+  @AdminPermissions(AdminPermission.EMAIL_CONFIG_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件配置详情' })
   async getEmailConfig(@Param('id', ParseIntPipe) id: number) {
     const config = await this.emailConfigRepository.findOne({
@@ -105,6 +110,7 @@ export class EmailConfigController {
 
   @Post()
   @ApiOperation({ summary: '创建邮件配置' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 201, description: '创建成功' })
   async createEmailConfig(
     @Body() dto: CreateEmailConfigDto,
@@ -136,6 +142,7 @@ export class EmailConfigController {
 
   @Put(':id')
   @ApiOperation({ summary: '更新邮件配置' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '更新成功' })
   async updateEmailConfig(
     @Param('id', ParseIntPipe) id: number,
@@ -184,6 +191,7 @@ export class EmailConfigController {
 
   @Delete(':id')
   @ApiOperation({ summary: '删除邮件配置' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteEmailConfig(
     @Param('id', ParseIntPipe) id: number,
@@ -211,6 +219,7 @@ export class EmailConfigController {
 
   @Post(':id/test')
   @ApiOperation({ summary: '测试邮件配置' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '测试成功' })
   async testEmailConfig(
     @Param('id', ParseIntPipe) id: number,

@@ -15,7 +15,10 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { AdminAuthGuard } from '../../common/guards';
+import { AdminPermissionsGuard } from '../../common/guards/admin-permissions.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
+import { AdminPermissions } from '../../common/decorators/admin-permissions.decorator';
+import { AdminPermission } from '../../types/permissions';
 import { EmailTemplate } from '../../entities/email-template.entity';
 import { AdminUser } from '../../entities/admin-user.entity';
 import { EmailService } from '../services/email.service';
@@ -30,7 +33,7 @@ import { ResponseWrapperUtil } from '../../common/utils/response-wrapper.util';
 
 @ApiTags('admin-email-template')
 @ApiBearerAuth()
-@UseGuards(AdminAuthGuard)
+@UseGuards(AdminAuthGuard, AdminPermissionsGuard)
 @Controller('admin/email-templates')
 export class EmailTemplateController {
   constructor(
@@ -42,6 +45,7 @@ export class EmailTemplateController {
 
   @Get()
   @ApiOperation({ summary: '获取邮件模板列表' })
+  @AdminPermissions(AdminPermission.EMAIL_TEMPLATE_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件模板列表' })
   async getEmailTemplates(@Query() query: EmailTemplateListDto) {
     const { page = 1, limit = 10, isActive, triggerEvent, code } = query;
@@ -105,6 +109,7 @@ export class EmailTemplateController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取邮件模板详情' })
+  @AdminPermissions(AdminPermission.EMAIL_TEMPLATE_VIEW)
   @ApiResponse({ status: 200, description: '返回邮件模板详情' })
   async getEmailTemplate(@Param('id', ParseIntPipe) id: number) {
     const template = await this.emailTemplateRepository.findOne({
@@ -120,6 +125,7 @@ export class EmailTemplateController {
 
   @Post()
   @ApiOperation({ summary: '创建邮件模板' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 201, description: '创建成功' })
   async createEmailTemplate(
     @Body() dto: CreateEmailTemplateDto,
@@ -145,6 +151,7 @@ export class EmailTemplateController {
 
   @Put(':id')
   @ApiOperation({ summary: '更新邮件模板' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '更新成功' })
   async updateEmailTemplate(
     @Param('id', ParseIntPipe) id: number,
@@ -185,6 +192,7 @@ export class EmailTemplateController {
 
   @Delete(':id')
   @ApiOperation({ summary: '删除邮件模板' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteEmailTemplate(
     @Param('id', ParseIntPipe) id: number,
@@ -203,6 +211,7 @@ export class EmailTemplateController {
 
   @Post(':id/preview')
   @ApiOperation({ summary: '预览邮件模板' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({ status: 200, description: '返回预览内容' })
   async previewEmailTemplate(
     @Param('id', ParseIntPipe) id: number,
