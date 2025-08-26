@@ -200,6 +200,39 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     AdminPermission.PLAN_VIEW,
     AdminPermission.DASHBOARD_VIEW,
   ],
+  demo_viewer: [
+    // 演示账号只有查看权限，不能进行任何修改操作
+    // 企业管理查看权限
+    AdminPermission.COMPANY_VIEW,
+    
+    // 产品管理查看权限
+    AdminPermission.PRODUCT_VIEW,
+    
+    // 用户管理查看权限
+    AdminPermission.USER_VIEW,
+    
+    // 业务流程查看权限
+    AdminPermission.INQUIRY_VIEW,
+    AdminPermission.SAMPLE_REQUEST_VIEW,
+    AdminPermission.REGISTRATION_REQUEST_VIEW,
+    AdminPermission.ORDER_VIEW,
+    
+    // 会员计划查看权限
+    AdminPermission.PLAN_VIEW,
+    
+    // VIP配置查看权限
+    AdminPermission.VIP_CONFIG_VIEW,
+    
+    // 系统信息查看权限
+    AdminPermission.AUDIT_LOG_VIEW,
+    
+    // 统计分析权限
+    AdminPermission.ANALYTICS_VIEW,
+    AdminPermission.DASHBOARD_VIEW,
+    
+    // 新闻资讯查看权限
+    AdminPermission.NEWS_VIEW,
+  ],
 } as const;
 
 /**
@@ -267,7 +300,7 @@ export type PermissionType = AdminPermission;
 /**
  * 角色类型定义
  */
-export type AdminRole = 'super_admin' | 'admin' | 'moderator';
+export type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'demo_viewer';
 
 /**
  * 权限检查辅助函数

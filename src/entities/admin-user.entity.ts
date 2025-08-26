@@ -1,6 +1,6 @@
 import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { AuditLog } from './audit-log.entity';
-import { AdminPermission, AdminRole } from '../types/permissions';
+import { AdminPermission, AdminRole, DEFAULT_ROLE_PERMISSIONS } from '../types/permissions';
 
 @Entity('admin_users')
 export class AdminUser {
@@ -48,8 +48,9 @@ export class AdminUser {
       return true;
     }
     
-    // 检查用户具体权限列表
-    return this.permissions?.includes(permission) || false;
+    // 获取用户的所有有效权限
+    const allPermissions = this.getAllPermissions();
+    return allPermissions.includes(permission);
   }
 
   /**
@@ -61,11 +62,9 @@ export class AdminUser {
       return true;
     }
     
-    if (!this.permissions) {
-      return false;
-    }
-    
-    return permissions.some(permission => this.permissions!.includes(permission));
+    // 获取用户的所有有效权限
+    const allPermissions = this.getAllPermissions();
+    return permissions.some(permission => allPermissions.includes(permission));
   }
 
   /**
@@ -77,11 +76,9 @@ export class AdminUser {
       return true;
     }
     
-    if (!this.permissions) {
-      return false;
-    }
-    
-    return permissions.every(permission => this.permissions!.includes(permission));
+    // 获取用户的所有有效权限
+    const allPermissions = this.getAllPermissions();
+    return permissions.every(permission => allPermissions.includes(permission));
   }
 
   /**
@@ -93,6 +90,14 @@ export class AdminUser {
       return Object.values(AdminPermission);
     }
     
-    return this.permissions || [];
+    // 获取角色默认权限
+    const rolePermissions = DEFAULT_ROLE_PERMISSIONS[this.role] || [];
+    
+    // 如果用户有自定义权限，使用自定义权限，否则使用角色默认权限
+    if (this.permissions && this.permissions.length > 0) {
+      return this.permissions;
+    }
+    
+    return [...rolePermissions];
   }
 }

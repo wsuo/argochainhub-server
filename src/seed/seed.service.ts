@@ -77,6 +77,14 @@ export class SeedService {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      {
+        username: 'demo',
+        password: await bcrypt.hash('Demo123!', 10),
+        role: 'demo_viewer' as const,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
 
     await this.adminUserRepository.save(adminUsers);

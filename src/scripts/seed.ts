@@ -16,6 +16,7 @@ async function runSeed() {
     console.log('🔧 系统管理员账户:');
     console.log('   超级管理员: superadmin / Admin123!');
     console.log('   普通管理员: admin / Admin123!');
+    console.log('   演示账号(只读): demo / Demo123!');
 
     console.log('\n🏢 企业买家账户:');
     console.log('   企业: 阳光农业采购有限公司');
