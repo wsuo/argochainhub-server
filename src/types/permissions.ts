@@ -50,7 +50,11 @@ export enum AdminPermission {
 
   // 系统管理权限
   ADMIN_MANAGE = 'admin:manage',           // 管理员账户管理
+  DICTIONARY_VIEW = 'dictionary:view',     // 查看字典
   DICTIONARY_MANAGE = 'dictionary:manage', // 字典管理
+  EMAIL_CONFIG_VIEW = 'email_config:view', // 查看邮件配置
+  EMAIL_TEMPLATE_VIEW = 'email_template:view', // 查看邮件模板
+  EMAIL_HISTORY_VIEW = 'email_history:view', // 查看邮件历史
   SYSTEM_CONFIG = 'system:config',         // 系统配置
   AUDIT_LOG_VIEW = 'audit_log:view',       // 查看审计日志
   FILE_MANAGE = 'file:manage',             // 文件管理
@@ -224,6 +228,10 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     AdminPermission.VIP_CONFIG_VIEW,
     
     // 系统信息查看权限
+    AdminPermission.DICTIONARY_VIEW,        // 字典查看权限
+    AdminPermission.EMAIL_CONFIG_VIEW,      // 邮件配置查看权限
+    AdminPermission.EMAIL_TEMPLATE_VIEW,    // 邮件模板查看权限
+    AdminPermission.EMAIL_HISTORY_VIEW,     // 邮件历史查看权限
     AdminPermission.AUDIT_LOG_VIEW,
     
     // 统计分析权限
@@ -278,7 +286,11 @@ export const PERMISSION_DESCRIPTIONS = {
   [AdminPermission.VIP_CONFIG_DELETE]: '删除VIP配置',
   
   [AdminPermission.ADMIN_MANAGE]: '管理员账户管理',
+  [AdminPermission.DICTIONARY_VIEW]: '查看字典',
   [AdminPermission.DICTIONARY_MANAGE]: '字典管理',
+  [AdminPermission.EMAIL_CONFIG_VIEW]: '查看邮件配置',
+  [AdminPermission.EMAIL_TEMPLATE_VIEW]: '查看邮件模板',
+  [AdminPermission.EMAIL_HISTORY_VIEW]: '查看邮件历史',
   [AdminPermission.SYSTEM_CONFIG]: '系统配置',
   [AdminPermission.AUDIT_LOG_VIEW]: '查看审计日志',
   [AdminPermission.FILE_MANAGE]: '文件管理',
