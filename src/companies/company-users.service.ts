@@ -190,6 +190,11 @@ export class CompanyUsersService {
     createDto: CreateCompanyUserDto,
     currentUser: User | AdminUser
   ): Promise<User> {
+    // 权限检查：演示账号不能执行写操作
+    if (currentUser instanceof AdminUser && currentUser.role === 'demo_viewer') {
+      throw new ForbiddenException('演示账号只能查看数据，不能进行创建操作');
+    }
+    
     // 管理员可以为任何企业创建用户
     if (currentUser instanceof AdminUser) {
       // 管理员没有企业限制
@@ -253,6 +258,11 @@ export class CompanyUsersService {
     updateDto: UpdateCompanyUserDto,
     currentUser: User | AdminUser
   ): Promise<User> {
+    // 权限检查：演示账号不能执行写操作
+    if (currentUser instanceof AdminUser && currentUser.role === 'demo_viewer') {
+      throw new ForbiddenException('演示账号只能查看数据，不能进行修改操作');
+    }
+    
     // 管理员可以修改任何企业的用户
     if (currentUser instanceof AdminUser) {
       // 管理员没有企业限制
@@ -315,6 +325,11 @@ export class CompanyUsersService {
     userId: number,
     currentUser: User | AdminUser
   ): Promise<void> {
+    // 权限检查：演示账号不能执行写操作
+    if (currentUser instanceof AdminUser && currentUser.role === 'demo_viewer') {
+      throw new ForbiddenException('演示账号只能查看数据，不能进行删除操作');
+    }
+    
     // 管理员可以删除任何企业的用户
     if (currentUser instanceof AdminUser) {
       // 管理员没有企业限制
@@ -358,6 +373,11 @@ export class CompanyUsersService {
     userId: number,
     currentUser: User | AdminUser
   ): Promise<User> {
+    // 权限检查：演示账号不能执行写操作
+    if (currentUser instanceof AdminUser && currentUser.role === 'demo_viewer') {
+      throw new ForbiddenException('演示账号只能查看数据，不能进行状态修改操作');
+    }
+    
     // 管理员可以修改任何企业的用户状态
     if (currentUser instanceof AdminUser) {
       // 管理员没有企业限制
