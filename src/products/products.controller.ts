@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { CompanyTypeGuard } from '../common/guards/company-type.guard';
 // import { QuotaGuard } from '../common/guards/quota.guard';  // 临时注释，开发阶段暂不使用
 import { CompanyTypes } from '../common/decorators/company-types.decorator';
@@ -70,12 +71,42 @@ export class ProductsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '搜索产品' })
-  @ApiResponse({ status: 200, description: '搜索成功' })
-  async searchProducts(@Query() searchDto: SearchProductsDto) {
-    const result = await this.productsService.searchProducts(searchDto);
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({ summary: '搜索产品（游客可访问，限制前2页）' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '搜索成功。游客用户仅可查看前2页数据，登录用户可查看全部数据',
+    schema: {
+      example: {
+        success: true,
+        message: '搜索成功',
+        data: [
+          {
+            id: 1,
+            name: { "zh-CN": "杀虫剂A", "en": "Insecticide A" },
+            pesticideName: { "zh-CN": "高效氯氰菊酯", "en": "Beta-Cypermethrin" },
+            registrationNumber: "PD20230001",
+            supplier: {
+              id: 26,
+              name: { "zh-CN": "XX农业科技", "en": "XX Agri Tech" }
+            }
+          }
+        ],
+        meta: {
+          totalItems: 50,
+          currentPage: 1,
+          totalPages: 10,
+          itemsPerPage: 20,
+          isGuestAccess: false
+        }
+      }
+    }
+  })
+  async searchProducts(
+    @Query() searchDto: SearchProductsDto,
+    @CurrentUser() user?: User
+  ) {
+    const result = await this.productsService.searchProducts(searchDto, user);
     return ResponseWrapperUtil.successWithPagination(result, '搜索成功');
   }
 

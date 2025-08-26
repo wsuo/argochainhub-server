@@ -25,6 +25,8 @@ export interface PaginationMeta {
   currentPage: number;
   hasNextPage?: boolean;
   hasPrevPage?: boolean;
+  isGuestAccess?: boolean;
+  message?: string;
 }
 
 export interface PaginatedResult<T> {

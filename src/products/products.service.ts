@@ -25,8 +25,33 @@ export class ProductsService {
 
   async searchProducts(
     searchDto: SearchProductsDto,
+    user?: User,
   ): Promise<PaginatedResult<Product>> {
     const { search, category, supplierId, language, page = 1, limit = 20 } = searchDto;
+
+    // 游客用户限制：只能访问前2页数据
+    const isGuestUser = !user;
+    const maxGuestPage = 2;
+    const maxGuestLimit = 20;
+    
+    if (isGuestUser && page > maxGuestPage) {
+      // 游客用户超过限制页数，返回空结果
+      return {
+        data: [],
+        meta: {
+          totalItems: 0,
+          itemCount: 0,
+          itemsPerPage: limit,
+          totalPages: maxGuestPage,
+          currentPage: page,
+          isGuestAccess: true,
+          message: '游客用户仅可查看前2页数据，请登录查看更多内容'
+        },
+      };
+    }
+
+    // 游客用户限制每页最大数量
+    const actualLimit = isGuestUser ? Math.min(limit, maxGuestLimit) : limit;
 
     const queryBuilder = this.productRepository
       .createQueryBuilder('product')
@@ -64,20 +89,39 @@ export class ProductsService {
       );
     }
 
-    const [products, total] = await queryBuilder
-      .skip((page - 1) * limit)
-      .take(limit)
-      .orderBy('product.createdAt', 'DESC')
-      .getManyAndCount();
+    // 对于游客用户，限制查询范围以提高性能
+    let totalQuery = queryBuilder.clone();
+    if (isGuestUser) {
+      // 游客用户只查询前40条记录的总数（2页 * 20条/页）
+      totalQuery = totalQuery.limit(maxGuestPage * maxGuestLimit);
+    }
+
+    const [products, total] = await Promise.all([
+      queryBuilder
+        .skip((page - 1) * actualLimit)
+        .take(actualLimit)
+        .orderBy('product.createdAt', 'DESC')
+        .getMany(),
+      isGuestUser 
+        ? totalQuery.getCount().then(count => Math.min(count, maxGuestPage * maxGuestLimit))
+        : queryBuilder.getCount()
+    ]);
+
+    // 计算总页数，游客用户最多显示2页
+    const actualTotalPages = isGuestUser 
+      ? Math.min(Math.ceil(total / actualLimit), maxGuestPage)
+      : Math.ceil(total / actualLimit);
 
     return {
       data: products,
       meta: {
         totalItems: total,
         itemCount: products.length,
-        itemsPerPage: limit,
-        totalPages: Math.ceil(total / limit),
+        itemsPerPage: actualLimit,
+        totalPages: actualTotalPages,
         currentPage: page,
+        isGuestAccess: isGuestUser,
+        ...(isGuestUser && { message: '游客用户仅可查看前2页数据，请登录查看更多内容' })
       },
     };
   }
