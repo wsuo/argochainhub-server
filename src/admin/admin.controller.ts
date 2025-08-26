@@ -22,8 +22,8 @@ import {
 import { AdminService } from './admin.service';
 import { AdminProductsService } from './services/admin-products.service';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
-import { AdminRolesGuard } from '../common/guards/admin-roles.guard';
-import { AdminRoles } from '../common/decorators/admin-roles.decorator';
+import { AdminPermissionsGuard } from '../common/guards/admin-permissions.guard';
+import { AdminPermissions } from '../common/decorators/admin-permissions.decorator';
 import { CurrentAdmin } from '../common/decorators/current-admin.decorator';
 import { AdminUser } from '../entities/admin-user.entity';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -83,9 +83,8 @@ import { UserQueryDto } from './dto/user-query.dto';
 
 @ApiTags('后台管理')
 @Controller('admin')
-@UseGuards(AdminAuthGuard, AdminRolesGuard)
+@UseGuards(AdminAuthGuard, AdminPermissionsGuard)
 @ApiBearerAuth()
-@AdminRoles('admin', 'super_admin')
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
@@ -94,6 +93,7 @@ export class AdminController {
 
   @Get('dashboard/charts')
   @ApiOperation({ summary: '获取仪表盘图表数据' })
+  @AdminPermissions(AdminPermission.DASHBOARD_VIEW)
   @ApiResponse({
     status: 200,
     description: '获取成功',
@@ -106,6 +106,7 @@ export class AdminController {
 
   @Get('stats')
   @ApiOperation({ summary: '获取管理统计数据' })
+  @AdminPermissions(AdminPermission.DASHBOARD_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getStats() {
     const result = await this.adminService.getStats();
@@ -114,6 +115,7 @@ export class AdminController {
 
   @Get('companies/pending')
   @ApiOperation({ summary: '获取待审核企业列表' })
+  @AdminPermissions(AdminPermission.COMPANY_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getPendingCompanies(@Query() queryDto: CompanyQueryDto) {
     const result = await this.adminService.getPendingCompanies(queryDto);
@@ -122,6 +124,7 @@ export class AdminController {
 
   @Post('companies/:id/review')
   @ApiOperation({ summary: '审核企业' })
+  @AdminPermissions(AdminPermission.COMPANY_REVIEW)
   @ApiParam({ name: 'id', description: '企业ID' })
   @ApiResponse({ status: 200, description: '审核成功' })
   @ApiResponse({ status: 404, description: '企业不存在' })
@@ -135,6 +138,7 @@ export class AdminController {
 
   @Get('companies')
   @ApiOperation({ summary: '获取所有企业列表' })
+  @AdminPermissions(AdminPermission.COMPANY_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllCompanies(@Query() queryDto: CompanyQueryDto) {
     const result = await this.adminService.getAllCompanies(queryDto);
@@ -143,6 +147,7 @@ export class AdminController {
 
   @Get('companies/:id')
   @ApiOperation({ summary: '获取单个企业的详细信息' })
+  @AdminPermissions(AdminPermission.COMPANY_VIEW)
   @ApiParam({ name: 'id', description: '企业ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '企业不存在' })
@@ -153,6 +158,7 @@ export class AdminController {
 
   @Patch('companies/:id/toggle-status')
   @ApiOperation({ summary: '切换企业状态(启用/禁用)' })
+  @AdminPermissions(AdminPermission.COMPANY_REVIEW)
   @ApiParam({ name: 'id', description: '企业ID' })
   @ApiResponse({ status: 200, description: '操作成功' })
   @ApiResponse({ status: 404, description: '企业不存在' })
@@ -163,6 +169,7 @@ export class AdminController {
 
   @Get('products/pending')
   @ApiOperation({ summary: '获取待审核产品列表' })
+  @AdminPermissions(AdminPermission.PRODUCT_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getPendingProducts(@Query() queryDto: ProductQueryDto) {
     const query = { ...queryDto, status: ProductStatus.PENDING_REVIEW };
@@ -172,6 +179,7 @@ export class AdminController {
 
   @Post('products/:id/review')
   @ApiOperation({ summary: '审核产品' })
+  @AdminPermissions(AdminPermission.PRODUCT_REVIEW)
   @ApiParam({ name: 'id', description: '产品ID' })
   @ApiResponse({ status: 200, description: '审核成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -185,6 +193,7 @@ export class AdminController {
 
   @Post('products/batch-review')
   @ApiOperation({ summary: '批量审核产品' })
+  @AdminPermissions(AdminPermission.PRODUCT_REVIEW)
   @ApiResponse({ 
     status: 200, 
     description: '批量审核完成',
@@ -223,6 +232,7 @@ export class AdminController {
 
   @Get('products')
   @ApiOperation({ summary: '获取所有产品列表' })
+  @AdminPermissions(AdminPermission.PRODUCT_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllProducts(@Query() queryDto: ProductQueryDto) {
     const result = await this.adminProductsService.getProducts(queryDto);
@@ -231,6 +241,7 @@ export class AdminController {
 
   @Get('products/:id')
   @ApiOperation({ summary: '获取单个产品的详细信息' })
+  @AdminPermissions(AdminPermission.PRODUCT_VIEW)
   @ApiParam({ name: 'id', description: '产品ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -241,6 +252,7 @@ export class AdminController {
 
   @Patch('products/:id/list')
   @ApiOperation({ summary: '产品上架' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'id', description: '产品ID' })
   @ApiResponse({ status: 200, description: '上架成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -252,6 +264,7 @@ export class AdminController {
 
   @Patch('products/:id/unlist')
   @ApiOperation({ summary: '产品下架' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'id', description: '产品ID' })
   @ApiResponse({ status: 200, description: '下架成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -262,6 +275,7 @@ export class AdminController {
 
   @Get('test-users')
   @ApiOperation({ summary: '测试用户查询' })
+  @AdminPermissions(AdminPermission.USER_VIEW)
   @ApiResponse({ status: 200, description: '测试成功' })
   async testGetAllUsers() {
     const result = await this.adminService.testGetAllUsers();
@@ -270,6 +284,7 @@ export class AdminController {
 
   @Get('users')
   @ApiOperation({ summary: '获取所有用户列表' })
+  @AdminPermissions(AdminPermission.USER_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAllUsers(@Query() queryDto: UserQueryDto) {
     const result = await this.adminService.getAllUsers(queryDto);
@@ -278,6 +293,7 @@ export class AdminController {
 
   @Get('users/:id')
   @ApiOperation({ summary: '获取单个用户的详细信息' })
+  @AdminPermissions(AdminPermission.USER_VIEW)
   @ApiParam({ name: 'id', description: '用户ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '用户不存在' })
@@ -289,6 +305,7 @@ export class AdminController {
   // 翻译服务接口
   @Post('utilities/translate')
   @ApiOperation({ summary: '翻译文本' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({
     status: 200,
     description: '翻译成功',
@@ -308,6 +325,7 @@ export class AdminController {
 
   @Post('utilities/detect-language')
   @ApiOperation({ summary: '检测文本语言' })
+  @AdminPermissions(AdminPermission.SYSTEM_CONFIG)
   @ApiResponse({
     status: 200,
     description: '检测成功',
@@ -328,6 +346,7 @@ export class AdminController {
   // 订阅管理
   @Get('companies/:id/subscriptions')
   @ApiOperation({ summary: '查看指定企业的订阅历史' })
+  @AdminPermissions(AdminPermission.USER_VIEW)
   @ApiParam({ name: 'id', description: '企业ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '企业不存在' })
@@ -341,6 +360,7 @@ export class AdminController {
 
   @Post('companies/:id/subscriptions')
   @ApiOperation({ summary: '手动为企业添加/赠送会员订阅' })
+  @AdminPermissions(AdminPermission.USER_MANAGE_SUBSCRIPTION)
   @ApiParam({ name: 'id', description: '企业ID' })
   @ApiResponse({ status: 201, description: '添加成功' })
   @ApiResponse({ status: 404, description: '企业或计划不存在' })
@@ -358,6 +378,7 @@ export class AdminController {
 
   @Delete('subscriptions/:id')
   @ApiOperation({ summary: '取消/终止订阅' })
+  @AdminPermissions(AdminPermission.USER_MANAGE_SUBSCRIPTION)
   @ApiParam({ name: 'id', description: '订阅ID' })
   @ApiResponse({ status: 200, description: '取消成功' })
   @ApiResponse({ status: 404, description: '订阅不存在' })
@@ -370,6 +391,7 @@ export class AdminController {
   // 订单管理
   @Get('orders')
   @ApiOperation({ summary: '获取所有会员购买订单列表' })
+  @AdminPermissions(AdminPermission.ORDER_VIEW)
   @ApiQuery({ name: 'status', enum: OrderStatus, required: false })
   @ApiQuery({
     name: 'search',
@@ -392,6 +414,7 @@ export class AdminController {
 
   @Get('orders/:id')
   @ApiOperation({ summary: '查看单个订单详情' })
+  @AdminPermissions(AdminPermission.ORDER_VIEW)
   @ApiParam({ name: 'id', description: '订单ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '订单不存在' })
@@ -403,6 +426,7 @@ export class AdminController {
   // 会员计划管理
   @Get('plans')
   @ApiOperation({ summary: '获取所有会员计划列表' })
+  @AdminPermissions(AdminPermission.PLAN_VIEW)
   @ApiQuery({
     name: 'includeInactive',
     required: false,
@@ -422,6 +446,7 @@ export class AdminController {
 
   @Post('plans')
   @ApiOperation({ summary: '创建新的会员计划' })
+  @AdminPermissions(AdminPermission.PLAN_CREATE)
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   async createPlan(@Body() createPlanDto: CreatePlanDto) {
@@ -431,6 +456,7 @@ export class AdminController {
 
   @Put('plans/:id')
   @ApiOperation({ summary: '更新会员计划' })
+  @AdminPermissions(AdminPermission.PLAN_UPDATE)
   @ApiParam({ name: 'id', description: '计划ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '计划不存在' })
@@ -445,6 +471,7 @@ export class AdminController {
 
   @Patch('plans/:id/status')
   @ApiOperation({ summary: '上架或下架会员计划' })
+  @AdminPermissions(AdminPermission.PLAN_UPDATE)
   @ApiParam({ name: 'id', description: '计划ID' })
   @ApiResponse({ status: 200, description: '操作成功' })
   @ApiResponse({ status: 404, description: '计划不存在' })
@@ -456,6 +483,7 @@ export class AdminController {
   // 企业CRUD管理
   @Post('companies')
   @ApiOperation({ summary: '创建新企业' })
+  @AdminPermissions(AdminPermission.COMPANY_REVIEW)
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   async createCompany(@Body() createCompanyDto: CreateCompanyDto) {
@@ -465,6 +493,7 @@ export class AdminController {
 
   @Put('companies/:id')
   @ApiOperation({ summary: '更新企业信息' })
+  @AdminPermissions(AdminPermission.COMPANY_REVIEW)
   @ApiParam({ name: 'id', description: '企业ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '企业不存在' })
@@ -480,6 +509,7 @@ export class AdminController {
   // 产品CRUD管理
   @Post('products')
   @ApiOperation({ summary: '创建新产品' })
+  @AdminPermissions(AdminPermission.PRODUCT_CREATE)
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   @ApiResponse({ status: 404, description: '供应商企业不存在' })
@@ -490,6 +520,7 @@ export class AdminController {
 
   @Put('products/:id')
   @ApiOperation({ summary: '更新产品信息' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'id', description: '产品ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -504,6 +535,7 @@ export class AdminController {
 
   @Delete('products/:id')
   @ApiOperation({ summary: '删除产品' })
+  @AdminPermissions(AdminPermission.PRODUCT_DELETE)
   @ApiParam({ name: 'id', description: '产品ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -524,6 +556,7 @@ export class AdminController {
 
   @Post('products/:productId/control-methods')
   @ApiOperation({ summary: '创建防治方法' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'productId', description: '产品ID' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -540,6 +573,7 @@ export class AdminController {
 
   @Post('products/:productId/control-methods/batch')
   @ApiOperation({ summary: '批量创建防治方法' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'productId', description: '产品ID' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 404, description: '产品不存在' })
@@ -556,6 +590,7 @@ export class AdminController {
 
   @Put('control-methods/:id')
   @ApiOperation({ summary: '更新防治方法' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'id', description: '防治方法ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '防治方法不存在' })
@@ -569,6 +604,7 @@ export class AdminController {
 
   @Delete('control-methods/:id')
   @ApiOperation({ summary: '删除防治方法' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'id', description: '防治方法ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '防治方法不存在' })
@@ -579,6 +615,7 @@ export class AdminController {
 
   @Put('products/:productId/control-methods/order')
   @ApiOperation({ summary: '更新防治方法排序' })
+  @AdminPermissions(AdminPermission.PRODUCT_UPDATE)
   @ApiParam({ name: 'productId', description: '产品ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
@@ -593,6 +630,7 @@ export class AdminController {
   // 询价单业务流程管理
   @Get('inquiries')
   @ApiOperation({ summary: '获取询价单列表' })
+  @AdminPermissions(AdminPermission.INQUIRY_VIEW)
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
   @ApiQuery({ name: 'inquiryNo', required: false, description: '询价单号' })
@@ -613,6 +651,7 @@ export class AdminController {
 
   @Get('inquiries/stats')
   @ApiOperation({ summary: '获取询价单统计数据' })
+  @AdminPermissions(AdminPermission.INQUIRY_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getInquiryStats() {
     const result = await this.adminService.getInquiryStats();
@@ -621,6 +660,7 @@ export class AdminController {
 
   @Get('inquiries/:id')
   @ApiOperation({ summary: '获取询价单详情' })
+  @AdminPermissions(AdminPermission.INQUIRY_VIEW)
   @ApiParam({ name: 'id', description: '询价单ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '询价单不存在' })
@@ -631,6 +671,7 @@ export class AdminController {
 
   @Patch('inquiries/:id/status')
   @ApiOperation({ summary: '更新询价单状态' })
+  @AdminPermissions(AdminPermission.INQUIRY_MANAGE)
   @ApiParam({ name: 'id', description: '询价单ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 400, description: '状态转换不合法或参数错误' })
@@ -645,6 +686,7 @@ export class AdminController {
 
   @Delete('inquiries/:id')
   @ApiOperation({ summary: '删除询价单' })
+  @AdminPermissions(AdminPermission.INQUIRY_MANAGE)
   @ApiParam({ name: 'id', description: '询价单ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 400, description: '询价单状态不允许删除' })
@@ -657,6 +699,7 @@ export class AdminController {
   // 样品申请业务流程管理
   @Get('sample-requests')
   @ApiOperation({ summary: '获取样品申请列表' })
+  @AdminPermissions(AdminPermission.SAMPLE_REQUEST_VIEW)
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
   @ApiQuery({ name: 'sampleReqNo', required: false, description: '样品申请单号' })
@@ -675,6 +718,7 @@ export class AdminController {
 
   @Get('sample-requests/stats')
   @ApiOperation({ summary: '获取样品申请统计数据' })
+  @AdminPermissions(AdminPermission.SAMPLE_REQUEST_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getSampleRequestStats() {
     const result = await this.adminService.getSampleRequestStats();
@@ -683,6 +727,7 @@ export class AdminController {
 
   @Get('sample-requests/:id')
   @ApiOperation({ summary: '获取样品申请详情' })
+  @AdminPermissions(AdminPermission.SAMPLE_REQUEST_VIEW)
   @ApiParam({ name: 'id', description: '样品申请ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '样品申请不存在' })
@@ -693,6 +738,7 @@ export class AdminController {
 
   @Patch('sample-requests/:id/status')
   @ApiOperation({ summary: '更新样品申请状态' })
+  @AdminPermissions(AdminPermission.SAMPLE_REQUEST_MANAGE)
   @ApiParam({ name: 'id', description: '样品申请ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 400, description: '状态转换不合法或参数错误' })
@@ -707,6 +753,7 @@ export class AdminController {
 
   @Delete('sample-requests/:id')
   @ApiOperation({ summary: '删除样品申请' })
+  @AdminPermissions(AdminPermission.SAMPLE_REQUEST_MANAGE)
   @ApiParam({ name: 'id', description: '样品申请ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 400, description: '样品申请状态不允许删除' })
@@ -719,6 +766,7 @@ export class AdminController {
   // 登记申请业务流程管理
   @Get('registration-requests')
   @ApiOperation({ summary: '获取登记申请列表' })
+  @AdminPermissions(AdminPermission.REGISTRATION_REQUEST_VIEW)
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
   @ApiQuery({ name: 'regReqNo', required: false, description: '登记申请单号' })
@@ -738,6 +786,7 @@ export class AdminController {
 
   @Get('registration-requests/stats')
   @ApiOperation({ summary: '获取登记申请统计数据' })
+  @AdminPermissions(AdminPermission.REGISTRATION_REQUEST_VIEW)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getRegistrationRequestStats() {
     const result = await this.adminService.getRegistrationRequestStats();
@@ -746,6 +795,7 @@ export class AdminController {
 
   @Get('registration-requests/:id')
   @ApiOperation({ summary: '获取登记申请详情' })
+  @AdminPermissions(AdminPermission.REGISTRATION_REQUEST_VIEW)
   @ApiParam({ name: 'id', description: '登记申请ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '登记申请不存在' })
@@ -756,6 +806,7 @@ export class AdminController {
 
   @Patch('registration-requests/:id/status')
   @ApiOperation({ summary: '更新登记申请状态' })
+  @AdminPermissions(AdminPermission.REGISTRATION_REQUEST_MANAGE)
   @ApiParam({ name: 'id', description: '登记申请ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 400, description: '状态转换不合法或参数错误' })
@@ -770,6 +821,7 @@ export class AdminController {
 
   @Delete('registration-requests/:id')
   @ApiOperation({ summary: '删除登记申请' })
+  @AdminPermissions(AdminPermission.REGISTRATION_REQUEST_MANAGE)
   @ApiParam({ name: 'id', description: '登记申请ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 400, description: '登记申请状态不允许删除' })
@@ -782,6 +834,7 @@ export class AdminController {
   // 管理员账户管理
   @Get('admin-users')
   @ApiOperation({ summary: '获取管理员用户列表' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: '每页条数', example: 20 })
   @ApiQuery({ name: 'username', required: false, description: '用户名搜索' })
@@ -797,6 +850,7 @@ export class AdminController {
 
   @Get('admin-users/stats')
   @ApiOperation({ summary: '获取管理员用户统计数据' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiResponse({ status: 200, description: '获取成功' })
   async getAdminUserStats() {
     const result = await this.adminService.getAdminUserStats();
@@ -805,6 +859,7 @@ export class AdminController {
 
   @Get('admin-users/:id')
   @ApiOperation({ summary: '获取管理员用户详情' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
@@ -815,6 +870,7 @@ export class AdminController {
 
   @Post('admin-users')
   @ApiOperation({ summary: '创建管理员用户' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   @ApiResponse({ status: 409, description: '用户名已存在' })
@@ -825,6 +881,7 @@ export class AdminController {
 
   @Put('admin-users/:id')
   @ApiOperation({ summary: '更新管理员用户信息' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
@@ -839,6 +896,7 @@ export class AdminController {
 
   @Patch('admin-users/:id/password')
   @ApiOperation({ summary: '修改管理员用户密码' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '密码修改成功' })
   @ApiResponse({ status: 401, description: '当前密码错误' })
@@ -853,6 +911,7 @@ export class AdminController {
 
   @Patch('admin-users/:id/reset-password')
   @ApiOperation({ summary: '重置管理员用户密码' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '密码重置成功' })
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
@@ -866,6 +925,7 @@ export class AdminController {
 
   @Patch('admin-users/:id/toggle-status')
   @ApiOperation({ summary: '切换管理员用户状态' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '状态切换成功' })
   @ApiResponse({ status: 404, description: '管理员用户不存在' })
@@ -876,6 +936,7 @@ export class AdminController {
 
   @Delete('admin-users/:id')
   @ApiOperation({ summary: '删除管理员用户' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 400, description: '不能删除最后一个超级管理员' })
@@ -889,6 +950,7 @@ export class AdminController {
 
   @Get('permissions/groups')
   @ApiOperation({ summary: '获取权限分组信息' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiResponse({ 
     status: 200, 
     description: '获取成功',
@@ -901,6 +963,7 @@ export class AdminController {
 
   @Get('permissions/role-templates')
   @ApiOperation({ summary: '获取角色模板信息' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiResponse({ 
     status: 200, 
     description: '获取成功',
@@ -913,6 +976,7 @@ export class AdminController {
 
   @Get('admin-users/:id/permissions')
   @ApiOperation({ summary: '获取管理员用户权限信息' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ 
     status: 200, 
@@ -927,6 +991,7 @@ export class AdminController {
 
   @Post('admin-users/:id/permissions')
   @ApiOperation({ summary: '为管理员用户分配权限' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '权限分配成功' })
   @ApiResponse({ status: 400, description: '超级管理员无需分配权限' })
@@ -941,6 +1006,7 @@ export class AdminController {
 
   @Patch('admin-users/:id/permissions/reset')
   @ApiOperation({ summary: '根据角色重置用户权限' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiParam({ name: 'id', description: '管理员用户ID' })
   @ApiResponse({ status: 200, description: '权限重置成功' })
   @ApiResponse({ status: 400, description: '超级管理员无需重置权限' })
@@ -952,6 +1018,7 @@ export class AdminController {
 
   @Patch('admin-users/permissions/batch')
   @ApiOperation({ summary: '批量更新管理员用户权限' })
+  @AdminPermissions(AdminPermission.ADMIN_MANAGE)
   @ApiResponse({ status: 200, description: '批量更新成功' })
   @ApiResponse({ status: 400, description: '部分用户不存在或包含超级管理员' })
   async batchUpdatePermissions(
